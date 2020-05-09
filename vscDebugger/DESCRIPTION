@@ -1,0 +1,19 @@
+Package: vscDebugger
+Title: Provides support for a visual studio code debugger
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Manuel",
+           family = "Hentschel",
+           role = c("aut", "cre"),
+           email = "Manuel.Hentschel@outlook.com"
+           )
+Description: Provides support for a visual studio code debugger
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.0
+Imports:
+    stringr (>= 1.4.0),
+    jsonlite(>= 1.6.0)
+KeepSource: TRUE

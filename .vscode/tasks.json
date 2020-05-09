@@ -1,0 +1,33 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Test package",
+            "type": "shell",
+            "command": "R",
+            "args": [
+                "--file=testPackage.R",
+                "--silent",
+                "--no-save",
+                "--no-restore"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build and install package",
+            "type": "shell",
+            "command": ".\\buildPackage.bat",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+    ]
+}
