@@ -236,7 +236,8 @@ getVariable<- function(valueR, name, depth=5){
 }
 
 getValueR <- function(name, scope){
-    valueR <- eval(parse(text=name), envir=scope)
+    # valueR <- eval(parse(text=name), envir=scope)
+    valueR <- get(name, envir = scope)
     return(valueR)
 }
 
