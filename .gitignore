@@ -1,4 +1,3 @@
 lib/*
-*.tar.gz
 vscDebugger/man
 vscDebugger/NAMESPACE
