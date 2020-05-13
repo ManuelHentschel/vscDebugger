@@ -54,7 +54,7 @@
     }
     nFrames <- getNFrames(topFrame)
     frameIdsR <- seq2((nFrames-skipFromTop), (skipFromBottom+1), -1) # vsc considers frames in the opposite order!
-    frameIdsVsc <- seq2(frameIdsR)-1
+    frameIdsVsc <- seq2(length(frameIdsR))-1
     # frameIds <- 1:nFrames
     # frames <- lapply(frameIdsR, getStackFrame, nFrames)
     frames <- mapply(getStackFrame, frameIdsR, frameIdsVsc, SIMPLIFY = FALSE, USE.NAMES = FALSE)
