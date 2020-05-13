@@ -2,7 +2,7 @@
 # Prep
 
 .packageEnv <- new.env()
-
+.packageEnv$isEvaluating <- FALSE
 
 
 #' Evaluate an expression and send result to vsc
@@ -106,9 +106,8 @@
 .vsc.runMain <- function(overWritePrint=TRUE) {
 
     options(prompt = "<#>\n")
-    # options(error=browser)
+    options(error = recover)
 
-    .packageEnv$isRunningEval <- FALSE
 
     if(overWritePrint){
         assign('print', .vsc.print, envir=.GlobalEnv)
