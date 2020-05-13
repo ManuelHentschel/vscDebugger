@@ -101,7 +101,8 @@ getStackFrame <- function(frameIdR, frameIdVsc){
 }
 
 getFrameName <- function(call){
-    name <- capture.output(base::print(call))[1]
+    # name <- capture.output(base::print(call))[1]
+    name <- toString(call)
     return(name)
 }
 
@@ -249,10 +250,10 @@ getValue <- function(valueR){
 varToString <- function(v){
     ret <- try(toString(v), silent = TRUE)
     if(class(ret) != 'try-error') return(ret)
-    ret <- try({
-        paste0(capture.output(v), collapse = ';\n')
-    }, silent = TRUE)
-    if(class(ret) != 'try-error') return(ret)
+    # ret <- try({
+    #     paste0(capture.output(v), collapse = ';\n')
+    # }, silent = TRUE)
+    # if(class(ret) != 'try-error') return(ret)
     return('???')
 }
 
