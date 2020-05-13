@@ -15,9 +15,9 @@
 #' @param id The Id of the message sent to vsc
 .vsc.evalInFrame <- function(expr, frameId, id=0){
     env <- sys.frame(frameId + 1)
-    assign('isEvaluating', TRUE, envir=.packageEnv)
+    .packageEnv$isEvaluating <- TRUE
     ret <- capture.output(eval(parse(text=expr), envir=env))
-    assign('isEvaluating', FALSE, envir=.packageEnv)
+    .packageEnv$isEvaluating <- FALSE
     ret <- paste(ret, sep="", collapse="\n")
     .vsc.sendToVsc('eval', ret, id=id)
 }
@@ -51,8 +51,8 @@
 #' @param id The id of the message sent to vsc
 #' @return The current stack, formatted as a nested named list
 #' 
-.vsc.getStack <- function(topFrame=parent.frame(),id=0){
-    stack <- .vsc.buildStack(topFrame)
+.vsc.getStack <- function(topFrame=parent.frame(),id=0, isError=0){
+    stack <- .vsc.buildStack(topFrame = topFrame, isError = isError)
     .vsc.sendToVsc('stack', stack, id)
 }
 
@@ -106,6 +106,9 @@
 .vsc.runMain <- function(overWritePrint=TRUE) {
 
     options(prompt = "<#>\n")
+    # options(error=browser)
+
+    .packageEnv$isRunningEval <- FALSE
 
     if(overWritePrint){
         assign('print', .vsc.print, envir=.GlobalEnv)
@@ -122,6 +125,28 @@
 # GET file-name of current function:
 # attr(attr(eval.parent(sys.call()[[1]]), 'srcref'), 'srcfile')
 # attr(attr(attributes(eval.parent(sys.call()[[1]]))$original, 'srcref'), 'srcfile')
+
+
+#' Check if debugger is evaluating
+#' 
+#' Returns TRUE iff an expression is being evaluated by the debugger during a breakpoint
+#' 
+#' @export
+#' @return Boolean indicating whether an expression is being evaluated
+.vsc.isEvaluating <- function(){
+    return(.packageEnv$isEvaluating)
+}
+
+
+#' Check if R should stop on breakpoint
+#' 
+#' Returns FALSE iff an expression is being evaluated by the debugger during a (different) breakpoint, else TRUE
+#' 
+#' @export
+#' @return Boolean indicating whether R should stop on breakpoints
+.vsc.stopOnBreakpoint <- function(){
+    return(!.packageEnv$isEvaluating)
+}
 
 
 #' Sets a breakpoint
@@ -193,16 +218,22 @@
             # loop through breakpoints for each function
             for(j in seq2(1, length(step$at))){
                 loc <- step$at[[j]]
-                # insert calls to cat() and browser()
+                # Make string that is cat() upon hitting the breakpoint
+                # tells vsc that a breakpoint was hit and gives info about file and line
                 catString <- paste0(
                     .vsc.makeStringForVsc('breakpoint'),
                     "debug at ", step$filename, '#', step$line[[j]], ": ?\n"
                 )
+                # only stop, if vsc is not running an eval statment from the debug console
                 body(func)[[loc]] <- call('{',
-                        # call('cat',paste0("<v\\s\\c>breakpoint</v\\s\\c>\ndebug at ", (step$filename), '#', step$line[[j]], ": ?\n")),
-                        call('cat', catString),
-                        quote(.doTrace(browser())),
-                        body(func)[[loc]]
+                    call('if',
+                        quote(.vsc.stopOnBreakpoint()),
+                        call('{',
+                            call('cat', catString),
+                            quote(.doTrace(browser()))
+                        )
+                    ),
+                    body(func)[[loc]]
                 )
             }
             # assign modified function to original environment

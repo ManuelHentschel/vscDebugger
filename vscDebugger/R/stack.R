@@ -47,11 +47,17 @@
 #' @param topFrame The first stack frame to consider (= the current function call)
 #' @return The current stack, formatted as a nested named list
 #' 
-.vsc.buildStack <- function(topFrame = parent.frame()){
+.vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop=0, skipFromBottom=1, isError=0){
     assign('varLists', list(), envir = .packageEnv) # used in getVarRef()
+    if(isError){
+        skipFromTop = skipFromTop + 3
+    }
     nFrames <- getNFrames(topFrame)
-    frameIds <- nFrames:1 # vsc considers frames in the opposite order!
-    frames <- lapply(frameIds, getStackFrame, nFrames)
+    frameIdsR <- seq2((nFrames-skipFromTop), (skipFromBottom+1), -1) # vsc considers frames in the opposite order!
+    frameIdsVsc <- seq2(frameIdsR)-1
+    # frameIds <- 1:nFrames
+    # frames <- lapply(frameIdsR, getStackFrame, nFrames)
+    frames <- mapply(getStackFrame, frameIdsR, frameIdsVsc, SIMPLIFY = FALSE, USE.NAMES = FALSE)
     stack <- list(
         frames=frames,
         varLists=.packageEnv$varLists
@@ -71,17 +77,19 @@ getNFrames <- function(topFrame){
 ########################################################################
 # StackFrames
 
-getStackFrame <- function(frameId, nFrames){
-    env <- sys.frame(frameId)
-    id <- nFrames + 1 - frameId # vsc considers frames in the opposite order!
-    call <- sys.call(frameId)
+getStackFrame <- function(frameIdR, frameIdVsc){
+    env <- sys.frame(frameIdR)
+    # id <- nFrames + 1 - frameIdR # vsc considers frames in the opposite order!
+    id <- frameIdVsc
+    call <- sys.call(frameIdR)
     name <- getFrameName(call)
     source <- getSource(env, call)
-    line <- getLine(frameId, nFrames)
-    column <- 1
+    line <- getLine(frameIdR)
+    column <- 0
     frame <- list(
         env=env,
         id=id,
+        index=id,
         name=name,
         source=source,
         line=line,
@@ -108,7 +116,8 @@ getSource <- function(env, call){
 
         source <- list(
             name = fileName,
-            path = fullPath
+            path = fullPath,
+            sourceReference = 0
         )
     }, silent=TRUE)
     if(class(source)=='try-error'){
@@ -118,8 +127,8 @@ getSource <- function(env, call){
 }
 
 # getLine <- function(env, call){
-getLine <- function(frameId, nFrames){
-    if(frameId==nFrames){
+getLine <- function(frameId){
+    if(frameId>=sys.nframe()){
         return(1)
     }
     call <- sys.call(frameId+1)
@@ -283,18 +292,16 @@ getVarListForVar <- function(valueR, depth) {
 ########################################################################
 # Helper
 
-seq2 <- function(from, to=NULL){
+seq2 <- function(from, to=NULL, by=1){
     if(is.null(from) || is.list(from) || (is.vector(from) && length(from)>1)){
-        return(seq2(length(from)))
+        return(seq2(1, length(from), by))
     } else if(is.null(to)){
-        if(from==0){
-            return(NULL)
-        } else {
-            return(seq(from))
-        }
-    } else if(from>to){
+        to <- from
+        from <- 1
+        return(seq2(from, to, by))
+    } else if((to-from)*by<0){
         return(NULL)
     } else{
-        return(seq(from, to))
+        return(seq(from, to, by))
     }
 }
