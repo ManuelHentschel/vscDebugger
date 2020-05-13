@@ -103,6 +103,8 @@ getStackFrame <- function(frameIdR, frameIdVsc){
 getFrameName <- function(call){
     # name <- capture.output(base::print(call))[1]
     name <- toString(call)
+    name <- str_replace_all(name, '\n', '')
+    name <- substr(name, 1, 16)
     return(name)
 }
 
