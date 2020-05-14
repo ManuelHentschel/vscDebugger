@@ -103,7 +103,11 @@ getStackFrame <- function(frameIdR, frameIdVsc){
 getFrameName <- function(call){
     # name <- capture.output(base::print(call))[1]
     name <- toString(call)
-    name <- str_replace_all(name, '\n', '')
+    name <- gsub('\n', '', name)
+    name <- gsub(' ', '', name)
+    name <- gsub('\\.', '', name)
+    name <- gsub('\\,', '', name)
+    name <- gsub('\\_', '', name)
     name <- substr(name, 1, 16)
     return(name)
 }
@@ -116,6 +120,7 @@ getSource <- function(env, call){
         fullPath <- file.path(dirName, fileName)
         fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
         fullPath <- toString(fullPath)
+        fileName <- toString(fileName)
 
         source <- list(
             name = fileName,
@@ -124,7 +129,7 @@ getSource <- function(env, call){
         )
     }, silent=TRUE)
     if(class(source)=='try-error'){
-        source <- list(name='', path='')
+        source <- list(name='???', path='')
     }
     return(source)
 }
@@ -136,6 +141,9 @@ getLine <- function(frameId){
     }
     call <- sys.call(frameId+1)
     ref <- attr(call, 'srcref')
+    if(is.null(ref)){
+        ref <- 0
+    }
     return(ref[1])
     # return(1)
 }
@@ -277,9 +285,12 @@ getVarRefForVar <- function(valueR, depth) {
     return(varRef)
 }
 
-getVarListForVar <- function(valueR, depth) {
+getVarListForVar <- function(valueR, depth, maxVars=100) {
     if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1))){
         valuesR <- valueR
+        if(length(valuesR)>maxVars && maxVars>0){
+            valuesR <- valuesR[1:maxVars]
+        }
         names <- names(valuesR)
         if(is.null(names)){
             names <- seq2(valuesR)
