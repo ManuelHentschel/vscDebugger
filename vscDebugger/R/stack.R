@@ -4,7 +4,7 @@
 
 # interface stack{
 #     frames: Stackframe[];
-#     varLists: Variable[][];
+#     varLists: 
 # }
 #
 # interface StackFrame{
@@ -25,6 +25,8 @@
 #     name: string;
 #     variablesReference: number;
 # }
+# 
+# interface VarList{ TODO! }
 #
 # interface Variable{
 #     name: string;
@@ -48,7 +50,7 @@
 #' @return The current stack, formatted as a nested named list
 #' 
 .vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop=0, skipFromBottom=1, isError=0){
-    assign('varLists', list(), envir = .packageEnv) # used in getVarRef()
+    .packageEnv$varLists <- list()
     if(isError){
         skipFromTop = skipFromTop + 3
     }
@@ -64,6 +66,12 @@
     )
     return(stack)
 }
+
+makeVarLists <- function(refs){
+    varLists <- lapply(refs, getVarListsEntry)
+    return(varLists)
+}
+
 
 getNFrames <- function(topFrame){
     nFrames <- sys.nframe()
@@ -185,26 +193,60 @@ getVarRefForEnv <- function(env, maxVars=100){
         varnames <- varnames[1:maxVars]
     }
 
-    varList <- getVarList(varnames, env)
-    varRef <- getVarRef(varList)
+    # varList <- getVarListForEnv(varnames, env)
+    varListCall <- call('getVarListForEnv', varnames, env)
+    varRef <- getVarRef(varListCall)
     return(varRef)
 }
 
-getVarRef <- function(varList){
-    if(length(varList)==0){
-        varRef <- 0
-    } else{
-        varRef <- length(.packageEnv$varLists) + 1 #.packageEnv$varLists is created in buildStack()
+getDummyVarRef <- function(call){
+    varRef <- 
+    .packageEnv$varListCalls
+
+}
+
+getVarRef <- function(varListCall=NULL, evalCall=FALSE, varRef=NULL){
+    if(is.null(varRef)){
+        varRef <- length(.packageEnv$varListCalls) + 1
+    }
+    .packageEnv$varListCalls[[varRef]] <- varListCall
+    if(evalCall){
+        varList <- eval(varListCall)
+        varList <- list(
+            reference = varRef,
+            isReady = TRUE,
+            variables = varList
+        )
         .packageEnv$varLists[[varRef]] <- varList
+    } else{
+        .packageEnv$varLists[[varRef]] <- list(
+            reference = 0,
+            isReady = FALSE,
+            variables = list()
+        )
     }
     return(varRef)
+}
+
+getVarListsEntry <- function(varRef){
+    varList <- .packageEnv$varLists[[varRef]]
+    if(!varList$isReady){
+        variables <- eval(.packageEnv$varListCalls[[varRef]])
+        varList <- list(
+            reference = varRef,
+            isReady = TRUE,
+            variables = variables
+        )
+        .packageEnv$varLists[[varRef]] <- varList
+    }
+    return(varList)
 }
 
 
 ########################################################################
 # Variables
 
-getVarList <- function(names, scope){
+getVarListForEnv <- function(names, scope){
     varList <- lapply(names, getVariableInScope, scope)
     return(varList)
 }
@@ -260,10 +302,10 @@ getValue <- function(valueR){
 varToString <- function(v){
     ret <- try(toString(v), silent = TRUE)
     if(class(ret) != 'try-error') return(ret)
-    # ret <- try({
-    #     paste0(capture.output(v), collapse = ';\n')
-    # }, silent = TRUE)
-    # if(class(ret) != 'try-error') return(ret)
+    ret <- try({
+        paste0(capture.output(v), collapse = ';\n')
+    }, silent = TRUE)
+    if(class(ret) != 'try-error') return(ret)
     return('???')
 }
 
@@ -280,8 +322,12 @@ getType <- function(valueR){
 }
 
 getVarRefForVar <- function(valueR, depth) {
-    varList <- getVarListForVar(valueR, depth)
-    varRef <- getVarRef(varList)
+    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1))){
+        varListCall <- call('getVarListForVar', valueR, depth)
+        varRef <- getVarRef(varListCall)
+    } else{
+        varRef <- 0
+    }
     return(varRef)
 }
 

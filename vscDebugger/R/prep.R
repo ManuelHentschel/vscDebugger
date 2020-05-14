@@ -2,7 +2,10 @@
 # Prep
 
 .packageEnv <- new.env()
+.packageEnv$varLists <- list()
+.packageEnv$varListCalls <- list()
 .packageEnv$isEvaluating <- FALSE
+
 
 
 #' Evaluate an expression and send result to vsc
@@ -54,6 +57,12 @@
 .vsc.getStack <- function(topFrame=parent.frame(),id=0, isError=0){
     stack <- .vsc.buildStack(topFrame = topFrame, isError = isError)
     .vsc.sendToVsc('stack', stack, id)
+}
+
+#' @export
+.vsc.getVarLists <- function(refs, id=0){
+    varLists <- makeVarLists(refs)
+    .vsc.sendToVsc('variables', varLists, id)
 }
 
 .vsc.getFileName <- function(call, frame){
