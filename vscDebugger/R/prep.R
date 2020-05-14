@@ -25,15 +25,20 @@
     .vsc.sendToVsc('eval', ret, id=id)
 }
 
+basePrint <- base::print
+baseCat <- base::cat
+
+#' @export
 .vsc.cat <- function(...){
     # TODO: consider correct environment for print(...)?
     # env <- sys.frame(-1)
     # ret <- capture.output(base::print(...), envir=env)
 
     if(.packageEnv$isEvaluating){
-        return(base::cat(...))
+        # return(base::cat(...))
+        return(baseCat(...))
     }
-    ret <- capture.output(base::cat(...))
+    ret <- capture.output(baseCat(...))
     output <- paste(ret, sep="", collapse="\n")
 
     line <- .vsc.getLineNumber(sys.call())
@@ -44,15 +49,16 @@
     .vsc.sendToVsc('print', list(output=output, file=file, line=line))
 }
 
+#' @export
 .vsc.print <- function(...){
     # TODO: consider correct environment for print(...)?
     # env <- sys.frame(-1)
     # ret <- capture.output(base::print(...), envir=env)
 
     if(.packageEnv$isEvaluating){
-        return(base::print(...))
+        return(basePrint(...))
     }
-    ret <- capture.output(base::print(...))
+    ret <- capture.output(basePrint(...))
     output <- paste(ret, sep="", collapse="\n")
 
     line <- .vsc.getLineNumber(sys.call())
@@ -63,10 +69,11 @@
     .vsc.sendToVsc('print', list(output=output, file=file, line=line))
 }
 
-#' @export
-print <- .vsc.print
-#' @export
-cat <- .vsc.cat
+# #' @export
+# print <- .vsc.print
+# #' @export
+# cat <- .vsc.cat
+
 
 #' Build current stack and send to vsc
 #' 
@@ -119,7 +126,8 @@ cat <- .vsc.cat
 
 .vsc.sendToVsc <- function(message, body="", id=0){
     s <- .vsc.makeStringForVsc(message, body, id)
-    base::cat(s)
+    # base::cat(s)
+    baseCat(s)
 }
 
 .vsc.makeStringForVsc <- function(message, body="", id=0, args=list()){
@@ -143,16 +151,19 @@ cat <- .vsc.cat
 #' 
 #' @export
 #' @param overWritePrint Whether to overwrite base::print with a version that sends output to vsc
-.vsc.runMain <- function(overWritePrint=TRUE) {
+.vsc.runMain <- function(overWritePrint=1) {
 
     options(prompt = "<#>\n")
     options(error = recover)
 
 
-    if(overWritePrint){
-        # assign('print', .vsc.print, envir=.GlobalEnv)
-        # .GlobalEnv$print <- .vsc.print
-        # .GlobalEnv$cat <- .vsc.cat
+    if(overWritePrint>=2){
+        # super hacky and not recommended!!!
+        methods:::.assignOverBinding(what = 'print', value = .vsc.print, where = baseenv())
+        methods:::.assignOverBinding(what = 'cat', value = .vsc.cat, where = baseenv())
+    } else if(overWritePrint>=1){
+        .GlobalEnv$print <- .vsc.print
+        .GlobalEnv$cat <- .vsc.cat
     }
     .packageEnv$isEvaluating <- FALSE
 
