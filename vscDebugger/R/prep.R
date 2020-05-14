@@ -25,7 +25,25 @@
     .vsc.sendToVsc('eval', ret, id=id)
 }
 
-#' Prints 
+.vsc.cat <- function(...){
+    # TODO: consider correct environment for print(...)?
+    # env <- sys.frame(-1)
+    # ret <- capture.output(base::print(...), envir=env)
+
+    if(.packageEnv$isEvaluating){
+        return(base::cat(...))
+    }
+    ret <- capture.output(base::cat(...))
+    output <- paste(ret, sep="", collapse="\n")
+
+    line <- .vsc.getLineNumber(sys.call())
+    frame <- parent.frame()
+    call <- sys.call(-1)
+    file <- .vsc.getFileName(call, frame)
+    # output <- capture.output(base::print(...))
+    .vsc.sendToVsc('print', list(output=output, file=file, line=line))
+}
+
 .vsc.print <- function(...){
     # TODO: consider correct environment for print(...)?
     # env <- sys.frame(-1)
@@ -52,14 +70,22 @@
 #' @export
 #' @param topFrame The first stack frame to consider (= the current function call)
 #' @param id The id of the message sent to vsc
-#' @return The current stack, formatted as a nested named list
+#' @return None (The current stack, formatted as a nested named list is sent to vsc)
 #' 
 .vsc.getStack <- function(topFrame=parent.frame(),id=0, isError=0){
     stack <- .vsc.buildStack(topFrame = topFrame, isError = isError)
     .vsc.sendToVsc('stack', stack, id)
 }
 
+#' Send info about some vars to vsc
+#' 
+#' Gathers info about the specified variablesReferences and sends them to vsc
+#' 
 #' @export
+#' @param refs A list of variableReferences, as specified in the scopes/previous variables
+#' @param id The id of the message sent to vsc
+#' @return None (The variable info, formatted as a nested named list is sent to vsc)
+#' 
 .vsc.getVarLists <- function(refs, id=0){
     varLists <- makeVarLists(refs)
     .vsc.sendToVsc('variables', varLists, id)
@@ -119,7 +145,9 @@
 
 
     if(overWritePrint){
-        assign('print', .vsc.print, envir=.GlobalEnv)
+        # assign('print', .vsc.print, envir=.GlobalEnv)
+        .GlobalEnv$print <- .vsc.print
+        .GlobalEnv$cat <- .vsc.cat
     }
     .packageEnv$isEvaluating <- FALSE
 
