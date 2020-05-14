@@ -51,6 +51,7 @@
 #' 
 .vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop=0, skipFromBottom=1, isError=0){
     .packageEnv$varLists <- list()
+    .packageEnv$varListCalls <- list()
     if(isError){
         skipFromTop = skipFromTop + 3
     }
@@ -272,7 +273,7 @@ getDummyVariable <- function(name){
     )
 }
 
-getVariable<- function(valueR, name, depth=5){
+getVariable<- function(valueR, name, depth=20){
     value <- getValue(valueR)
     type <- getType(valueR)
 
