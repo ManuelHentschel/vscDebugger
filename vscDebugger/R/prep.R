@@ -63,6 +63,11 @@
     .vsc.sendToVsc('print', list(output=output, file=file, line=line))
 }
 
+#' @export
+print <- .vsc.print
+#' @export
+cat <- .vsc.cat
+
 #' Build current stack and send to vsc
 #' 
 #' Gives info about the current stack and sends it to vsc
@@ -114,7 +119,7 @@
 
 .vsc.sendToVsc <- function(message, body="", id=0){
     s <- .vsc.makeStringForVsc(message, body, id)
-    cat(s)
+    base::cat(s)
 }
 
 .vsc.makeStringForVsc <- function(message, body="", id=0, args=list()){
@@ -146,8 +151,8 @@
 
     if(overWritePrint){
         # assign('print', .vsc.print, envir=.GlobalEnv)
-        .GlobalEnv$print <- .vsc.print
-        .GlobalEnv$cat <- .vsc.cat
+        # .GlobalEnv$print <- .vsc.print
+        # .GlobalEnv$cat <- .vsc.cat
     }
     .packageEnv$isEvaluating <- FALSE
 
