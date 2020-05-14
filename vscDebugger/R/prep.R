@@ -281,7 +281,7 @@ baseCat <- base::cat
                     call('if',
                         quote(.vsc.stopOnBreakpoint()),
                         call('{',
-                            call('cat', catString),
+                            call('base::cat', catString),
                             quote(.doTrace(browser()))
                         )
                     ),

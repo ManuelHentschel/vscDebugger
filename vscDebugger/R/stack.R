@@ -230,6 +230,13 @@ getVarRef <- function(varListCall=NULL, evalCall=FALSE, varRef=NULL){
 }
 
 getVarListsEntry <- function(varRef){
+    if(varRef>length(.packageEnv$varLists)){
+        return(list(
+            reference = varRef,
+            isReady = TRUE,
+            variables = list()
+        ))
+    }
     varList <- .packageEnv$varLists[[varRef]]
     if(!varList$isReady){
         variables <- eval(.packageEnv$varListCalls[[varRef]])
@@ -303,10 +310,10 @@ getValue <- function(valueR){
 varToString <- function(v){
     ret <- try(toString(v), silent = TRUE)
     if(class(ret) != 'try-error') return(ret)
-    ret <- try({
-        paste0(capture.output(v), collapse = ';\n')
-    }, silent = TRUE)
-    if(class(ret) != 'try-error') return(ret)
+    # ret <- try({
+    #     paste0(capture.output(v), collapse = ';\n')
+    # }, silent = TRUE)
+    # if(class(ret) != 'try-error') return(ret)
     return('???')
 }
 
