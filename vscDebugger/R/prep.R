@@ -156,7 +156,7 @@
 .vsc.runMain <- function(overWritePrint=1) {
 
     options(prompt = "<#v\\s\\c>\n")
-    # options(error = recover)
+    options(error = recover)
     options(browserNLdisabled = TRUE)
 
 
