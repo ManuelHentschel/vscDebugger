@@ -308,13 +308,46 @@ getValue <- function(valueR){
 }
 
 varToString <- function(v){
-    ret <- try(toString(v), silent = TRUE)
-    if(class(ret) != 'try-error') return(ret)
-    # ret <- try({
-    #     paste0(capture.output(v), collapse = ';\n')
-    # }, silent = TRUE)
-    # if(class(ret) != 'try-error') return(ret)
-    return('???')
+    # special case: v is NULL
+    if(is.null(v)){
+        ret <- 'NULL'
+        return(ret)
+    }
+
+    # check for type of v
+    type <- ''
+    if(is.list(v)){
+        type <- 'list'
+    } else if(is.matrix(v)){
+        type <- 'matrix'
+    } else if(is.vector(v) && length(v)>1){
+        type <- 'vector'
+    }
+
+    # get value-representation of v
+    ret <- ''
+    if(is.function(v)){
+        ret <- try({
+            paste0(capture.output(v), collapse = ';\n')
+        }, silent = TRUE)
+    } else{
+        ret <- try(toString(v), silent = TRUE)
+    }
+
+    # handle errors
+    if(class(ret) == 'try-error'){
+        ret <- '???'
+    }
+
+    # join type+value
+    if(type != ''){
+        ret <- paste0(type, '(', ret, ')')
+    } else{
+        ret <- ret
+    }
+
+    # return
+    return(ret)
 }
 
 getType <- function(valueR){
@@ -353,6 +386,7 @@ getVarListForVar <- function(valueR, depth, maxVars=1000) {
         varList <- mapply(getVariable, valuesR, names, depth-1, SIMPLIFY=FALSE, USE.NAMES=FALSE)
         return(varList)
     } else{
+        # TODO: handle matrix
         return(list())
     }
 }
