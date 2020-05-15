@@ -339,7 +339,7 @@ getVarRefForVar <- function(valueR, depth) {
     return(varRef)
 }
 
-getVarListForVar <- function(valueR, depth, maxVars=100) {
+getVarListForVar <- function(valueR, depth, maxVars=1000) {
     if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1))){
         valuesR <- valueR
         if(length(valuesR)>maxVars && maxVars>0){

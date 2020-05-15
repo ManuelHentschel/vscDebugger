@@ -111,7 +111,7 @@ baseCat <- base::cat
         fullPath <- file.path(dirName, fileName)
         fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
         fullPath <- toString(fullPath)
-    })
+    }, silent=TRUE)
     if(class(fullPath)=='try-error'){
         fullPath <- ''
     }
