@@ -15,5 +15,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
 Imports:
     stringr (>= 1.4.0),
-    jsonlite(>= 1.6.0)
+    jsonlite(>= 1.6.0),
+    pryr (>= 0.1.4)
 KeepSource: TRUE

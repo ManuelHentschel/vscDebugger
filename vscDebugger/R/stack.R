@@ -187,7 +187,7 @@ getScopeEnvs <- function(firstenv=parent.frame(), lastenv=.GlobalEnv){
     return(scopes)
 }
 
-getVarRefForEnv <- function(env, maxVars=100){
+getVarRefForEnv <- function(env, maxVars=1000){
     varnames <- ls(env)
 
     if(length(varnames)>maxVars && maxVars>0){
@@ -260,16 +260,38 @@ getVarListForEnv <- function(names, scope){
 }
 
 getVariableInScope <- function(name, scope){
-    variable <- try({
-        valueR <- getValueR(name, scope)
-        getVariable(valueR, name)
-    }, silent=TRUE)
+    if(isPromise(name, scope)){
+        variable <- getPromiseVariable(name, scope)
+    } else{
+        variable <- try({
+            valueR <- getValueR(name, scope)
+            getVariable(valueR, name)
+        }, silent=TRUE)
+    }
     if(class(variable)=='try-error'){
         variable <- getDummyVariable(name)
     }
     return(variable)
 }
 
+isPromise <- function(name, env){
+    if(pryr:::is_promise2(name, env)){
+        return(!pryr:::promise_evaled(name, env))
+    }
+    return(FALSE)
+}
+
+getPromiseVariable <- function(name, env){
+    promiseCode <- varToStringWithCaptureOutput(
+        pryr:::promise_code(name,env)
+    )
+    variable <- list(
+        name=name,
+        value=promiseCode,
+        type='Promise',
+        variablesReference=0
+    )
+}
 
 getDummyVariable <- function(name){
     variable <- list(
@@ -327,9 +349,7 @@ varToString <- function(v){
     # get value-representation of v
     ret <- ''
     if(is.function(v)){
-        ret <- try({
-            paste0(capture.output(v), collapse = ';\n')
-        }, silent = TRUE)
+        ret <- varToStringWithCaptureOutput(v)
     } else{
         ret <- try(toString(v), silent = TRUE)
     }
@@ -347,6 +367,16 @@ varToString <- function(v){
     }
 
     # return
+    return(ret)
+}
+
+varToStringWithCaptureOutput <- function(v){
+    ret <- try({
+        paste0(capture.output(v), collapse = '\n')
+    }, silent = TRUE)
+    if(class(ret) == 'try-error'){
+        ret <- '???'
+    }
     return(ret)
 }
 

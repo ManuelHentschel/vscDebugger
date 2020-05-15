@@ -1,4 +1,4 @@
-R --file=preparePackage.R
+R --file=preparePackage.R --silent
 
 R CMD build vscDebugger
 
