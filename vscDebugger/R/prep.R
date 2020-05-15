@@ -25,8 +25,10 @@
     .vsc.sendToVsc('eval', ret, id=id)
 }
 
-basePrint <- base::print
-baseCat <- base::cat
+#' @export
+.vsc.basePrint <- base::print
+#' @export
+.vsc.baseCat <- base::cat
 
 #' @export
 .vsc.cat <- function(...){
@@ -36,9 +38,9 @@ baseCat <- base::cat
 
     if(.packageEnv$isEvaluating){
         # return(base::cat(...))
-        return(baseCat(...))
+        return(.vsc.baseCat(...))
     }
-    ret <- capture.output(baseCat(...))
+    ret <- capture.output(.vsc.baseCat(...))
     output <- paste(ret, sep="", collapse="\n")
 
     line <- .vsc.getLineNumber(sys.call())
@@ -56,9 +58,9 @@ baseCat <- base::cat
     # ret <- capture.output(base::print(...), envir=env)
 
     if(.packageEnv$isEvaluating){
-        return(basePrint(...))
+        return(.vsc.basePrint(...))
     }
-    ret <- capture.output(basePrint(...))
+    ret <- capture.output(.vsc.basePrint(...))
     output <- paste(ret, sep="", collapse="\n")
 
     line <- .vsc.getLineNumber(sys.call())
@@ -127,7 +129,7 @@ baseCat <- base::cat
 .vsc.sendToVsc <- function(message, body="", id=0){
     s <- .vsc.makeStringForVsc(message, body, id)
     # base::cat(s)
-    baseCat(s)
+    .vsc.baseCat(s)
 }
 
 .vsc.makeStringForVsc <- function(message, body="", id=0, args=list()){
@@ -153,7 +155,7 @@ baseCat <- base::cat
 #' @param overWritePrint Whether to overwrite base::print with a version that sends output to vsc
 .vsc.runMain <- function(overWritePrint=1) {
 
-    options(prompt = "<#>\n")
+    options(prompt = "<#v\\s\\c>\n")
     options(error = recover)
 
 
@@ -281,7 +283,7 @@ baseCat <- base::cat
                     call('if',
                         quote(.vsc.stopOnBreakpoint()),
                         call('{',
-                            call('cat', catString),
+                            call('.vsc.baseCat', catString),
                             quote(.doTrace(browser()))
                         )
                     ),
