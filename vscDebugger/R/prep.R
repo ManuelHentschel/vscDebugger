@@ -133,8 +133,8 @@
 }
 
 .vsc.makeStringForVsc <- function(message, body="", id=0, args=list()){
-    .vsc.delimiter0 <- '<v\\s\\c>'
-    .vsc.delimiter1 <- '</v\\s\\c>'
+    .vsc.delimiter0 <- '<v\\s\\c>' # hardcoded to avoid triggering vsc when e.g. stack is sent
+    .vsc.delimiter1 <- '</v\\s\\c>' # should probably be solved more elegantly
     l <- list(message=message, body=body, id=id, args=args)
     s <- jsonlite::toJSON(l, auto_unbox = TRUE, force=TRUE)
     r <- paste0(
