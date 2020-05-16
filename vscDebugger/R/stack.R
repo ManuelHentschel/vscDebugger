@@ -53,7 +53,7 @@
     .packageEnv$varLists <- list()
     .packageEnv$varListCalls <- list()
     if(isError){
-        skipFromTop = skipFromTop + 3
+        skipFromTop = skipFromTop + 1
     }
     nFrames <- getNFrames(topFrame)
     frameIdsR <- seq2((nFrames-skipFromTop), (skipFromBottom+1), -1) # vsc considers frames in the opposite order!
