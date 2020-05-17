@@ -124,8 +124,11 @@
 }
 
 .vsc.getLineNumber <- function(call){
-    ref <- attr(call, 'srcref')
-    return(ref[1])
+    ref <- try(attr(call, 'srcref')[1], silent=TRUE)
+    if(class(ref)=='try-error'){
+        ref <- 0
+    }
+    return(ref)
 }
 
 
@@ -162,6 +165,8 @@
     # options(error = recover)
     options(error = .vsc.onError)
     options(browserNLdisabled = TRUE)
+
+    require(pryr, quietly = TRUE, warn.conflicts = FALSE)
 
 
     # if(FALSE){
