@@ -65,7 +65,29 @@
         frames=frames,
         varLists=.packageEnv$varLists
     )
+    .packageEnv$frameIdsR <- frameIdsR
+    .packageEnv$frameIdsVsc <- frameIdsVsc
     return(stack)
+}
+
+convertFrameId <- function(vsc=NULL, R=NULL){
+    if(is.null(vsc) && is.null(R)){
+        return(NULL)
+    } else if(is.null(vsc)){
+        ind <- which(R == .packageEnv$frameIdsR)
+        if(length(ind)>0){
+            return(.packageEnv$frameIdsVsc[ind])
+        } else{
+            return(NULL)
+        }
+    } else{
+        ind <- which(vsc == .packageEnv$frameIdsVsc)
+        if(length(ind)>0){
+            return(.packageEnv$frameIdsR[ind])
+        } else{
+            return(NULL)
+        }
+    }
 }
 
 makeVarLists <- function(refs){

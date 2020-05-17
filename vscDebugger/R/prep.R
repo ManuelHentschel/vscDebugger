@@ -5,6 +5,8 @@
 .packageEnv$varLists <- list()
 .packageEnv$varListCalls <- list()
 .packageEnv$isEvaluating <- FALSE
+.packageEnv$frameIdsR <- list()
+.packageEnv$frameIdsVsc <- list()
 
 
 
@@ -17,7 +19,8 @@
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc
 .vsc.evalInFrame <- function(expr, frameId, id=0){
-    env <- sys.frame(frameId + 1)
+    frameIdR <- convertFrameId(vsc=frameId)
+    env <- sys.frame(frameIdR)
     .packageEnv$isEvaluating <- TRUE
     ret <- capture.output(eval(parse(text=expr), envir=env))
     .packageEnv$isEvaluating <- FALSE
@@ -153,7 +156,7 @@
 #' 
 #' @export
 #' @param overWritePrint Whether to overwrite base::print with a version that sends output to vsc
-.vsc.runMain <- function(overWritePrint=1) {
+.vsc.runMain <- function(overwritePrint=TRUE, overwriteCat=TRUE) {
 
     options(prompt = "<#v\\s\\c>\n")
     # options(error = recover)
@@ -161,14 +164,20 @@
     options(browserNLdisabled = TRUE)
 
 
-    if(overWritePrint>=2){
-        # super hacky and not recommended!!!
-        methods:::.assignOverBinding(what = 'print', value = .vsc.print, where = baseenv())
-        methods:::.assignOverBinding(what = 'cat', value = .vsc.cat, where = baseenv())
-    } else if(overWritePrint>=1){
+    # if(FALSE){
+    #     # super hacky and not recommended!!!
+    #     methods:::.assignOverBinding(what = 'print', value = .vsc.print, where = baseenv())
+    #     methods:::.assignOverBinding(what = 'cat', value = .vsc.cat, where = baseenv())
+    # }
+
+    if(overwritePrint){
         .GlobalEnv$print <- .vsc.print
+    }
+
+    if(overwriteCat){
         .GlobalEnv$cat <- .vsc.cat
     }
+    
     .packageEnv$isEvaluating <- FALSE
 
     .vsc.sendToVsc('go')
