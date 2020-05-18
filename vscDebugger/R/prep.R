@@ -32,9 +32,9 @@
 }
 
 
-#' Modified version of cat() for vsc
+#' Modified version of \code{cat()} for vsc
 #' 
-#' Captures the output of cat(...) and sends it to vsc together with information about the sourcefile and line
+#' Captures the output of \code{cat(...)} and sends it to vsc together with information about the sourcefile and line
 #' @export
 #' @param ... Arguments passed to base::cat()
 #' @return NULL (invisible)
@@ -59,12 +59,12 @@
     invisible(NULL)
 }
 
-#' Modified version of print() for vsc
+#' Modified version of \code{print()} for vsc
 #' 
-#' Captures the output of print(...) and sends it to vsc together with information about the sourcefile and line
+#' Captures the output of \code{print(...)} and sends it to vsc together with information about the sourcefile and line
 #' @export
-#' @param ... Arguments passed to base::cat()
-#' @return NULL (invisible)
+#' @param ... Arguments passed to \code{base::cat()}
+#' @return \code{NULL} (invisible)
 .vsc.print <- function(x, ...){
     # TODO: consider correct environment for print(...)?
     # env <- sys.frame(-1)
@@ -189,13 +189,13 @@
 }
 
 
-#' Runs the main() function
+#' Runs the \code{main()} function
 #' 
-#' Runs the function main() from the global environment
+#' Runs the function \code{main()} from the global environment
 #' 
 #' @export
-#' @param overWritePrint Whether to overwrite base::print with a version that sends output to vsc
-#' @param overWriteCat Whether to overwrite base::cat with a version that sends output to vsc
+#' @param overWritePrint Whether to overwrite \code{base::print} with a version that sends output to vsc
+#' @param overWriteCat Whether to overwrite \code{base::cat} with a version that sends output to vsc
 .vsc.runMain <- function(overwritePrint=TRUE, overwriteCat=TRUE) {
 
     options(prompt = "<#v\\s\\c>\n")
@@ -238,7 +238,7 @@
 
 #' Check if debugger is evaluating
 #' 
-#' Returns TRUE iff an expression is being evaluated by the debugger during a breakpoint
+#' Returns \code{TRUE} iff an expression is being evaluated by the debugger during a breakpoint
 #' 
 #' @export
 #' @return Boolean indicating whether an expression is being evaluated
@@ -249,7 +249,7 @@
 
 #' Check if R should stop on breakpoint
 #' 
-#' Returns FALSE iff an expression is being evaluated by the debugger during a (different) breakpoint, else TRUE
+#' Returns \code{FALSE} iff an expression is being evaluated by the debugger during a (different) breakpoint, else TRUE
 #' 
 #' @export
 #' @return Boolean indicating whether R should stop on breakpoints
@@ -267,10 +267,10 @@
 #' 
 #' @description
 #' Sets a breakpoint in the given file and line.
-#' Is a rather hacky alternative to setBreakpoint()/trace().
-#' Better alternatives would be:
-#'  - trace(..., at=stp$at) => Problem: trace does not print the full filename upon hitting a breakpoint (needed for vsc)
-#'  - setBreakpoint() => Problem: does not print the full filename and does not support multiple breakpoints per method
+#' Is a rather hacky alternative to \code{setBreakpoint()} / \code{trace()}
+#' Better alternatives might be:
+#'  - \code{trace(...,at=stp$at)} => Problem: trace does not print the full filename upon hitting a breakpoint (needed for vsc)
+#'  - \code{setBreakpoint()} => Problem: does not print the full filename and does not support multiple breakpoints per method
 #' 
 #' @export
 #' @param srcfile The file in which to set the breakpoint

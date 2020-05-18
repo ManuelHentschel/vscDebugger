@@ -51,9 +51,9 @@
 #' 
 #' @export
 #' @param topFrame The first stack frame to consider (= the current function call)
-#' @param skipFromTop Number of frames to skip from the top. Can be used to skip e.g. the frame of browser() itself.
-#' @param skipFromBottom Number of frames to skip from the bottom. Can be used to skip e.g. the frame of .vsc.runMain()
-#' @param isError Boolean indicating whether the function is called from an error state. Adds 1 to skiptFromTop.
+#' @param skipFromTop Number of frames to skip from the top. Can be used to skip e.g. the frame of \code{browser()} itself.
+#' @param skipFromBottom Number of frames to skip from the bottom. Can be used to skip e.g. the frame of \code{.vsc.runMain()}
+#' @param isError Boolean indicating whether the function is called from an error state. Adds 1 to \code{skipFromTop}
 #' @return The current stack, formatted as a nested named list
 #' 
 .vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop=0, skipFromBottom=1, isError=FALSE){
