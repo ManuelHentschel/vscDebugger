@@ -1,12 +1,15 @@
 ########################################################################
 # Prep
 
+
+# create environment for global data used by package functions
 .packageEnv <- new.env()
 .packageEnv$varLists <- list()
 .packageEnv$varListCalls <- list()
 .packageEnv$isEvaluating <- FALSE
 .packageEnv$frameIdsR <- list()
 .packageEnv$frameIdsVsc <- list()
+
 
 
 
@@ -28,12 +31,13 @@
     .vsc.sendToVsc('eval', ret, id=id)
 }
 
-#' @export
-.vsc.basePrint <- base::print
-#' @export
-.vsc.baseCat <- base::cat
 
+#' Modified version of cat() for vsc
+#' 
+#' Captures the output of cat(...) and sends it to vsc together with information about the sourcefile and line
 #' @export
+#' @param ... Arguments passed to base::cat()
+#' @return NULL (invisible)
 .vsc.cat <- function(...){
     # TODO: consider correct environment for print(...)?
     # env <- sys.frame(-1)
@@ -41,9 +45,9 @@
 
     if(.packageEnv$isEvaluating){
         # return(base::cat(...))
-        return(.vsc.baseCat(...))
+        return(base::cat(...))
     }
-    ret <- capture.output(.vsc.baseCat(...))
+    ret <- capture.output(base::cat(...))
     output <- paste(ret, sep="", collapse="\n")
 
     line <- .vsc.getLineNumber(sys.call())
@@ -52,18 +56,24 @@
     file <- .vsc.getFileName(call, frame)
     # output <- capture.output(base::print(...))
     .vsc.sendToVsc('print', list(output=output, file=file, line=line))
+    invisible(NULL)
 }
 
+#' Modified version of print() for vsc
+#' 
+#' Captures the output of print(...) and sends it to vsc together with information about the sourcefile and line
 #' @export
-.vsc.print <- function(...){
+#' @param ... Arguments passed to base::cat()
+#' @return NULL (invisible)
+.vsc.print <- function(x, ...){
     # TODO: consider correct environment for print(...)?
     # env <- sys.frame(-1)
     # ret <- capture.output(base::print(...), envir=env)
 
     if(.packageEnv$isEvaluating){
-        return(.vsc.basePrint(...))
+        return(base::print(x, ...))
     }
-    ret <- capture.output(.vsc.basePrint(...))
+    ret <- capture.output(base::print(x, ...))
     output <- paste(ret, sep="", collapse="\n")
 
     line <- .vsc.getLineNumber(sys.call())
@@ -72,12 +82,8 @@
     file <- .vsc.getFileName(call, frame)
     # output <- capture.output(base::print(...))
     .vsc.sendToVsc('print', list(output=output, file=file, line=line))
+    invisible(x)
 }
-
-# #' @export
-# print <- .vsc.print
-# #' @export
-# cat <- .vsc.cat
 
 
 #' Build current stack and send to vsc
@@ -108,6 +114,13 @@
     .vsc.sendToVsc('variables', varLists, id)
 }
 
+#' Get Filename corresponding to a call in a given frame
+#'
+#' Get Filename corresponding to a call in a given frame
+#'
+#' @param call A function call (usually from the stack)
+#' @param frame The corresponding frame
+#' @return The filename
 .vsc.getFileName <- function(call, frame){
     fullpath <- try({
         fileName <- getSrcFilename(eval(call[[1]], envir=frame))
@@ -123,6 +136,14 @@
     return(fullPath)
 }
 
+
+#' Get Line-number corresponding to a call in a given frame
+#'
+#' Get Line-number corresponding to a call in a given frame
+#'
+#' @param call A function call (usually from the stack)
+#' @param frame The corresponding frame
+#' @return The line-numer
 .vsc.getLineNumber <- function(call){
     ref <- try(attr(call, 'srcref')[1], silent=TRUE)
     if(class(ref)=='try-error'){
@@ -131,17 +152,32 @@
     return(ref)
 }
 
-
+#' Send a message to vsc
+#' 
+#' Sends a message (text) together with body and id to vsc
+#'
+#' @param message A string identifying the type of message
+#' @param body The body of the message. Must be convertible to JSON. Usually named lists.
+#' @param id The message id. Is usually provided in the function call from vsc.
 .vsc.sendToVsc <- function(message, body="", id=0){
     s <- .vsc.makeStringForVsc(message, body, id)
     # base::cat(s)
-    .vsc.baseCat(s)
+    base::cat(s)
 }
 
-.vsc.makeStringForVsc <- function(message, body="", id=0, args=list()){
+#' Prepare a message as string for vsc
+#' 
+#' Prepare a message as string for vsc
+#' 
+#' @param message A string identifying the type of message
+#' @param body The body of the message. Must be convertible to JSON. Usually named lists.
+#' @param id The message id. Is usually provided in the function call from vsc.
+#' @return A (json) string that can be interpreted by vsc
+
+.vsc.makeStringForVsc <- function(message, body="", id=0){
     .vsc.delimiter0 <- '<v\\s\\c>' # hardcoded to avoid triggering vsc when e.g. stack is sent
     .vsc.delimiter1 <- '</v\\s\\c>' # should probably be solved more elegantly
-    l <- list(message=message, body=body, id=id, args=args)
+    l <- list(message=message, body=body, id=id)
     s <- jsonlite::toJSON(l, auto_unbox = TRUE, force=TRUE)
     r <- paste0(
         .vsc.delimiter0,
@@ -159,21 +195,14 @@
 #' 
 #' @export
 #' @param overWritePrint Whether to overwrite base::print with a version that sends output to vsc
+#' @param overWriteCat Whether to overwrite base::cat with a version that sends output to vsc
 .vsc.runMain <- function(overwritePrint=TRUE, overwriteCat=TRUE) {
 
     options(prompt = "<#v\\s\\c>\n")
-    # options(error = recover)
     options(error = .vsc.onError)
     options(browserNLdisabled = TRUE)
 
     require(pryr, quietly = TRUE, warn.conflicts = FALSE)
-
-
-    # if(FALSE){
-    #     # super hacky and not recommended!!!
-    #     methods:::.assignOverBinding(what = 'print', value = .vsc.print, where = baseenv())
-    #     methods:::.assignOverBinding(what = 'cat', value = .vsc.cat, where = baseenv())
-    # }
 
     if(overwritePrint){
         .GlobalEnv$print <- .vsc.print
@@ -185,9 +214,14 @@
     
     .packageEnv$isEvaluating <- FALSE
 
-    .vsc.sendToVsc('go')
-    main()
-    .vsc.sendToVsc('end')
+    
+    if('main' %in% ls(.GlobalEnv) && typeof(main)=='closure'){
+        .vsc.sendToVsc('go')
+        main()
+        .vsc.sendToVsc('end')
+    } else{
+        .vsc.sendToVsc('noMain')
+    }
 }
 
 .vsc.onError <- function(){
@@ -223,12 +257,17 @@
     return(!.packageEnv$isEvaluating)
 }
 
+#' Same as base::cat
+#'
+#' Same as base::cat. Used by custom breakpoints
+#' @export
+.vsc.baseCat <- base::cat
 
 #' Sets a breakpoint
 #' 
 #' @description
 #' Sets a breakpoint in the given file and line.
-#' Is a very hacky alternative to setBreakpoint()/trace().
+#' Is a rather hacky alternative to setBreakpoint()/trace().
 #' Better alternatives would be:
 #'  - trace(..., at=stp$at) => Problem: trace does not print the full filename upon hitting a breakpoint (needed for vsc)
 #'  - setBreakpoint() => Problem: does not print the full filename and does not support multiple breakpoints per method

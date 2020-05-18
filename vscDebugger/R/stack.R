@@ -1,10 +1,10 @@
 
 # # buildStack() gathers information about current stackframes/scopes
-# # structured as follows:
+# # structured as follows (using nested named lists):
 
 # interface stack{
 #     frames: Stackframe[];
-#     varLists: 
+#     varLists: Variable[];
 # }
 #
 # interface StackFrame{
@@ -26,15 +26,19 @@
 #     variablesReference: number;
 # }
 # 
-# interface VarList{ TODO! }
-#
 # interface Variable{
 #     name: string;
 #     value: string;
 #     type: string;
 #     variablesReference: number;
 # }
-
+#
+# # VarLists are internally stored as:
+# interface Variable2{
+#     reference: number;
+#     isReady: boolean;
+#     variables: Variable[];
+# }
 
 
 
@@ -47,9 +51,12 @@
 #' 
 #' @export
 #' @param topFrame The first stack frame to consider (= the current function call)
+#' @param skipFromTop Number of frames to skip from the top. Can be used to skip e.g. the frame of browser() itself.
+#' @param skipFromBottom Number of frames to skip from the bottom. Can be used to skip e.g. the frame of .vsc.runMain()
+#' @param isError Boolean indicating whether the function is called from an error state. Adds 1 to skiptFromTop.
 #' @return The current stack, formatted as a nested named list
 #' 
-.vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop=0, skipFromBottom=1, isError=0){
+.vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop=0, skipFromBottom=1, isError=FALSE){
     .packageEnv$varLists <- list()
     .packageEnv$varListCalls <- list()
     if(isError){
@@ -70,6 +77,13 @@
     return(stack)
 }
 
+#' Converts the frame id
+#' 
+#' Converts the frame id form R to vsc or viceversa
+#' 
+#' @param vsc The frame id as used by vsc
+#' @param R The frame id as used by R
+#' @return The frame id as used by the other program
 convertFrameId <- function(vsc=NULL, R=NULL){
     if(is.null(vsc) && is.null(R)){
         return(NULL)
@@ -90,12 +104,21 @@ convertFrameId <- function(vsc=NULL, R=NULL){
     }
 }
 
+#' Get varLists for a list of given varRefs
+#' 
+#' Get varLists for a list of given varRefs
+#' 
+#' @param refs List of varRefs
 makeVarLists <- function(refs){
     varLists <- lapply(refs, getVarListsEntry)
     return(varLists)
 }
 
-
+#' Get the number of frames
+#' 
+#' Get the number of frames
+#'
+#' @param topFrame Consider only frames below this frame
 getNFrames <- function(topFrame){
     nFrames <- sys.nframe()
     while(!identical(sys.frame(nFrames), topFrame) && !identical(sys.frame(nFrames), .GlobalEnv)){
@@ -108,6 +131,12 @@ getNFrames <- function(topFrame){
 ########################################################################
 # StackFrames
 
+#' Gather info about a stack frame
+#' 
+#' Gathers info about a stack frame identified by frameIdR
+#'
+#' @param frameIdR Frame Id as used by R. Used to identify the frame
+#' @param frameIdVsc Frame Id as used by vsc. Is only added as info
 getStackFrame <- function(frameIdR, frameIdVsc){
     env <- sys.frame(frameIdR)
     # id <- nFrames + 1 - frameIdR # vsc considers frames in the opposite order!
@@ -131,18 +160,18 @@ getStackFrame <- function(frameIdR, frameIdVsc){
     return(frame)
 }
 
+#' Get the frame name of a given call
+#' 
+#' Get the frame name of a given call
 getFrameName <- function(call){
-    # name <- capture.output(base::print(call))[1]
-    name <- toString(call)
-    name <- gsub('\n', '', name)
-    name <- gsub(' ', '', name)
-    name <- gsub('\\.', '', name)
-    name <- gsub('\\,', '', name)
-    name <- gsub('\\_', '', name)
-    name <- substr(name, 1, 16)
+    name <- varToStringWithCaptureOutput(call)
+    # name <- substr(name, 1, 16)
     return(name)
 }
 
+#' Get Source Info about a call in a given environment
+#' 
+#' Get Source Info about a call in a given environment
 getSource <- function(env, call){
     source <- try({
         fileName <- getSrcFilename(eval(call[[1]], envir=env))
@@ -165,7 +194,9 @@ getSource <- function(env, call){
     return(source)
 }
 
-# getLine <- function(env, call){
+#' Get the source line of the function call corresponding to a frameId
+#' 
+#' Get the source line of the function call corresponding to a frameId
 getLine <- function(frameId){
     if(frameId>=sys.nframe()){
         return(1)
