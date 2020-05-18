@@ -1,4 +1,4 @@
-"C:\Program Files\R\R-3.6.3\bin\R.exe" --file=preparePackage.R
+"C:\Program Files\R\R-3.6.3\bin\R.exe" --file=preparePackage.R --silent
 
 @IF %ERRORLEVEL% NEQ 0 (
     @echo Aborting build: preparePackage.R returned errorcode %ERRORLEVEL%

@@ -22,7 +22,12 @@
         {
             "label": "Build and install package",
             "type": "shell",
-            "command": ".\\buildPackage.bat",
+            "windows": {
+                "command": ".\\buildPackage.bat"
+            },
+            "linux": {
+                "command": "./buildPackage.sh"
+            },
             "problemMatcher": [],
             "group": {
                 "kind": "build",
