@@ -263,6 +263,12 @@
 #' @export
 .vsc.baseCat <- base::cat
 
+#' Same as base::print
+#'
+#' Same as base::print. Used by custom breakpoints
+#' @export
+.vsc.basePrint <- base::print
+
 #' Sets a breakpoint
 #' 
 #' @description

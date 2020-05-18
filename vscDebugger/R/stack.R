@@ -166,6 +166,7 @@ getStackFrame <- function(frameIdR, frameIdVsc){
 getFrameName <- function(call){
     name <- varToStringWithCaptureOutput(call)
     # name <- substr(name, 1, 16)
+    name <- substr(name, 1, 50)
     return(name)
 }
 
