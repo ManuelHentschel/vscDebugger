@@ -392,12 +392,16 @@ varToString <- function(v){
 
     # check for type of v
     type <- ''
-    if(is.list(v)){
+    if(is.data.frame(v)){
+        type <- 'data.frame'
+    } else if(is.list(v)){
         type <- 'list'
     } else if(is.matrix(v)){
         type <- 'matrix'
     } else if(is.vector(v) && length(v)>1){
-        type <- 'vector'
+        type <- 'c'
+    } else if(is.factor(v)){
+        type <- 'factor'
     }
 
     # get value-representation of v
@@ -405,7 +409,7 @@ varToString <- function(v){
     if(is.function(v)){
         ret <- varToStringWithCaptureOutput(v)
     } else{
-        ret <- try(toString(v), silent = TRUE)
+        ret <- try(toString2(v), silent = TRUE)
     }
 
     # handle errors
@@ -424,6 +428,24 @@ varToString <- function(v){
     return(ret)
 }
 
+toString2 <- function(v, quoteStrings=FALSE){
+    if(is.factor(v)){
+        v <- format(v)
+    } else if(is.data.frame(v)){
+        v <- as.list(v)
+    }
+    if(is.list(v) || is.vector(v) && length(v)>1){
+        l <- lapply(v, toString2, quoteStrings=TRUE)
+        s <- paste0(l, collapse = ',')
+    } else{
+        s <- toString(v)
+        if(quoteStrings && is.character(v)){
+            s <- paste0('"', s, '"')
+        }
+    }
+    return(s)
+}
+
 varToStringWithCaptureOutput <- function(v){
     ret <- try({
         paste0(capture.output(v), collapse = '\n')
@@ -435,19 +457,25 @@ varToStringWithCaptureOutput <- function(v){
 }
 
 getType <- function(valueR){
-    if(is.list(valueR)){
+    if(is.data.frame(valueR)){
+        return('data.frame')
+    } else if(is.factor(valueR)){
+        return('factor')
+    } else if(is.list(valueR)){
         return('list')
     } else if(is.vector(valueR) && length(valueR)>1){
         return('vector')
     } else if(is.matrix(valueR)){
         return('matrix')
+    } else if(is.character(valueR)){
+        return('string')
     } else{
         return(typeof(valueR))
     }
 }
 
 getVarRefForVar <- function(valueR, depth) {
-    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1))){
+    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR))){
         varListCall <- call('getVarListForVar', valueR, depth)
         varRef <- getVarRef(varListCall)
     } else{
@@ -457,8 +485,14 @@ getVarRefForVar <- function(valueR, depth) {
 }
 
 getVarListForVar <- function(valueR, depth, maxVars=1000) {
-    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1))){
-        valuesR <- valueR
+    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR))){
+        if(is.data.frame(valueR)){
+            valuesR <- as.list(valueR)
+        } else if(is.factor(valueR)){
+            valuesR <- format(valueR)
+        } else{
+            valuesR <- valueR
+        }
         if(length(valuesR)>maxVars && maxVars>0){
             valuesR <- valuesR[1:maxVars]
         }

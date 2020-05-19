@@ -21,11 +21,19 @@
 #' @param expr The espression to be evaluated
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc
-.vsc.evalInFrame <- function(expr, frameId, id=0){
+.vsc.evalInFrame <- function(expr, frameId, silent=TRUE, id=0){
     frameIdR <- convertFrameId(vsc=frameId)
     env <- sys.frame(frameIdR)
     .packageEnv$isEvaluating <- TRUE
-    ret <- capture.output(eval(parse(text=expr), envir=env))
+    options(error=NULL)
+    ret <- try(
+        capture.output(eval(parse(text=expr), envir=env))
+        , silent=silent
+    )
+    if(class(ret)=='try-error'){
+        ret <- 'ERROR'
+    }
+    options(error=.vsc.onError)
     .packageEnv$isEvaluating <- FALSE
     ret <- paste(ret, sep="", collapse="\n")
     .vsc.sendToVsc('eval', ret, id=id)
