@@ -160,6 +160,26 @@
     return(ref)
 }
 
+######## NEW: during browser-calls:
+getCallingLine <- function(){
+    ret <- try({
+        argList <- as.list(sys.call(-4))
+        stepInfo <- argList[[3]]
+        stepNumber <- as.integer(substring(stepInfo, 6))
+
+        functionBody <- body(sys.function(-5))
+        srcref <- attr(functionBody, 'srcref')[[stepNumber]]
+        lineNumber <- srcref[1]
+    })
+    if(class(ret)=='try-error'){
+        ret = 0
+    }
+    return(ret)
+}
+
+
+
+
 #' Send a message to vsc
 #' 
 #' Sends a message (text) together with body and id to vsc

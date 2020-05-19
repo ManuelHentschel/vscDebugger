@@ -474,8 +474,9 @@ getType <- function(valueR){
     }
 }
 
-getVarRefForVar <- function(valueR, depth) {
-    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR))){
+getVarRefForVar <- function(valueR, depth, includeAttributes=TRUE) {
+    hasAttributes <- !is.null(attributes(valueR)) && includeAttributes
+    if(depth>0 && (hasAttributes || is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR))){
         varListCall <- call('getVarListForVar', valueR, depth)
         varRef <- getVarRef(varListCall)
     } else{
@@ -484,29 +485,54 @@ getVarRefForVar <- function(valueR, depth) {
     return(varRef)
 }
 
-getVarListForVar <- function(valueR, depth, maxVars=1000) {
+getVarListForVar <- function(valueR, depth, maxVars=1000, includeAttributes=TRUE) {
+    # TODO: handle matrix
+    # TODO: handle languages, expressions, calls etc. properly
     if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR))){
         if(is.data.frame(valueR)){
+            # convert data frames to a list of lists
             valuesR <- as.list(valueR)
         } else if(is.factor(valueR)){
+            # convert factors to vectors of strings
             valuesR <- format(valueR)
         } else{
+            # leave lists/vectors as they are
             valuesR <- valueR
         }
+        # trim list (replace with dynamic loading? Extra varref for additional elements?)
         if(length(valuesR)>maxVars && maxVars>0){
             valuesR <- valuesR[1:maxVars]
         }
+
+        # get names, if no names assigned use 1,2,3...
         names <- names(valuesR)
         if(is.null(names)){
-            names <- seq2(valuesR)
+            names <- seq2(length(valuesR))
         }
         names <- vapply(names, toString, '0')
+
+        # get variable info for each element (this is the recurisve part)
         varList <- mapply(getVariable, valuesR, names, depth-1, SIMPLIFY=FALSE, USE.NAMES=FALSE)
-        return(varList)
     } else{
-        # TODO: handle matrix
-        return(list())
+        varList <- list()
     }
+
+    # also give infos about attributes
+    if(includeAttributes && depth>0){
+        atr <- attributes(valueR)
+        if(!is.null(atr)){
+            atrNames <- names(atr)
+            atrNames <- lapply(atrNames, function(s){paste0('_', s)}) # valid R variable names cannot start with "_"
+
+            # get variable info for each element (this is the recurisve part)
+            atrList <- mapply(getVariable, atr, atrNames, depth-1, SIMPLIFY=FALSE, USE.NAMES=FALSE)
+
+            # join atribute list to rest
+            varList <- append(varList, atrList)
+        }
+    }
+
+    return(varList)
 }
 
 
