@@ -6,6 +6,7 @@
 .packageEnv <- new.env()
 .packageEnv$varLists <- list()
 .packageEnv$varListCalls <- list()
+.packageEnv$varListArgs <- list()
 .packageEnv$isEvaluating <- FALSE
 .packageEnv$frameIdsR <- list()
 .packageEnv$frameIdsVsc <- list()
@@ -307,7 +308,7 @@ getCallingLine <- function(skipCalls=0){
 #' 
 #' @description
 #' Sets breakpoints in the given file and line.
-#' Uses \code(findLineNum()) and \code(trace())
+#' Uses \code{findLineNum()} and \code{trace()}
 #' 
 #' @export
 #' @param srcfile The file in which to set the breakpoint
