@@ -311,15 +311,9 @@ getCallingLine <- function(){
 #' @param line The line in which to set the breakpoint
 #' @param incdluePackages Whether to set breakpoints in package files
 .vsc.mySetBreakpoint <- function(srcfile, lines, includePackages=TRUE){
-    # helper function. used to loop through (potentially empty) lists
-    seq2 <- function(from, to){
-        if(from>to) return(c())
-        return(seq(from, to))
-    }
-
     # find steps, that correspond to the given line numbers
     stepList <- list()
-    for(i in seq2(1,length(lines))){
+    for(i in seq2(length(lines))){
         if(includePackages){
             lastenv <- emptyenv() # searches through package-envs as well
         } else {
@@ -331,7 +325,7 @@ getCallingLine <- function(){
             found <- FALSE
 
             # check if the same function already has breakpoints:
-            for(j in seq2(1,length(stepList))){
+            for(j in seq2(length(stepList))){
                 #check if env and function are identical:
                 if(identical(stepList[[j]]$name, step$name) && identical(stepList[[j]]$env, step$env)){ 
                     #append step$at to steplist[[j]]$at, etc.
@@ -392,3 +386,20 @@ getCallingLine <- function(){
     }
 }
 
+
+########################################################################
+# Helper
+
+seq2 <- function(from, to=NULL, by=1){
+    if(is.null(from) || is.list(from) || (is.vector(from) && length(from)>1)){
+        return(seq2(1, length(from), by))
+    } else if(is.null(to)){
+        to <- from
+        from <- 1
+        return(seq2(from, to, by))
+    } else if((to-from)*by<0){
+        return(NULL)
+    } else{
+        return(seq(from, to, by))
+    }
+}
