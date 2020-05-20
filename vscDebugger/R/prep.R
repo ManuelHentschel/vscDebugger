@@ -160,17 +160,23 @@
     return(ref)
 }
 
+#' @export
+.vsc.getLineNumberAtBreakpoint <- function(id=0){
+    line <- getCallingLine(1)
+    .vsc.sendToVsc(message='lineAtBreakpoint', body=line, id=id)
+}
+
 ######## NEW: during browser-calls:
-getCallingLine <- function(){
+getCallingLine <- function(skipCalls=0){
     ret <- try({
-        argList <- as.list(sys.call(-4))
+        argList <- as.list(sys.call(-4-skipCalls))
         stepInfo <- argList[[3]]
         stepNumber <- as.integer(substring(stepInfo, 6))
 
-        functionBody <- body(sys.function(-5))
+        functionBody <- body(sys.function(-5-skipCalls))
         srcref <- attr(functionBody, 'srcref')[[stepNumber]]
         lineNumber <- srcref[1]
-    })
+    }, silent=TRUE)
     if(class(ret)=='try-error'){
         ret = 0
     }
@@ -300,11 +306,8 @@ getCallingLine <- function(){
 #' Sets a breakpoint
 #' 
 #' @description
-#' Sets a breakpoint in the given file and line.
-#' Is a rather hacky alternative to \code{setBreakpoint()} / \code{trace()}
-#' Better alternatives might be:
-#'  - \code{trace(...,at=stp$at)} => Problem: trace does not print the full filename upon hitting a breakpoint (needed for vsc)
-#'  - \code{setBreakpoint()} => Problem: does not print the full filename and does not support multiple breakpoints per method
+#' Sets breakpoints in the given file and line.
+#' Uses \code(findLineNum()) and \code(trace())
 #' 
 #' @export
 #' @param srcfile The file in which to set the breakpoint
@@ -349,40 +352,14 @@ getCallingLine <- function(){
     # loop through functions found above
     for(i in seq2(1, length(stepList))){
         step <- stepList[[i]]
-        if(FALSE){
-            tracer <- bquote({
-                cat(paste0(.(step$filename), "#", .(step$line), "\n"))
-                browser(skipCalls = 4L)
-            })
-        } else {
-            func <- eval(parse(text=step$name), envir = step$env)
 
-            # loop through breakpoints for each function
-            for(j in seq2(1, length(step$at))){
-                loc <- step$at[[j]]
-                # Make string that is cat() upon hitting the breakpoint
-                # tells vsc that a breakpoint was hit and gives info about file and line
-                catString <- paste0(
-                    .vsc.makeStringForVsc('breakpoint'),
-                    "debug at ", step$filename, '#', step$line[[j]], ": ?\n"
-                )
-                # only stop, if vsc is not running an eval statment from the debug console
-                body(func)[[loc]] <- call('{',
-                    call('if',
-                        quote(.vsc.stopOnBreakpoint()),
-                        call('{',
-                            call('.vsc.baseCat', catString),
-                            quote(.doTrace(browser()))
-                        )
-                    ),
-                    body(func)[[loc]]
-                )
-            }
-            # assign modified function to original environment
-            # assign(step$name, func, envir = step$env)
-            global <- identical(step$env, .GlobalEnv)
-            methods:::.assignOverBinding(step$name, func, step$env, FALSE)
-        }
+        # use trace instead of custom version:
+        trace(
+            what = step$name,
+            tracer = browser,
+            at = unlist(step$at),
+            where = step$env
+        )
     }
 }
 
