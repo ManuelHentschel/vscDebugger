@@ -247,6 +247,7 @@ getVarRefForVarListArgs <- function(varListArgs=NULL, evalCall=FALSE, varRef=NUL
     }
     .packageEnv$varListArgs[[varRef]] <- varListArgs
     if(evalCall){
+        # use arglist instead of call/eval/do.call to avoid evaluating the content of variables that contain expressions
         v <- varListArgs$v
         depth <- varListArgs$depth
         maxVars <- varListArgs$maxVars
@@ -489,6 +490,7 @@ getVarRefForVar <- function(valueR, depth=10, maxVars=1000, includeAttributes=TR
 
 
 getVarList <- function(v, depth=10, maxVars=1000, includeAttributes=TRUE){
+    # TODO: accept argList containing all args
     if(is.environment(v)){
         # special case environment: might contain promises that should not be evaluated
         varNames <- ls(v)
