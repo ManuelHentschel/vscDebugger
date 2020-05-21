@@ -4,7 +4,7 @@
 
 # interface stack{
 #     frames: Stackframe[];
-#     varLists: Variable[];
+#     varLists: Variable2[];
 # }
 #
 # interface StackFrame{
@@ -58,7 +58,7 @@
 #' 
 .vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop=0, skipFromBottom=1, isError=FALSE){
     .packageEnv$varLists <- list()
-    .packageEnv$varListCalls <- list()
+    .packageEnv$varListArgs <- list()
     if(isError){
         skipFromTop = skipFromTop + 1
     }
@@ -223,7 +223,7 @@ getScopes <- function(frame){
 
 getScope <- function(env){
     name <- capture.output(str(env))[1]
-    varRef <- getVarRefForEnv(env)
+    varRef <- getVarRefForVar(env)
     scope <- list(
         name=name,
         variablesReference=varRef
@@ -241,36 +241,23 @@ getScopeEnvs <- function(firstenv=parent.frame(), lastenv=.GlobalEnv){
     return(scopes)
 }
 
-getVarRefForEnv <- function(env, maxVars=1000){
-    varnames <- ls(env)
-
-    if(length(varnames)>maxVars && maxVars>0){
-        varnames <- varnames[1:maxVars]
-    }
-
-    # varList <- getVarListForEnv(varnames, env)
-    varListCall <- call('getVarListForEnv', varnames, env)
-    varRef <- getVarRef(varListCall)
-    return(varRef)
-}
-
-getDummyVarRef <- function(call){
-    varRef <- 
-    .packageEnv$varListCalls
-
-}
-
-getVarRef <- function(varListCall=NULL, evalCall=FALSE, varRef=NULL){
+getVarRefForVarListArgs <- function(varListArgs=NULL, evalCall=FALSE, varRef=NULL){
     if(is.null(varRef)){
-        varRef <- length(.packageEnv$varListCalls) + 1
+        varRef <- length(.packageEnv$varListArgs) + 1
     }
-    .packageEnv$varListCalls[[varRef]] <- varListCall
+    .packageEnv$varListArgs[[varRef]] <- varListArgs
     if(evalCall){
-        varList <- eval(varListCall)
+        # use arglist instead of call/eval/do.call to avoid evaluating the content of variables that contain expressions
+        v <- varListArgs$v
+        depth <- varListArgs$depth
+        maxVars <- varListArgs$maxVars
+        includeAttributes <- varListArgs$includeAttributes
+
+        variables <- getVarList(v=v, depth=depth, maxVars=maxVars, includeAttributes=includeAttributes)
         varList <- list(
             reference = varRef,
             isReady = TRUE,
-            variables = varList
+            variables = variables
         )
         .packageEnv$varLists[[varRef]] <- varList
     } else{
@@ -284,6 +271,11 @@ getVarRef <- function(varListCall=NULL, evalCall=FALSE, varRef=NULL){
 }
 
 getVarListsEntry <- function(varRef){
+    # basically is a wrapper for ".packageEnv$varLists[[varRef]]"
+    # to avoid excessive nested calls, the varList is only computed once requested
+    # before the varList is requested, only the arguments for getVarList() that will return it is stored in .packageEnv$varListArgs
+
+    # return dummy entries for invalid requests:
     if(varRef>length(.packageEnv$varLists)){
         return(list(
             reference = varRef,
@@ -291,9 +283,20 @@ getVarListsEntry <- function(varRef){
             variables = list()
         ))
     }
+
+    # retrieve varList
     varList <- .packageEnv$varLists[[varRef]]
+
+    # compute varList if necessary
     if(!varList$isReady){
-        variables <- eval(.packageEnv$varListCalls[[varRef]])
+        varListArgs <- .packageEnv$varListArgs[[varRef]]
+        v <- varListArgs$v
+        depth <- varListArgs$depth
+        maxVars <- varListArgs$maxVars
+        includeAttributes <- varListArgs$includeAttributes
+        variables <- getVarList(v=v, depth=depth, maxVars=maxVars, includeAttributes=includeAttributes)
+
+
         varList <- list(
             reference = varRef,
             isReady = TRUE,
@@ -301,6 +304,7 @@ getVarListsEntry <- function(varRef){
         )
         .packageEnv$varLists[[varRef]] <- varList
     }
+
     return(varList)
 }
 
@@ -308,19 +312,16 @@ getVarListsEntry <- function(varRef){
 ########################################################################
 # Variables
 
-getVarListForEnv <- function(names, scope){
-    varList <- lapply(names, getVariableInScope, scope)
-    return(varList)
-}
-
-getVariableInScope <- function(name, scope){
-    if(isPromise(name, scope)){
-        variable <- getPromiseVariable(name, scope)
+getVariableInEnv <- function(name, env){
+    # get Info about a variable in an environment
+    # separate from getVariable(), since environments might contain promises
+    if(isPromise(name, env)){
+        variable <- getPromiseVariable(name, env)
     } else{
         variable <- try({
-            valueR <- getValueR(name, scope)
+            valueR <- get(name, envir = env)
             getVariable(valueR, name)
-        }, silent=TRUE)
+        }, silent=FALSE)
     }
     if(class(variable)=='try-error'){
         variable <- getDummyVariable(name)
@@ -357,7 +358,7 @@ getDummyVariable <- function(name){
 }
 
 getVariable<- function(valueR, name, depth=20){
-    value <- getValue(valueR)
+    value <- varToString(valueR)
     type <- getType(valueR)
 
     variablesReference <- getVarRefForVar(valueR, depth)
@@ -372,63 +373,43 @@ getVariable<- function(valueR, name, depth=20){
     return(variable)
 }
 
-getValueR <- function(name, scope){
-    # valueR <- eval(parse(text=name), envir=scope)
-    valueR <- get(name, envir = scope)
-    return(valueR)
-}
-
-getValue <- function(valueR){
-    value <- varToString(valueR)
-    return(value) # as string
-}
 
 varToString <- function(v){
-    # special case: v is NULL
+    ret <- ''
     if(is.null(v)){
         ret <- 'NULL'
-        return(ret)
-    }
-
-    # check for type of v
-    type <- ''
-    if(is.data.frame(v)){
-        type <- 'data.frame'
-    } else if(is.list(v)){
-        type <- 'list'
-    } else if(is.matrix(v)){
-        type <- 'matrix'
-    } else if(is.vector(v) && length(v)>1){
-        type <- 'c'
-    } else if(is.factor(v)){
-        type <- 'factor'
-    }
-
-    # get value-representation of v
-    ret <- ''
-    if(is.function(v)){
-        ret <- varToStringWithCaptureOutput(v)
+    } else if(is.environment(v)){
+        ret <- format(v)
+    } else if(is.function(v)){
+        ret <- paste(format(v), collapse='\n')
+    } else if(is.language(v) && length(as.list(v))>1){
+        ret <- paste0(format(v), collapse = '\n')
     } else{
+        # generic case
+        # TODO: if v is a list, return e.g.: 'list(c(1,2,3), c("a","b","c"))'
+        # check for type of v
+        type <- getType(v, TRUE)
+
+        # get value-representation of v
         ret <- try(toString2(v), silent = TRUE)
+
+        # handle errors
+        if(class(ret) == 'try-error'){
+            ret <- '???'
+        }
+
+        # join type+value
+        if(type != ''){
+            ret <- paste0(type, '(', ret, ')')
+        }
     }
 
-    # handle errors
-    if(class(ret) == 'try-error'){
-        ret <- '???'
-    }
-
-    # join type+value
-    if(type != ''){
-        ret <- paste0(type, '(', ret, ')')
-    } else{
-        ret <- ret
-    }
-
-    # return
     return(ret)
 }
 
 toString2 <- function(v, quoteStrings=FALSE){
+    # recursive version of toString()
+    # TODO: modify to return e.g.: 'list(c(1,2,3), c("a","b","c"))'
     if(is.factor(v)){
         v <- format(v)
     } else if(is.data.frame(v)){
@@ -447,6 +428,7 @@ toString2 <- function(v, quoteStrings=FALSE){
 }
 
 varToStringWithCaptureOutput <- function(v){
+    # TODO: replace with proper use of format(...)?
     ret <- try({
         paste0(capture.output(v), collapse = '\n')
     }, silent = TRUE)
@@ -456,73 +438,100 @@ varToStringWithCaptureOutput <- function(v){
     return(ret)
 }
 
-getType <- function(valueR){
+
+getType <- function(valueR, short=FALSE){
+    # returns one of two possible values (depending on argument short):
+    # long: full typename, returned as variable type
+    #       default: typeof(v)
+    #
+    # short: used in varToString to differentiate e.g. list(1,2,3) and c(1,2,3)
+    #        default: ''
+    
+    # default case:
+    ret <- list(long=typeof(valueR), short='')    
+
+    # overwrite default for some types:
     if(is.data.frame(valueR)){
-        return('data.frame')
+        ret$short <- ret$long <- 'data.frame'
     } else if(is.factor(valueR)){
-        return('factor')
+        ret$short <- ret$long <- 'factor'
     } else if(is.list(valueR)){
-        return('list')
+        ret$short <- ret$long <- 'list'
     } else if(is.vector(valueR) && length(valueR)>1){
-        return('vector')
+        ret$long <- 'vector'
+        ret$short <- 'c'
     } else if(is.matrix(valueR)){
-        return('matrix')
+        ret$long <- 'matrix'
     } else if(is.character(valueR)){
-        return('string')
+        ret$long <- 'string'
+    }
+
+    # return the requested entry:
+    if(short){
+        return(ret$short)
     } else{
-        return(typeof(valueR))
+        return(ret$long)
     }
 }
 
-getVarRefForVar <- function(valueR, depth) {
-    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR))){
-        varListCall <- call('getVarListForVar', valueR, depth)
-        varRef <- getVarRef(varListCall)
+
+
+getVarRefForVar <- function(valueR, depth=10, maxVars=1000, includeAttributes=TRUE) {
+    hasAttributes <- !is.null(attributes(valueR)) && includeAttributes
+    if(depth>0 && (is.environment(valueR) || hasAttributes || is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR) || is.language(valueR) && length(as.list(valueR))>1)){
+        varListArgs <- list(v=valueR, depth=depth, maxVars=maxVars, includeAttributes=includeAttributes)
+        varRef <- getVarRefForVarListArgs(varListArgs)
     } else{
         varRef <- 0
     }
     return(varRef)
 }
 
-getVarListForVar <- function(valueR, depth, maxVars=1000) {
-    if(depth>0 && (is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR))){
-        if(is.data.frame(valueR)){
-            valuesR <- as.list(valueR)
-        } else if(is.factor(valueR)){
-            valuesR <- format(valueR)
+
+
+getVarList <- function(v, depth=10, maxVars=1000, includeAttributes=TRUE){
+    # TODO: accept argList containing all args
+    if(is.environment(v)){
+        # special case environment: might contain promises that should not be evaluated
+        varNames <- ls(v)
+        varList <- lapply(varNames, getVariableInEnv, v)
+    } else{
+        # normal case:
+        vars <- list()
+        if(is.data.frame(v)){
+            vars <- as.list(v)
+        } else if(is.factor(v)){
+            vars <- format(v)
+        } else if(is.vector(v) && length(v)>1){
+            vars <- as.list(v)
+        } else if(is.language(v)){
+            vars <- as.list(v)
+        } else if(is.list(v)){
+            vars <- v
         } else{
-            valuesR <- valueR
+            # normal (atomic) variable does not have children
+            vars <- list()
         }
-        if(length(valuesR)>maxVars && maxVars>0){
-            valuesR <- valuesR[1:maxVars]
+
+        if(is.null(names(vars))){
+            names(vars) <- lapply(seq2(vars), toString, '0')
         }
-        names <- names(valuesR)
-        if(is.null(names)){
-            names <- seq2(valuesR)
-        }
-        names <- vapply(names, toString, '0')
-        varList <- mapply(getVariable, valuesR, names, depth-1, SIMPLIFY=FALSE, USE.NAMES=FALSE)
-        return(varList)
-    } else{
-        # TODO: handle matrix
-        return(list())
+        varNames <- as.list(names(vars))
+
+        varList <- mapply(getVariable, vars, varNames, MoreArgs=list(depth=depth-1), SIMPLIFY=FALSE, USE.NAMES=FALSE)
+        
     }
-}
+    
+    # get variable info about attributes
+    # separate, since environments might have attributes as well
+    if(includeAttributes && length(attributes(v))>0){
+        atr <- attributes(v)
+        atrNames <- lapply(names(atr), function(s){paste0('_',s)})
 
+        atrList <- mapply(getVariable, atr, atrNames, depth-1, SIMPLIFY=FALSE, USE.NAMES=FALSE)
 
-########################################################################
-# Helper
-
-seq2 <- function(from, to=NULL, by=1){
-    if(is.null(from) || is.list(from) || (is.vector(from) && length(from)>1)){
-        return(seq2(1, length(from), by))
-    } else if(is.null(to)){
-        to <- from
-        from <- 1
-        return(seq2(from, to, by))
-    } else if((to-from)*by<0){
-        return(NULL)
-    } else{
-        return(seq(from, to, by))
+        varList <- append(varList, atrList)
     }
+
+    return(varList)
 }

@@ -6,6 +6,7 @@
 .packageEnv <- new.env()
 .packageEnv$varLists <- list()
 .packageEnv$varListCalls <- list()
+.packageEnv$varListArgs <- list()
 .packageEnv$isEvaluating <- FALSE
 .packageEnv$frameIdsR <- list()
 .packageEnv$frameIdsVsc <- list()
@@ -160,6 +161,32 @@
     return(ref)
 }
 
+#' @export
+.vsc.getLineNumberAtBreakpoint <- function(id=0){
+    line <- getCallingLine(1)
+    .vsc.sendToVsc(message='lineAtBreakpoint', body=line, id=id)
+}
+
+######## NEW: during browser-calls:
+getCallingLine <- function(skipCalls=0){
+    ret <- try({
+        argList <- as.list(sys.call(-4-skipCalls))
+        stepInfo <- argList[[3]]
+        stepNumber <- as.integer(substring(stepInfo, 6))
+
+        functionBody <- body(sys.function(-5-skipCalls))
+        srcref <- attr(functionBody, 'srcref')[[stepNumber]]
+        lineNumber <- srcref[1]
+    }, silent=TRUE)
+    if(class(ret)=='try-error'){
+        ret = 0
+    }
+    return(ret)
+}
+
+
+
+
 #' Send a message to vsc
 #' 
 #' Sends a message (text) together with body and id to vsc
@@ -280,26 +307,17 @@
 #' Sets a breakpoint
 #' 
 #' @description
-#' Sets a breakpoint in the given file and line.
-#' Is a rather hacky alternative to \code{setBreakpoint()} / \code{trace()}
-#' Better alternatives might be:
-#'  - \code{trace(...,at=stp$at)} => Problem: trace does not print the full filename upon hitting a breakpoint (needed for vsc)
-#'  - \code{setBreakpoint()} => Problem: does not print the full filename and does not support multiple breakpoints per method
+#' Sets breakpoints in the given file and line.
+#' Uses \code{findLineNum()} and \code{trace()}
 #' 
 #' @export
 #' @param srcfile The file in which to set the breakpoint
 #' @param line The line in which to set the breakpoint
 #' @param incdluePackages Whether to set breakpoints in package files
 .vsc.mySetBreakpoint <- function(srcfile, lines, includePackages=TRUE){
-    # helper function. used to loop through (potentially empty) lists
-    seq2 <- function(from, to){
-        if(from>to) return(c())
-        return(seq(from, to))
-    }
-
     # find steps, that correspond to the given line numbers
     stepList <- list()
-    for(i in seq2(1,length(lines))){
+    for(i in seq2(length(lines))){
         if(includePackages){
             lastenv <- emptyenv() # searches through package-envs as well
         } else {
@@ -311,7 +329,7 @@
             found <- FALSE
 
             # check if the same function already has breakpoints:
-            for(j in seq2(1,length(stepList))){
+            for(j in seq2(length(stepList))){
                 #check if env and function are identical:
                 if(identical(stepList[[j]]$name, step$name) && identical(stepList[[j]]$env, step$env)){ 
                     #append step$at to steplist[[j]]$at, etc.
@@ -335,40 +353,31 @@
     # loop through functions found above
     for(i in seq2(1, length(stepList))){
         step <- stepList[[i]]
-        if(FALSE){
-            tracer <- bquote({
-                cat(paste0(.(step$filename), "#", .(step$line), "\n"))
-                browser(skipCalls = 4L)
-            })
-        } else {
-            func <- eval(parse(text=step$name), envir = step$env)
 
-            # loop through breakpoints for each function
-            for(j in seq2(1, length(step$at))){
-                loc <- step$at[[j]]
-                # Make string that is cat() upon hitting the breakpoint
-                # tells vsc that a breakpoint was hit and gives info about file and line
-                catString <- paste0(
-                    .vsc.makeStringForVsc('breakpoint'),
-                    "debug at ", step$filename, '#', step$line[[j]], ": ?\n"
-                )
-                # only stop, if vsc is not running an eval statment from the debug console
-                body(func)[[loc]] <- call('{',
-                    call('if',
-                        quote(.vsc.stopOnBreakpoint()),
-                        call('{',
-                            call('.vsc.baseCat', catString),
-                            quote(.doTrace(browser()))
-                        )
-                    ),
-                    body(func)[[loc]]
-                )
-            }
-            # assign modified function to original environment
-            # assign(step$name, func, envir = step$env)
-            global <- identical(step$env, .GlobalEnv)
-            methods:::.assignOverBinding(step$name, func, step$env, FALSE)
-        }
+        # use trace instead of custom version:
+        trace(
+            what = step$name,
+            tracer = browser,
+            at = unlist(step$at),
+            where = step$env
+        )
     }
 }
 
+
+########################################################################
+# Helper
+
+seq2 <- function(from, to=NULL, by=1){
+    if(is.null(from) || is.list(from) || (is.vector(from) && length(from)>1)){
+        return(seq2(1, length(from), by))
+    } else if(is.null(to)){
+        to <- from
+        from <- 1
+        return(seq2(from, to, by))
+    } else if((to-from)*by<0){
+        return(NULL)
+    } else{
+        return(seq(from, to, by))
+    }
+}
