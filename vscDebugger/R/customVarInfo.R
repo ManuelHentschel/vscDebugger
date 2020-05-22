@@ -49,13 +49,13 @@ defaultVarInfo <- list(
 }
 
 #' @export
-.vsc.addVarInfo <- function(varInfo, position=1){
+.vsc.addVarInfo <- function(..., position=1){
     if(position<0){
         position <- length(.packageEnv$varInfo) + 1 + position
     } else if(position>0){
         position <- position - 1
     }
-    .packageEnv$varInfo <- append(.packageEnv$varInfo, list(varInfo), position)
+    .packageEnv$varInfo <- append(.packageEnv$varInfo, list(...), position)
 }
 
 #' @export
