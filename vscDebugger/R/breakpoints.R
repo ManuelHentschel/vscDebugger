@@ -10,7 +10,7 @@
 #' @param includePackages Whether to set breakpoints in packages
 #' @param id The id of the answer sent to vsc
 #' 
-.vsc.setBreakpoint <- function(srcfile, lines=list(), ids=NULL, includePackages=TRUE, id=0){
+.vsc.setBreakpoint <- function(srcfile, lines=list(), ids=NULL, includePackages=TRUE, maxOffset=3, id=0){
     # breakpoints: bp[]
     # bp: {id: number; line: number; verified: boolean}
 
@@ -31,15 +31,23 @@
         lastenv <- .GlobalEnv # searches only through 'user'-envs
     }
 
-    maxLine <- length(readLines(srcfile))
+    linesInFile <- length(readLines(srcfile))
 
     refList <- list()
     verifiedList <- zeroList(lines)
     actualLines <- zeroList(lines)
     for(i in seq2(lines)){
+        line <- lines[[i]]
+
+        if(is.null(maxOffset)){
+            maxLine <- linesInFile
+        } else{
+            maxLine <- line + maxOffset
+        }
+
         # find line numbers in functions
         # might return multiple refs
-        refs <- findLineNum2(srcfile, lines[[i]], maxLine, lastenv=lastenv)
+        refs <- findLineNum2(srcfile, line, maxLine, lastenv=lastenv)
 
         # store occurences of line (for R)
         refList <- append(refList, refs)

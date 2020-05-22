@@ -19,6 +19,9 @@
 
 
 
+# TODO: clean up and create sensible varInfos!!!!!
+
+
 #' @export
 .vsc.resetVarInfo <- function(){
     .packageEnv$varInfo <- defaultVarInfo
@@ -149,15 +152,40 @@ defaultVarInfo <- list(
         shortType = 'factor',
         longType = 'factor'
     ),
+    # list
+    list(
+        doesApply = is.list,
+        childVars = function(v){
+            values <- as.list(v)
+            if(is.null(names(v))){
+                names <- lapply(seq2(values), function(s) paste0('[[',s,']]'))
+            } else{
+                names <- NULL
+            }
+            list(values=values, names=names)
+        },
+        hasChildren = TRUE,
+        shortType = 'list',
+        longType = 'list'
+    ),
     # vector
     list(
         doesApply = function(v){
+            attributes(v) <- NULL
             is.vector(v) && length(v)>1
         },
-        childVars = function(v) list(values = as.list(v)),
+        childVars = function(v){
+            values <- as.list(v)
+            if(is.null(names(values))){
+                names <- lapply(seq2(values), function(s){paste0('[',s,']')})
+            } else{
+                names <- NULL
+            }
+            list(values = as.list(v), names=names)
+        },
         hasChildren = TRUE,
-        shortType = 'vector',
-        longType = 'c'
+        shortType = 'c',
+        longType = 'vector'
     ),
     # language: name, call expression
     list(
@@ -184,6 +212,12 @@ defaultVarInfo <- list(
         hasChildren = TRUE, 
         shortType = 'matrix',
         longType = 'matrix'
+    ),
+    # string
+    list(
+        doesApply = is.character,
+        longType = 'string',
+        hasChildren = FALSE
     ),
     # non-standard class
     list(
@@ -221,6 +255,7 @@ defaultVarInfo <- list(
         shortType = '',
         longType = function(v) typeof(v),
         includeAttributes = TRUE,
-        hasChildren = FALSE
+        hasChildren = FALSE,
+        toString = function(v) paste0(format(v), collapse=',')
     )
 )

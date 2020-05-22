@@ -327,7 +327,8 @@ getVarInEnv <- function(name, env){
 
 getPromiseVar <- function(name, env){
     promiseExpr <- pryr:::promise_code(name,env)
-    promiseCode <- paste0(format(promiseExpr), collapse=';')
+    promiseCode <- try(paste0(toString(promiseExpr), collapse=';'))
+    if(class(promiseCode)=='try-error') promiseCode <- '???'
     promiseEnv <- pryr:::promise_env(name, env)
     var <- list(
         promiseCode = promiseCode,
@@ -401,7 +402,7 @@ getVariable<- function(valueR, name, depth=20){
 
 
 varToString <- function(v){
-    ret <- getCustomInfo(v, 'toString')
+    ret <- getCustomInfo(v, 'toString', '???', '???')
     if(is.null(ret)){
         ret <- toString2(v)
     }
@@ -506,7 +507,7 @@ getCustomInfo <- function(v, info, default=NULL, onError=NULL){
                 }
             }
         }
-    }, silent=FALSE)
+    }, silent=TRUE)
     if(class(ret) == 'try-error'){
         return(onError)
     } else{
