@@ -43,7 +43,7 @@ mySetBreakpoint <- function(b, at, finalize=TRUE){
     }
 
     if(finalize){
-        # below is a complicated wait of turning this:
+        # below is a complicated way of turning this:
         #     doStuff(1)
         #     ...
         #     doStuff(2)
