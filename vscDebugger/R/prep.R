@@ -10,6 +10,7 @@
 .packageEnv$isEvaluating <- FALSE
 .packageEnv$frameIdsR <- list()
 .packageEnv$frameIdsVsc <- list()
+.packageEnv$varInfo <- defaultVarInfo
 
 
 
@@ -166,8 +167,6 @@
     line <- getCallingLine(1)
     .vsc.sendToVsc(message='lineAtBreakpoint', body=line, id=id)
 }
-
-######## NEW: during browser-calls:
 getCallingLine <- function(skipCalls=0){
     ret <- try({
         argList <- as.list(sys.call(-4-skipCalls))
@@ -304,65 +303,65 @@ getCallingLine <- function(skipCalls=0){
 #' @export
 .vsc.basePrint <- base::print
 
-#' Sets a breakpoint
-#' 
-#' @description
-#' Sets breakpoints in the given file and line.
-#' Uses \code{findLineNum()} and \code{trace()}
-#' 
-#' @export
-#' @param srcfile The file in which to set the breakpoint
-#' @param line The line in which to set the breakpoint
-#' @param incdluePackages Whether to set breakpoints in package files
-.vsc.mySetBreakpoint <- function(srcfile, lines, includePackages=TRUE){
-    # find steps, that correspond to the given line numbers
-    stepList <- list()
-    for(i in seq2(length(lines))){
-        if(includePackages){
-            lastenv <- emptyenv() # searches through package-envs as well
-        } else {
-            lastenv <- .GlobalEnv # searches only through 'user'-envs
-        }
-        refs <- findLineNum(srcfile, lines[i], lastenv=lastenv)
-        if(length(refs)>0){
-            step <- refs[[1]] # Ignore other refs?? In what cases are there >1 refs??
-            found <- FALSE
+# #' Sets a breakpoint
+# #' 
+# #' @description
+# #' Sets breakpoints in the given file and line.
+# #' Uses \code{findLineNum()} and \code{trace()}
+# #' 
+# #' @export
+# #' @param srcfile The file in which to set the breakpoint
+# #' @param line The line in which to set the breakpoint
+# #' @param incdluePackages Whether to set breakpoints in package files
+# .vsc.mySetBreakpoint <- function(srcfile, lines, includePackages=TRUE){
+#     # find steps, that correspond to the given line numbers
+#     stepList <- list()
+#     for(i in seq2(length(lines))){
+#         if(includePackages){
+#             lastenv <- emptyenv() # searches through package-envs as well
+#         } else {
+#             lastenv <- .GlobalEnv # searches only through 'user'-envs
+#         }
+#         refs <- findLineNum(srcfile, lines[i], lastenv=lastenv)
+#         if(length(refs)>0){
+#             step <- refs[[1]] # Ignore other refs?? In what cases are there >1 refs??
+#             found <- FALSE
 
-            # check if the same function already has breakpoints:
-            for(j in seq2(length(stepList))){
-                #check if env and function are identical:
-                if(identical(stepList[[j]]$name, step$name) && identical(stepList[[j]]$env, step$env)){ 
-                    #append step$at to steplist[[j]]$at, etc.
-                    stepList[[j]]$at[[length(stepList[[j]]$at)+1]] <- step$at 
-                    stepList[[j]]$line[[length(stepList[[j]]$line)+1]] <- step$line 
-                    stepList[[j]]$timediff[[length(stepList[[j]]$timediff)+1]] <- step$timediff 
-                    found <- TRUE
-                    break
-                }
-            }
-            # add new functions to stepList
-            if(!found){
-                step$at <- list(step$at)
-                step$line <- list(step$line)
-                step$timediff <- list(step$timediff)
-                stepList[[length(stepList)+1]] <- step
-            }
-        }
-    }
+#             # check if the same function already has breakpoints:
+#             for(j in seq2(length(stepList))){
+#                 #check if env and function are identical:
+#                 if(identical(stepList[[j]]$name, step$name) && identical(stepList[[j]]$env, step$env)){ 
+#                     #append step$at to steplist[[j]]$at, etc.
+#                     stepList[[j]]$at[[length(stepList[[j]]$at)+1]] <- step$at 
+#                     stepList[[j]]$line[[length(stepList[[j]]$line)+1]] <- step$line 
+#                     stepList[[j]]$timediff[[length(stepList[[j]]$timediff)+1]] <- step$timediff 
+#                     found <- TRUE
+#                     break
+#                 }
+#             }
+#             # add new functions to stepList
+#             if(!found){
+#                 step$at <- list(step$at)
+#                 step$line <- list(step$line)
+#                 step$timediff <- list(step$timediff)
+#                 stepList[[length(stepList)+1]] <- step
+#             }
+#         }
+#     }
 
-    # loop through functions found above
-    for(i in seq2(1, length(stepList))){
-        step <- stepList[[i]]
+#     # loop through functions found above
+#     for(i in seq2(1, length(stepList))){
+#         step <- stepList[[i]]
 
-        # use trace instead of custom version:
-        trace(
-            what = step$name,
-            tracer = browser,
-            at = unlist(step$at),
-            where = step$env
-        )
-    }
-}
+#         # use trace instead of custom version:
+#         trace(
+#             what = step$name,
+#             tracer = browser,
+#             at = unlist(step$at),
+#             where = step$env
+#         )
+#     }
+# }
 
 
 ########################################################################
@@ -380,4 +379,9 @@ seq2 <- function(from, to=NULL, by=1){
     } else{
         return(seq(from, to, by))
     }
+}
+
+zeroList <- function(list0){
+    # returns a list of 0s, as long as the input list
+    return(lapply(list0, function(x) 0))
 }
