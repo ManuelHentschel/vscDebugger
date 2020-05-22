@@ -110,6 +110,7 @@
     .vsc.sendToVsc('stack', stack, id)
 }
 
+
 #' Send info about some vars to vsc
 #' 
 #' Gathers info about the specified variablesReferences and sends them to vsc
@@ -123,6 +124,7 @@
     varLists <- makeVarLists(refs)
     .vsc.sendToVsc('variables', varLists, id)
 }
+
 
 #' Get Filename corresponding to a call in a given frame
 #'
@@ -199,6 +201,8 @@ getCallingLine <- function(skipCalls=0){
     base::cat(s)
 }
 
+
+
 #' Prepare a message as string for vsc
 #' 
 #' Prepare a message as string for vsc
@@ -225,7 +229,9 @@ getCallingLine <- function(skipCalls=0){
 
 #' Runs the \code{main()} function
 #' 
-#' Runs the function \code{main()} from the global environment
+#' @description 
+#' Looks for a function \code{main()} in the global environment and runs it
+#' Runs main() inside this function, hence \code{parent.frame()} and \code{parent.env()} etc. will behave differently
 #' 
 #' @export
 #' @param overWritePrint Whether to overwrite \code{base::print} with a version that sends output to vsc
@@ -264,12 +270,6 @@ getCallingLine <- function(skipCalls=0){
 }
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# GET file-name of current function:
-# attr(attr(eval.parent(sys.call()[[1]]), 'srcref'), 'srcfile')
-# attr(attr(attributes(eval.parent(sys.call()[[1]]))$original, 'srcref'), 'srcfile')
-
-
 #' Check if debugger is evaluating
 #' 
 #' Returns \code{TRUE} iff an expression is being evaluated by the debugger during a breakpoint
@@ -293,80 +293,37 @@ getCallingLine <- function(skipCalls=0){
 
 #' Same as base::cat
 #'
-#' Same as base::cat. Used by custom breakpoints
+#' Same as base::cat
 #' @export
 .vsc.baseCat <- base::cat
 
 #' Same as base::print
 #'
-#' Same as base::print. Used by custom breakpoints
+#' Same as base::print
 #' @export
 .vsc.basePrint <- base::print
-
-# #' Sets a breakpoint
-# #' 
-# #' @description
-# #' Sets breakpoints in the given file and line.
-# #' Uses \code{findLineNum()} and \code{trace()}
-# #' 
-# #' @export
-# #' @param srcfile The file in which to set the breakpoint
-# #' @param line The line in which to set the breakpoint
-# #' @param incdluePackages Whether to set breakpoints in package files
-# .vsc.mySetBreakpoint <- function(srcfile, lines, includePackages=TRUE){
-#     # find steps, that correspond to the given line numbers
-#     stepList <- list()
-#     for(i in seq2(length(lines))){
-#         if(includePackages){
-#             lastenv <- emptyenv() # searches through package-envs as well
-#         } else {
-#             lastenv <- .GlobalEnv # searches only through 'user'-envs
-#         }
-#         refs <- findLineNum(srcfile, lines[i], lastenv=lastenv)
-#         if(length(refs)>0){
-#             step <- refs[[1]] # Ignore other refs?? In what cases are there >1 refs??
-#             found <- FALSE
-
-#             # check if the same function already has breakpoints:
-#             for(j in seq2(length(stepList))){
-#                 #check if env and function are identical:
-#                 if(identical(stepList[[j]]$name, step$name) && identical(stepList[[j]]$env, step$env)){ 
-#                     #append step$at to steplist[[j]]$at, etc.
-#                     stepList[[j]]$at[[length(stepList[[j]]$at)+1]] <- step$at 
-#                     stepList[[j]]$line[[length(stepList[[j]]$line)+1]] <- step$line 
-#                     stepList[[j]]$timediff[[length(stepList[[j]]$timediff)+1]] <- step$timediff 
-#                     found <- TRUE
-#                     break
-#                 }
-#             }
-#             # add new functions to stepList
-#             if(!found){
-#                 step$at <- list(step$at)
-#                 step$line <- list(step$line)
-#                 step$timediff <- list(step$timediff)
-#                 stepList[[length(stepList)+1]] <- step
-#             }
-#         }
-#     }
-
-#     # loop through functions found above
-#     for(i in seq2(1, length(stepList))){
-#         step <- stepList[[i]]
-
-#         # use trace instead of custom version:
-#         trace(
-#             what = step$name,
-#             tracer = browser,
-#             at = unlist(step$at),
-#             where = step$env
-#         )
-#     }
-# }
 
 
 ########################################################################
 # Helper
 
+#' Modified version of base::seq
+#' 
+#' Modified version of \code{base::seq}
+#' @usage seq2(from, to, by=1)
+#' @usage seq2(from)
+#' 
+#' @param from Can be the starting value of the sequence, or the end value of the sequence, or a vector of length>1, or a list
+#' @param to The ending value of the sequence
+#' @param by The step size (as in \code{base::seq})
+#' @return A vector containing a sequence of numbers
+#' 
+#' @details
+#' If \code{from, to, by} are supplied, the function returns the same as \code{base::seq}.
+#' If \code{from, to} are supplied the function returns \code{NULL} if \code{from>to},
+#' else the same as \code{base::seq}.
+#' If \code{from} is a number, the same as \code{seq2(1,from)} is returned.
+#' If \code{from} is a vector of length>1 or a list, \code{seq2(length(from))} is returned.
 seq2 <- function(from, to=NULL, by=1){
     if(is.null(from) || is.list(from) || (is.vector(from) && length(from)>1)){
         return(seq2(1, length(from), by))
@@ -381,7 +338,12 @@ seq2 <- function(from, to=NULL, by=1){
     }
 }
 
+#' Returns a list of 0s
+#' 
+#' Returns a list of 0s, of the same length as the input list
+#' 
+#' @param list0 Any oobject that can be passed to lapply as first argument
+#' @return A list of the same length as list0, filled with 0s
 zeroList <- function(list0){
-    # returns a list of 0s, as long as the input list
     return(lapply(list0, function(x) 0))
 }

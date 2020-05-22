@@ -312,6 +312,32 @@ getVarListsEntry <- function(varRef){
 ########################################################################
 # Variables
 
+
+
+getVarInEnv <- function(name, env){
+    # get Info about a variable in an environment
+    # separate from getVariable(), since environments might contain promises
+    if(isPromise(name, env)){
+        var <- getPromiseVar(name, env)
+    } else{
+        var <- get(name, envir = env)
+    }
+    return(var)
+}
+
+getPromiseVar <- function(name, env){
+    promiseExpr <- pryr:::promise_code(name,env)
+    promiseCode <- paste0(format(promiseExpr), collapse=';')
+    promiseEnv <- pryr:::promise_env(name, env)
+    var <- list(
+        promiseCode = promiseCode,
+        promiseEnv = promiseEnv,
+        promiseExpr = promiseExpr
+    )
+    class(var) <- '.vsc.promise'
+    return(var)
+}
+
 getVariableInEnv <- function(name, env){
     # get Info about a variable in an environment
     # separate from getVariable(), since environments might contain promises
@@ -376,41 +402,15 @@ getVariable<- function(valueR, name, depth=20){
 
 varToString <- function(v){
     ret <- getCustomInfo(v, 'toString')
-    if(!is.null(ret)){
-        # do nothing
-    } else if(is.null(v)){
-        ret <- 'NULL'
-    } else if(is.environment(v)){
-        ret <- format(v)
-    } else if(is.function(v)){
-        ret <- paste(format(v), collapse='\n')
-    } else if(is.language(v) && length(as.list(v))>1){
-        ret <- paste0(format(v), collapse = '\n')
-    } else{
-        # generic case
-        # TODO: if v is a list, return e.g.: 'list(c(1,2,3), c("a","b","c"))'
-        # check for type of v
-        type <- getType(v, TRUE)
-
-        # get value-representation of v
-        ret <- try(toString2(v), silent = TRUE)
-
-        # handle errors
-        if(class(ret) == 'try-error'){
-            ret <- '???'
-        }
-
-        # join type+value
-        if(type != ''){
-            ret <- paste0(type, '(', ret, ')')
-        }
+    if(is.null(ret)){
+        ret <- toString2(v)
     }
-
     return(ret)
 }
 
 toString2 <- function(v, quoteStrings=FALSE){
     # recursive version of toString()
+    # WIP
     # TODO: modify to return e.g.: 'list(c(1,2,3), c("a","b","c"))'
     if(is.factor(v)){
         v <- format(v)
@@ -430,6 +430,8 @@ toString2 <- function(v, quoteStrings=FALSE){
 }
 
 varToStringWithCaptureOutput <- function(v){
+    # dirty way to convert anything to string
+    # should be avoided!
     # TODO: replace with proper use of format(...)?
     ret <- try({
         paste0(capture.output(v), collapse = '\n')
@@ -452,45 +454,17 @@ getType <- function(valueR, short=FALSE){
     # default case:
 
     if(short){
-        ret <- getCustomInfo(valueR, 'shortType')
+        ret <- getCustomInfo(valueR, 'shortType', '???', '???')
     } else{
-        ret <- getCustomInfo(valueR, 'longType')
+        ret <- getCustomInfo(valueR, 'longType', '???', '???')
     }
-    if(!is.null(ret)){
-        return(ret)
-    }
-
-    ret <- list(long=typeof(valueR), short='')    
-
-    # overwrite default for some types:
-    if(is.data.frame(valueR)){
-        ret$short <- ret$long <- 'data.frame'
-    } else if(is.factor(valueR)){
-        ret$short <- ret$long <- 'factor'
-    } else if(is.list(valueR)){
-        ret$short <- ret$long <- 'list'
-    } else if(is.vector(valueR) && length(valueR)>1){
-        ret$long <- 'vector'
-        ret$short <- 'c'
-    } else if(is.matrix(valueR)){
-        ret$long <- 'matrix'
-    } else if(is.character(valueR)){
-        ret$long <- 'string'
-    }
-
-    # return the requested entry:
-    if(short){
-        return(ret$short)
-    } else{
-        return(ret$long)
-    }
+    return(ret)
 }
 
 
 
 getVarRefForVar <- function(valueR, depth=10, maxVars=1000, includeAttributes=TRUE) {
-    hasAttributes <- (!is.null(attributes(valueR)) || !is.null(getCustomInfo(valueR, 'customAttributes'))) && includeAttributes
-    if(depth>0 && (is.environment(valueR) || hasAttributes || is.list(valueR) || (is.vector(valueR) && length(valueR)>1) || is.factor(valueR) || is.language(valueR) && length(as.list(valueR))>1)){
+    if(depth>0 && getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)){
         varListArgs <- list(v=valueR, depth=depth, maxVars=maxVars, includeAttributes=includeAttributes)
         varRef <- getVarRefForVarListArgs(varListArgs)
     } else{
@@ -501,20 +475,40 @@ getVarRefForVar <- function(valueR, depth=10, maxVars=1000, includeAttributes=TR
 
 
 
-getCustomInfo <- function(v, info){
-    ret <- NULL
+getCustomInfo <- function(v, info, default=NULL, onError=NULL){
+    # checks the entries in .packageEnv$varInfo (specified in customVarinfo.R) for a matching entry
+    # returns the requested info if available
+    # info cane be a string from the list:
+    #     childVars
+    #     customAttributes
+    #     hasChildren
+    #     toString
+    #     shortType
+    #     longType
+    #     includeAttributes
+
+    ret <- default
     try({
+        # loop through varInfos
         for(varInfo in .packageEnv$varInfo){
-            if(is.function(varInfo[[info]])){
-                if(varInfo$doesApply(v)){
-                    ret <- varInfo[[info]](v)
+            # check if varInfo provides the required info
+            if(!is.null(varInfo[[info]])){
+                # check if varInfo applies to v
+                if(varInfo$doesApply(v)[[1]]){
+                    if(is.function(varInfo[[info]])){
+                        # apply function to v
+                        ret <- varInfo[[info]](v)
+                    } else {
+                        # ...or return (constant) value
+                        ret <- varInfo[[info]]
+                    }
                     break
                 }
             }
         }
     }, silent=FALSE)
     if(class(ret) == 'try-error'){
-        return(NULL)
+        return(onError)
     } else{
         return(ret)
     }
@@ -523,60 +517,30 @@ getCustomInfo <- function(v, info){
 
 getVarList <- function(v, depth=10, maxVars=1000, includeAttributes=TRUE){
     # TODO: accept argList containing all args
-    # TODO: make customizable with 'groups' of functions:
-    #       - function that returns a boolean (e.g. is.XXX()), if this 'group' applies
-    #       - function that returns the corresponding children-variables (e.g. as.list())
-    #       - function that returns a string representation
-    #       - further functions for e.g. numbering ([[1]] vs [1]), custom 'attributes' (e.g. body(f) for functions)
-    #       - define priority by order of groups (e.g. check is.data.frame() first , then is.list())
-    if(is.environment(v)){
-        # special case environment: might contain promises that should not be evaluated
-        varNames <- ls(v)
-        varList <- lapply(varNames, getVariableInEnv, v)
-    } else{
-        # normal case:
-        childVars <- getCustomInfo(v, 'childVars')
-        vars <- childVars$values
-        varNames <- childVars$names
-        if(is.list(vars)){
-            # do nothing
-        } else if(is.data.frame(v)){
-            vars <- as.list(v)
-        } else if(is.factor(v)){
-            vars <- format(v)
-        } else if(is.vector(v) && length(v)>1){
-            vars <- as.list(v)
-        } else if(is.language(v)){
-            vars <- as.list(v)
-        } else if(is.list(v)){
-            vars <- v
-        } else if(is.matrix(v)){
-            vars <- lapply(seq2(nrow(v)), function(i) v[i,])
-            names(vars) <- rownames(v)
-        } else{
-            # normal (atomic) variable does not have children
-            vars <- list()
-        }
+    childVars <- getCustomInfo(v, 'childVars')
 
-        if(!is.null(varNames)){
-            # do nothing
-        } else if(!is.null(names(vars))){
-            varNames <- as.list(names(vars))
-        } else{
-            varNames <- lapply(seq2(vars), toString, '0')
-        }
-        
-
-        varList <- mapply(getVariable, vars, varNames, MoreArgs=list(depth=depth-1), SIMPLIFY=FALSE, USE.NAMES=FALSE)
-        
+    vars <- childVars$values
+    varNames <- childVars$names
+    if(is.null(varNames) || length(varNames)==0){
+        varNames <- names(vars) 
     }
-    
+    if(is.null(varNames) || length(varNames)==0){
+        varNames <- lapply(seq2(vars), toString, '0')
+    }
+
+    varList <- mapply(getVariable, vars, varNames, MoreArgs=list(depth=depth-1), SIMPLIFY=FALSE, USE.NAMES=FALSE)
 
     # get variable info about attributes
     # separate, since environments might have attributes as well
+    
     if(includeAttributes){
-        atr <- attributes(v)
-        atrNames <- lapply(names(atr), function(s){paste0('_',s)})
+        if(getCustomInfo(v, 'includeAttributes', TRUE, TRUE)){
+            atr <- attributes(v)
+            atrNames <- lapply(names(atr), function(s){paste0('_',s)})
+        } else{
+            atr <- list()
+            atrNames <- list()
+        }
 
         customAttributes <- getCustomInfo(v, 'customAttributes')
         cAtr <- customAttributes$values

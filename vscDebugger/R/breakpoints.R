@@ -1,5 +1,15 @@
 
+#' Set breakpoints in a file
+#'
+#' Set breakpoints in a file, and sends a confirmation message to vsc
+#' 
 #' @export
+#' @param srcfile The file in which to set breakpoints
+#' @param lines A list of lines in which to set breakpoints
+#' @param ids A list of numbers, specifying the id of each breakpoint. Same length as \code{lines}
+#' @param includePackages Whether to set breakpoints in packages
+#' @param id The id of the answer sent to vsc
+#' 
 .vsc.setBreakpoint <- function(srcfile, lines=list(), ids=NULL, includePackages=TRUE, id=0){
     # breakpoints: bp[]
     # bp: {id: number; line: number; verified: boolean}
