@@ -187,15 +187,20 @@ defaultVarInfo <- list(
         shortType = 'c',
         longType = 'vector'
     ),
-    # language: name, call expression
+    # language: name, call, expression, name
     list(
-        doesApply = function(v) is.language(v) && length(as.list(v))>1,
+        doesApply = function(v) is.language(v),
         childVars = function(v) list(values = as.list(v)),
         hasChildren = TRUE,
         shortType = '',
         longType = 'language',
         toString = function(v){
-            paste0(format(v), collapse='\n')
+            if(is.symbol(v)){
+                ret <- toString(v)
+            } else{
+                ret <- paste0(format(v), collapse='\n')
+            }
+            ret
         }
     ),
     # matrix

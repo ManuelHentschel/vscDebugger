@@ -1,66 +1,117 @@
-# used in example:
-print(1)
-print(2)
-print(3)
 
-
-main <- function(){
-    # contains an example use of debugSource():
-    line <- 2
-    debugSource('debugSource.R', 3)
-}
-
+# TODO: make sure, browser-output is correctly parsed by vsc
+# TODO: make sure, call stack is correctly returned to vsc (skipped frames etc.)
+# TODO: function definitions:
+#       - do not modify function body directly
+#       - instead: define function normally, then trace function (-> bp can be easily unset)
+# TODO: recursive debugSource():
+#       - find calls to source() and replace with debugSource()
+#       - handle lines for breakpoints
+# TODO: enable breakpoints in specific columns?
 
 debugSource <- function(fileName, lines=c()){
     # parse file:
     body <- parse(fileName)
 
-    # find steps/expressions corresponding to the requested lines
+    # find steps/expressions corresponding to the requested lines:
     ats <- lapply(lines, function(l,b) findLine(b,l), body)
-
-    # iteratively set breakpoints
-    for(at in ats){
-        body <- mySetBreakpoint(body, at, finalize=FALSE)
-    }
     
-    # enclose entire body in {}
-    body <- mySetBreakpoint(body, c(), finalize=TRUE)
+    # set breakpoints:
+    body <- mySetBreakpoints(body, ats)
 
-    # eval body
+
+    # actually run the code:
     eval(body)
 }
 
+mySetBreakpoints <- function(body, ats=list(), finalize=TRUE){
+    # iteratively set breakpoints:
+    for(at in ats){
+        body <- mySetBreakpoint(body, at=at, finalize=FALSE)
+    }
 
-mySetBreakpoint <- function(b, at, finalize=TRUE){
+    # enclose entire body in {}:
+    if(finalize){
+        body <- encloseBody(body)
+    }
+
+    return(body)
+}
+
+mySetBreakpoint <- function(body, at, finalize=FALSE){
     if(length(at)==0){
         # do nothing
     } else if(length(at)==1){
         # innermost step: replace expression expr with {browser(), expr}
-        b[[at]] <- call('{', quote(browser()), b[[at]])
+        body[[at]] <- call('{', quote(browser()), body[[at]])
     } else{
         # outer steps: continue recursively
-        b[[at[1]]] <- mySetBreakpoint(b[[at[1]]], at[-1])
+        body[[at[1]]] <- mySetBreakpoint(body[[at[1]]], at[-1], finalize = FALSE)
     }
 
     if(finalize){
-        # below is a complicated way of turning this:
-        #     doStuff(1)
-        #     ...
-        #     doStuff(2)
-        # into this:
-        #     {
-        #         doStuff(1)
-        #         ...
-        #         doStuff(2)
-        #     }
-        #
-        b <- as.call(append(as.list(call('{')), b))
-        # necessary to enable correct browser()-behaviour
+        body <- encloseBody(body)
     }
 
-    return(b)
+    return(body)
 }
 
+encloseBody <- function(body){
+    # Below is a complicated way of turning this:
+    #     doStuff(1)
+    #     ...
+    #     doStuff(2)
+    # into this:
+    #     {
+    #         doStuff(1)
+    #         ...
+    #         doStuff(2)
+    #     }
+    # while preserving srcrefs.
+    # (Is necessary to enable correct browser()-behaviour.)
+
+    # surround body with '{', '}'
+    b2 <- as.call(append(as.list(call('{')), body))
+
+    # make new srcref that contains a dummy for the call to '{'
+    newSrcref <- prependDummySrcref(attr(body, 'srcref'))
+
+    # add srcref to new body
+    b2 <- structure(
+        b2,
+        srcref = newSrcref,
+        srcfile = attr(body, 'srcfile'),
+        wholeSrcref = attr(body, 'wholeSrcref')
+    )
+
+    # convert body to expression
+    ex <- as.expression(b2)
+
+    # add attributes to expression
+    b2 <- structure(
+        ex,
+        srcref = attr(body, 'wholeSrcref'),
+        srcfile = attr(body, 'srcfile'),
+        wholeSrcref = attr(body, 'wholeSrcref')
+    )
+
+    # assign to b
+    return(b2)
+}
+
+prependDummySrcref <- function(srcref){
+    newSrcref <- srcref
+    dummySrcref <- c(1,1,1,1,1,1,1,1)
+    attributes(dummySrcref) <- attributes(srcref[[1]])
+    newSrcref <- append(list(dummySrcref), newSrcref)
+    attributes(newSrcref) <- attributes(srcref)
+    return(newSrcref)
+}
+
+
+lineFind <- function(line, b, at=c()){
+    findLine(b, line, at)
+}
 findLine <- function(b, line, at=c()){
     if(hasSrcref(b)){
         at <- findLineWithSrcref(b, line, at)
