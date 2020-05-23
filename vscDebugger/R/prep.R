@@ -165,11 +165,12 @@
 }
 
 #' @export
-.vsc.getLineNumberAtBreakpoint <- function(id=0){
-    line <- getCallingLine(1)
+.vsc.getLineAtBreakpoint <- function(id=0){
+    line <- getCallingLineAtTracingBreakpoint(1)
     .vsc.sendToVsc(message='lineAtBreakpoint', body=line, id=id)
 }
-getCallingLine <- function(skipCalls=0){
+
+getCallingLineAtTracingBreakpoint <- function(skipCalls=0){
     ret <- try({
         argList <- as.list(sys.call(-4-skipCalls))
         stepInfo <- argList[[3]]
@@ -177,11 +178,37 @@ getCallingLine <- function(skipCalls=0){
 
         functionBody <- body(sys.function(-5-skipCalls))
         srcref <- attr(functionBody, 'srcref')[[stepNumber]]
-        lineNumber <- srcref[1]
+        srcfile <- attr(srcref, 'srcfile')
+        ret <- list(
+            wd = srcfile$wd,
+            filename = srcfile$filename,
+            line = srcref[1]
+        )
     }, silent=TRUE)
     if(class(ret)=='try-error'){
-        ret = 0
+        ret = list(
+            wd = '',
+            filename = '',
+            line = 0
+        )
     }
+    return(ret)
+}
+
+#' @export
+.vsc.getLineAtBrowser <- function(id=0){
+    line <- getCallingLine(1)
+    .vsc.sendToVsc(message='lineAtBreakpoint', body=line, id=id)
+}
+
+getCallingLine <- function(skipCalls=0){
+    srcref <- attr(sys.call(-skipCalls), 'srcref')
+    srcfile <- attr(srcref, 'srcfile')
+    ret <- list(
+        wd = srcfile$wd,
+        filename = srcfile$filename,
+        line = srcref[1]
+    )
     return(ret)
 }
 

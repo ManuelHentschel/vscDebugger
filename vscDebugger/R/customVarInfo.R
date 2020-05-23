@@ -85,14 +85,26 @@
 }
 
 .vsc.checkVarInfo <- function(varInfo, testCase=NULL){
+    warn <- list()
+    err <- list()
+    # doesApply:
     if(is.null(varInfo$doesApply)){
-        stop('doesApply must not be NULL')
+        err <- c(err, 'doesApply must not be NULL')
     } else if(!is.function(varInfo$doesApply)){
-        warning('doesApply is not a function')
+        warn <- c(warn, 'doesApply should be a function')
     }
+
+    # customAttributes:
+    # hasChildren:
+    # toString:
+    # shortType:
+    # longType:
+    # includeAttributes:
+
     # TODO: check everything else, apply testCase if supplied
     return(TRUE)
 }
+
 
 getVarsInEnv <- function(env, all.names=TRUE){
     names <- ls(env, all.names=all.names)
