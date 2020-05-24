@@ -45,6 +45,27 @@
 ########################################################################
 # Stack
 
+
+#' Build current stack and send to vsc
+#' 
+#' Gives info about the current stack and sends it to vsc
+#' 
+#' @export
+#' @param topFrame The first stack frame to consider (= the current function call)
+#' @param id The id of the message sent to vsc
+#' @return None (The current stack, formatted as a nested named list is sent to vsc)
+#' 
+.vsc.getStack <- function(topFrame=parent.frame(),id=0, isError=0, dummyFile=NULL){
+    if(.packageEnv$debugGlobal && calledFromGlobal()){
+        stack <- .vsc.getDummyStack(dummyFile=dummyFile)
+    } else{
+        stack <- .vsc.buildStack(topFrame = topFrame, isError = isError, skipFromBottom = 0)
+    }
+    .vsc.sendToVsc('stack', stack, id)
+}
+
+
+
 #' Build current stack
 #' 
 #' Gives info about the current stack, formatted to be used in a vsc-debugger.
@@ -77,13 +98,13 @@
 
 
 
-.vsc.getDummyStack <- function(){
+.vsc.getDummyStack <- function(dummyFile=NULL){
     .packageEnv$varLists <- list()
     .packageEnv$varListArgs <- list()
     nFrames <- 1
     frameIdsR <- seq(nFrames, 1, -1)
     frameIdsVsc <- seq2(length(frameIdsR))-1
-    frames <- mapply(getDummyFrame, frameIdsR, frameIdsVsc, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    frames <- mapply(getDummyFrame, frameIdsR, frameIdsVsc, MoreArgs = list(dummyFile=dummyFile), SIMPLIFY = FALSE, USE.NAMES = FALSE)
     stack <- list(
         frames=frames,
         varLists=.packageEnv$varLists
@@ -93,11 +114,18 @@
     return(stack)
 }
 
-getDummyFrame <- function(frameIdR, frameIdVsc){
+getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile=NULL){
     env <- .GlobalEnv
     id <- frameIdVsc
     name <- 'Global Workspace'
-    source <- NULL
+    if(is.null(dummyFile)){
+        source <- NULL
+    } else{
+        # source <- list(
+        #     path=dummyFile
+        # )
+        source <- NULL
+    }
     line <- 0
     column <- 0
     frame <- list(
@@ -113,6 +141,8 @@ getDummyFrame <- function(frameIdR, frameIdVsc){
     }
     scopes <- getScopes(frame)
     frame$scopes <- scopes
+    # only for dummy:
+    frame$presentationHint <- 'label'
     return(frame)
 }
 
@@ -182,7 +212,8 @@ getStackFrame <- function(frameIdR, frameIdVsc){
     id <- frameIdVsc
     call <- sys.call(frameIdR)
     name <- getFrameName(call)
-    source <- getSource(env, call)
+    # source <- getSource(env, call)
+    source <- getSource(frameIdR)
     line <- getLine(frameIdR)
     column <- 0
     frame <- list(
@@ -207,34 +238,37 @@ getStackFrame <- function(frameIdR, frameIdVsc){
 getFrameName <- function(call){
     name <- varToStringWithCaptureOutput(call)
     # name <- substr(name, 1, 16)
-    name <- substr(name, 1, 50)
+    maxChars <- 300
+    if(nchar(name)>maxChars){
+        name <- paste0(substr(name,1,maxChars-3),'...')
+    }
     return(name)
 }
 
 #' Get Source Info about a call in a given environment
 #' 
 #' Get Source Info about a call in a given environment
-getSource <- function(env, call){
-    source <- try({
-        fileName <- getSrcFilename(eval(call[[1]], envir=env))
-        dirName <- getSrcDirectory(eval(call[[1]], envir=env))
-        dirName <- suppressWarnings(normalizePath(dirName, winslash = '/'))
-        fullPath <- file.path(dirName, fileName)
-        fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
-        fullPath <- toString(fullPath)
-        fileName <- toString(fileName)
+# getSource <- function(env, call){
+#     source <- try({
+#         fileName <- getSrcFilename(eval(call[[1]], envir=env))
+#         dirName <- getSrcDirectory(eval(call[[1]], envir=env))
+#         dirName <- suppressWarnings(normalizePath(dirName, winslash = '/'))
+#         fullPath <- file.path(dirName, fileName)
+#         fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
+#         fullPath <- toString(fullPath)
+#         fileName <- toString(fileName)
 
-        source <- list(
-            name = fileName,
-            path = fullPath,
-            sourceReference = 0
-        )
-    }, silent=TRUE)
-    if(class(source)=='try-error' || source$name==''){
-        source <- NULL
-    }
-    return(source)
-}
+#         source <- list(
+#             name = fileName,
+#             path = fullPath,
+#             sourceReference = 0
+#         )
+#     }, silent=TRUE)
+#     if(class(source)=='try-error' || source$name==''){
+#         source <- NULL
+#     }
+#     return(source)
+# }
 
 #' Get the source line of the function call corresponding to a frameId
 #' 
@@ -252,6 +286,36 @@ getLine <- function(frameId){
     # return(1)
 }
 
+getSource <- function(frameId){
+    if(frameId>=sys.nframe()){
+        return(NULL)
+    }
+    call <- sys.call(frameId+1)
+    ref <- attr(call, 'srcref')
+    sf <- attr(ref, 'srcfile')
+    if(is.null(ref)){
+        return(NULL)
+    } else{
+        ret <- try({
+            filename <- sf$filename
+            dirname <- sf$wd
+            # dirname <- suppressWarnings(normalizePath(dirname, winslash = '/'))
+            # fullPath <- file.path(dirname, filename)
+            # fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
+            # fullPath <- toString(fullPath)
+            # filename <- toString(filename)
+            ret <- list(
+                name = basename(filename),
+                path = filename,
+                sourceReference = 0
+            )
+        })
+        if(class(ret)=='try-error'){
+            ret <- NULL
+        }
+        return(ret)
+    }
+}
 
 ########################################################################
 # Scopes

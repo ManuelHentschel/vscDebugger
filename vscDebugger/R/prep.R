@@ -125,23 +125,6 @@ isPackageFrame <- function(env=parent.frame()){
 }
 
 
-#' Build current stack and send to vsc
-#' 
-#' Gives info about the current stack and sends it to vsc
-#' 
-#' @export
-#' @param topFrame The first stack frame to consider (= the current function call)
-#' @param id The id of the message sent to vsc
-#' @return None (The current stack, formatted as a nested named list is sent to vsc)
-#' 
-.vsc.getStack <- function(topFrame=parent.frame(),id=0, isError=0){
-    if(.packageEnv$debugGlobal && calledFromGlobal()){
-        stack <- .vsc.getDummyStack()
-    } else{
-        stack <- .vsc.buildStack(topFrame = topFrame, isError = isError, skipFromBottom = 0)
-    }
-    .vsc.sendToVsc('stack', stack, id)
-}
 
 
 #' Send info about some vars to vsc

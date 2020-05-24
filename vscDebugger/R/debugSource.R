@@ -10,9 +10,9 @@
 # TODO: enable breakpoints in specific columns?
 
 #' @export
-.vsc.debugSource <- function(fileName, breakpoints=c(), envir=parent.frame(), encoding="unknown"){
+.vsc.debugSource <- function(file, breakpoints=list(), envir=parent.frame(), encoding="unknown"){
     # parse file:
-    body <- parse(fileName, encoding=encoding)
+    body <- parse(file, encoding=encoding)
 
     # find steps/expressions corresponding to the requested lines:
     ats <- lapply(breakpoints, lineFind, body)
@@ -25,7 +25,10 @@
     .packageEnv$debugGlobal <- FALSE
 
     # actually run the code:
-    eval(body, envir=envir)
+    enclos <- baseenv()
+    .Internal(eval(body, envir, enclos))
+    # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
+
 
     # restore debugState
     .packageEnv$debugGlobal <- tmpDebugGlobal
@@ -50,7 +53,17 @@ mySetBreakpoint <- function(body, at, finalize=FALSE){
         # do nothing
     } else if(length(at)==1){
         # innermost step: replace expression expr with {browser(), expr}
-        body[[at]] <- call('{', quote(browser()), body[[at]])
+        atr <- attributes(body)
+        srcref <- list(atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]])
+        b2 <- call('{', quote(browser()), body[[at]])
+        b2 <- structure(
+            b2,
+            srcref = srcref,
+            srcfile = atr$srcfile,
+            wholeSrcref = atr$wholeSrcref
+        )
+
+        body[[at]] <- b2
     } else{
         # outer steps: continue recursively
         body[[at[1]]] <- mySetBreakpoint(body[[at[1]]], at[-1], finalize = FALSE)

@@ -141,6 +141,13 @@ defaultVarInfo <- list(
         hasChildren = TRUE,
         includeAttributes = FALSE
     ),
+    # .Random.seed (TEMPORARY FIX)
+    list(
+        doesApply = function(v) tryCatch(identical(v,get('.Random.seed',envir=globalenv())),error=function(e)FALSE),
+        childVars = list(),
+        hasChildren = FALSE,
+        toString = 'c(KW:$%&...)'
+    ),
     # environment
     list(
         doesApply = is.environment,
@@ -202,8 +209,14 @@ defaultVarInfo <- list(
     # language: name, call, expression, name
     list(
         doesApply = function(v) is.language(v),
-        childVars = function(v) list(values = as.list(v)),
-        hasChildren = TRUE,
+        childVars = function(v) {
+            if(is.name(v) || is.symbol(v)){
+                return(list())
+            } else{
+                return(list(values = as.list(v)))
+            }
+        },
+        hasChildren = function(v) !(is.name(v) || is.symbol(v)),
         shortType = '',
         longType = 'language',
         toString = function(v){

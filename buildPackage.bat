@@ -12,13 +12,13 @@
     @goto EOF
 )
 
-"C:\Program Files\R\R-3.6.3\bin\R.exe" CMD INSTALL vscDebugger*.tar.gz --library=lib --no-lock
+"C:\Program Files\R\R-3.6.3\bin\R.exe" CMD INSTALL vscDebugger --library=lib --no-lock
 
 @IF %ERRORLEVEL% NEQ 0 (
     @echo Aborting build: local install command returned errorcode %ERRORLEVEL%
     @goto EOF
 )
 
-"C:\Program Files\R\R-3.6.3\bin\R.exe" CMD INSTALL vscDebugger*.tar.gz --library=..\vscode-R-test\lib --no-lock
+"C:\Program Files\R\R-3.6.3\bin\R.exe" CMD INSTALL vscDebugger --library=..\vscode-R-test\lib --no-lock
 
 :EOF
