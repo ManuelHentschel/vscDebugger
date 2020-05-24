@@ -11,6 +11,7 @@
 .packageEnv$frameIdsR <- list()
 .packageEnv$frameIdsVsc <- list()
 .packageEnv$varInfo <- defaultVarInfo
+.packageEnv$debugGlobal <- FALSE
 
 
 
@@ -24,8 +25,12 @@
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc
 .vsc.evalInFrame <- function(expr, frameId, silent=TRUE, id=0){
-    frameIdR <- convertFrameId(vsc=frameId)
-    env <- sys.frame(frameIdR)
+    if(.packageEnv$debugGlobal && calledFromGlobal()){
+        env <- .GlobalEnv
+    } else{
+        frameIdR <- convertFrameId(vsc=frameId)
+        env <- sys.frame(frameIdR)
+    }
     .packageEnv$isEvaluating <- TRUE
     options(error=NULL)
     ret <- try(
@@ -41,6 +46,30 @@
     .vsc.sendToVsc('eval', ret, id=id)
 }
 
+calledFromGlobal <- function(){
+    # can be used inside other functions from this package
+
+    # Make sure not to nest this line: (!!!)
+    thisPackageEnv <- parent.env(environment())
+
+    # check if the first call (stack frame) is to a funcion from this package:
+    if(identical(parent.env(sys.frame(1)), thisPackageEnv)){
+        return(TRUE)
+    } else{
+        return(FALSE)
+    }
+}
+
+
+isPackageFrame <- function(env=parent.frame()){
+    while(!identical(env, emptyenv())){
+        if(identical(env, globalenv())){
+            return(FALSE)
+        }
+        env <- parent.env(env)
+    }
+    return(TRUE)
+}
 
 #' Modified version of \code{cat()} for vsc
 #' 
@@ -106,7 +135,11 @@
 #' @return None (The current stack, formatted as a nested named list is sent to vsc)
 #' 
 .vsc.getStack <- function(topFrame=parent.frame(),id=0, isError=0){
-    stack <- .vsc.buildStack(topFrame = topFrame, isError = isError)
+    if(.packageEnv$debugGlobal && calledFromGlobal()){
+        stack <- .vsc.getDummyStack()
+    } else{
+        stack <- .vsc.buildStack(topFrame = topFrame, isError = isError, skipFromBottom = 0)
+    }
     .vsc.sendToVsc('stack', stack, id)
 }
 
@@ -254,19 +287,24 @@ getCallingLine <- function(skipCalls=0){
 }
 
 
+
+
+
 #' Runs the \code{main()} function
 #' 
 #' @description 
+#' HAS CHANGED! Following info not up to date!
 #' Looks for a function \code{main()} in the global environment and runs it
 #' Runs main() inside this function, hence \code{parent.frame()} and \code{parent.env()} etc. will behave differently
 #' 
 #' @export
 #' @param overWritePrint Whether to overwrite \code{base::print} with a version that sends output to vsc
 #' @param overWriteCat Whether to overwrite \code{base::cat} with a version that sends output to vsc
-.vsc.runMain <- function(overwritePrint=TRUE, overwriteCat=TRUE) {
+.vsc.prepGlobalEnv <- function(overwritePrint=TRUE, overwriteCat=TRUE, findMain=TRUE, mainFunction='main', debugGlobal=FALSE) {
+
+    .packageEnv$debugGlobal <- debugGlobal
 
     options(prompt = "<#v\\s\\c>\n")
-    options(error = .vsc.onError)
     options(browserNLdisabled = TRUE)
 
     require(pryr, quietly = TRUE, warn.conflicts = FALSE)
@@ -281,13 +319,22 @@ getCallingLine <- function(skipCalls=0){
     
     .packageEnv$isEvaluating <- FALSE
 
-    
-    if('main' %in% ls(.GlobalEnv) && typeof(main)=='closure'){
+    ignoreMain <- (
+        !findMain ||
+        is.null(mainFunction) || length(mainFunction)==0 ||
+        nchar(mainFunction)==0 || isFALSE(mainFunction)
+    )
+
+    if(ignoreMain){
         .vsc.sendToVsc('go')
-        main()
-        .vsc.sendToVsc('end')
-    } else{
+    } else if(!(mainFunction %in% ls(globalenv()))){
         .vsc.sendToVsc('noMain')
+    } else if(typeof(get(mainFunction, envir=globalenv())) != 'closure'){
+        # is there no short-circuit evaluation???
+        .vsc.sendToVsc('noMain')
+    } else{
+        options(error = .vsc.onError)
+        .vsc.sendToVsc('callMain')
     }
 }
 

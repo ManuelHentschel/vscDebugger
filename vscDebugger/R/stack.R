@@ -65,8 +65,6 @@
     nFrames <- getNFrames(topFrame)
     frameIdsR <- seq2((nFrames-skipFromTop), (skipFromBottom+1), -1) # vsc considers frames in the opposite order!
     frameIdsVsc <- seq2(length(frameIdsR))-1
-    # frameIds <- 1:nFrames
-    # frames <- lapply(frameIdsR, getStackFrame, nFrames)
     frames <- mapply(getStackFrame, frameIdsR, frameIdsVsc, SIMPLIFY = FALSE, USE.NAMES = FALSE)
     stack <- list(
         frames=frames,
@@ -75,6 +73,47 @@
     .packageEnv$frameIdsR <- frameIdsR
     .packageEnv$frameIdsVsc <- frameIdsVsc
     return(stack)
+}
+
+
+
+.vsc.getDummyStack <- function(){
+    .packageEnv$varLists <- list()
+    .packageEnv$varListArgs <- list()
+    nFrames <- 1
+    frameIdsR <- seq(nFrames, 1, -1)
+    frameIdsVsc <- seq2(length(frameIdsR))-1
+    frames <- mapply(getDummyFrame, frameIdsR, frameIdsVsc, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    stack <- list(
+        frames=frames,
+        varLists=.packageEnv$varLists
+    )
+    .packageEnv$frameIdsR <- frameIdsR
+    .packageEnv$frameIdsVsc <- frameIdsVsc
+    return(stack)
+}
+
+getDummyFrame <- function(frameIdR, frameIdVsc){
+    env <- .GlobalEnv
+    id <- frameIdVsc
+    name <- 'Global Workspace'
+    source <- NULL
+    line <- 0
+    column <- 0
+    frame <- list(
+        env=env,
+        id=id,
+        index=id,
+        name=name,
+        line=line,
+        column=column
+    )
+    if(!is.null(source) && length(source)>0){
+        frame$source <- source
+    }
+    scopes <- getScopes(frame)
+    frame$scopes <- scopes
+    return(frame)
 }
 
 #' Converts the frame id
@@ -151,10 +190,12 @@ getStackFrame <- function(frameIdR, frameIdVsc){
         id=id,
         index=id,
         name=name,
-        source=source,
         line=line,
         column=column
     )
+    if(!is.null(source) && length(source)>0){
+        frame$source <- source
+    }
     scopes <- getScopes(frame)
     frame$scopes <- scopes
     return(frame)
@@ -189,8 +230,8 @@ getSource <- function(env, call){
             sourceReference = 0
         )
     }, silent=TRUE)
-    if(class(source)=='try-error'){
-        source <- list(name='???', path='')
+    if(class(source)=='try-error' || source$name==''){
+        source <- NULL
     }
     return(source)
 }

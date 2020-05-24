@@ -1,6 +1,6 @@
 
-# TODO: make sure, browser-output is correctly parsed by vsc
-# TODO: make sure, call stack is correctly returned to vsc (skipped frames etc.)
+# TODO: make sure browser-output is correctly parsed by vsc
+# TODO: make sure call stack is correctly returned to vsc (skipped frames etc.)
 # TODO: function definitions:
 #       - do not modify function body directly
 #       - instead: define function normally, then trace function (-> bp can be easily unset)
@@ -9,19 +9,26 @@
 #       - handle lines for breakpoints
 # TODO: enable breakpoints in specific columns?
 
-debugSource <- function(fileName, lines=c()){
+#' @export
+.vsc.debugSource <- function(fileName, breakpoints=c(), envir=parent.frame(), encoding="unknown"){
     # parse file:
-    body <- parse(fileName)
+    body <- parse(fileName, encoding=encoding)
 
     # find steps/expressions corresponding to the requested lines:
-    ats <- lapply(lines, function(l,b) findLine(b,l), body)
+    ats <- lapply(breakpoints, lineFind, body)
     
     # set breakpoints:
     body <- mySetBreakpoints(body, ats)
 
+    # store debugState
+    tmpDebugGlobal <- .packageEnv$debugGlobal
+    .packageEnv$debugGlobal <- FALSE
 
     # actually run the code:
-    eval(body)
+    eval(body, envir=envir)
+
+    # restore debugState
+    .packageEnv$debugGlobal <- tmpDebugGlobal
 }
 
 mySetBreakpoints <- function(body, ats=list(), finalize=TRUE){
@@ -100,18 +107,13 @@ encloseBody <- function(body){
 }
 
 prependDummySrcref <- function(srcref){
-    newSrcref <- srcref
     dummySrcref <- c(1,1,1,1,1,1,1,1)
     attributes(dummySrcref) <- attributes(srcref[[1]])
-    newSrcref <- append(list(dummySrcref), newSrcref)
+    newSrcref <- append(list(dummySrcref), srcref)
     attributes(newSrcref) <- attributes(srcref)
     return(newSrcref)
 }
 
-
-lineFind <- function(line, b, at=c()){
-    findLine(b, line, at)
-}
 findLine <- function(b, line, at=c()){
     if(hasSrcref(b)){
         at <- findLineWithSrcref(b, line, at)
@@ -119,6 +121,10 @@ findLine <- function(b, line, at=c()){
         at <- findLineWithoutSrcref(b, line, at)
     }
     return(at)
+}
+lineFind <- function(line, b, at=c()){
+    # swapped arguments for easier use in lapply()
+    findLine(b, line, at)
 }
 
 findLineWithoutSrcref <- function(b, line, at){
@@ -173,9 +179,8 @@ findLineWithSrcref <- function(b, line, at){
     }
 }
 
-
 getMinLineMaxLine <- function(sr){
-    # srcref is a list of integers containing info about minLine, maxLine, minCol, maxCol, ...Byte 
+    # srcref is an integer vector containing info about lines, columns, and bytes
     # simply select the entries corresponding to minLine, maxLine:
     sr[c(1,3)]
 }
