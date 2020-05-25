@@ -2,8 +2,8 @@
 
 # type rValue = any;
 # type NULL = undefined;
-# type namedList = {names: string[], values: rValue[]};
-# type varInfo = {
+# interface namedList {names: string[], values: rValue[]};
+# interface varInfo {
 #     doesApply: ((v: rValue) => boolean);
 #     childVars: ((v:rValue) => namedList)|namedList|NULL;
 #     customAttributes: ((v:rValue) => namedList)|namedList|NULL;

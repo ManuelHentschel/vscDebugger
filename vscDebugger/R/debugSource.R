@@ -10,12 +10,26 @@
 # TODO: enable breakpoints in specific columns?
 
 #' @export
-.vsc.debugSource <- function(file, breakpoints=list(), envir=parent.frame(), encoding="unknown"){
+.vsc.debugSource <- function(file, lines=list(), envir=parent.frame(), encoding="unknown", applyInternalBreakpoints=TRUE, recursive=TRUE, ...){
     # parse file:
-    body <- parse(file, encoding=encoding)
+    file <- normalizePath(file)
+    body <- parse(file, encoding=encoding, keep.source=TRUE)
+
+    # apply breakpoints stored in .packageEnv$breakpoints
+    if(applyInternalBreakpoints){
+        bps <- .vsc.getBreakpoints(file)
+        lines <- .vsc.getBreakpointLines(file)
+    }
 
     # find steps/expressions corresponding to the requested lines:
-    ats <- lapply(breakpoints, lineFind, body)
+    ats <- lapply(lines, lineFind, body)
+
+    # check if bps were found and confirm breakpoints to vsc
+    for(i in seq2(bps)){
+        bps[[i]]$verified <- length(ats[[i]])>0
+    }
+    sendBreakpoints(bps)
+    
     
     # set breakpoints:
     body <- mySetBreakpoints(body, ats)
@@ -33,6 +47,9 @@
     # restore debugState
     .packageEnv$debugGlobal <- tmpDebugGlobal
 }
+
+
+
 
 mySetBreakpoints <- function(body, ats=list(), finalize=TRUE){
     # iteratively set breakpoints:

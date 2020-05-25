@@ -2,8 +2,6 @@
 # Prep
 
 
-# create environment for global data used by package functions
-.packageEnv <- new.env()
 .packageEnv$varLists <- list()
 .packageEnv$varListCalls <- list()
 .packageEnv$varListArgs <- list()
@@ -14,7 +12,9 @@
 .packageEnv$debugGlobal <- FALSE
 
 
-
+.onLoad <- function(...){
+    options(error=traceback)
+}
 
 #' Evaluate an expression and send result to vsc
 #' 
@@ -32,7 +32,7 @@
         env <- sys.frame(frameIdR)
     }
     .packageEnv$isEvaluating <- TRUE
-    options(error=NULL)
+    options(error=traceback)
     ret <- try(
         capture.output(eval(parse(text=expr), envir=env))
         , silent=silent
@@ -283,7 +283,7 @@ getCallingLine <- function(skipCalls=0){
 #' @export
 #' @param overWritePrint Whether to overwrite \code{base::print} with a version that sends output to vsc
 #' @param overWriteCat Whether to overwrite \code{base::cat} with a version that sends output to vsc
-.vsc.prepGlobalEnv <- function(overwritePrint=TRUE, overwriteCat=TRUE, findMain=TRUE, mainFunction='main', debugGlobal=FALSE) {
+.vsc.prepGlobalEnv <- function(overwritePrint=TRUE, overwriteCat=TRUE, overwriteSource=TRUE, findMain=TRUE, mainFunction='main', debugGlobal=FALSE) {
 
     .packageEnv$debugGlobal <- debugGlobal
 
@@ -299,6 +299,10 @@ getCallingLine <- function(skipCalls=0){
     if(overwriteCat){
         .GlobalEnv$cat <- .vsc.cat
     }
+
+    if(overwriteSource){
+        .GlobalEnv$source <- .vsc.debugSource
+    }
     
     .packageEnv$isEvaluating <- FALSE
 
@@ -309,6 +313,7 @@ getCallingLine <- function(skipCalls=0){
     )
 
     if(ignoreMain){
+        options(error = .vsc.onError)
         .vsc.sendToVsc('go')
     } else if(!(mainFunction %in% ls(globalenv()))){
         .vsc.sendToVsc('noMain')
@@ -361,46 +366,3 @@ getCallingLine <- function(skipCalls=0){
 .vsc.basePrint <- base::print
 
 
-########################################################################
-# Helper
-
-#' Modified version of base::seq
-#' 
-#' Modified version of \code{base::seq}
-#' @usage seq2(from, to, by=1)
-#' @usage seq2(from)
-#' 
-#' @param from Can be the starting value of the sequence, or the end value of the sequence, or a vector of length>1, or a list
-#' @param to The ending value of the sequence
-#' @param by The step size (as in \code{base::seq})
-#' @return A vector containing a sequence of numbers
-#' 
-#' @details
-#' If \code{from, to, by} are supplied, the function returns the same as \code{base::seq}.
-#' If \code{from, to} are supplied the function returns \code{NULL} if \code{from>to},
-#' else the same as \code{base::seq}.
-#' If \code{from} is a number, the same as \code{seq2(1,from)} is returned.
-#' If \code{from} is a vector of length>1 or a list, \code{seq2(length(from))} is returned.
-seq2 <- function(from, to=NULL, by=1){
-    if(is.null(from) || is.list(from) || (is.vector(from) && length(from)>1)){
-        return(seq2(1, length(from), by))
-    } else if(is.null(to)){
-        to <- from
-        from <- 1
-        return(seq2(from, to, by))
-    } else if((to-from)*by<0){
-        return(NULL)
-    } else{
-        return(seq(from, to, by))
-    }
-}
-
-#' Returns a list of 0s
-#' 
-#' Returns a list of 0s, of the same length as the input list
-#' 
-#' @param list0 Any oobject that can be passed to lapply as first argument
-#' @return A list of the same length as list0, filled with 0s
-zeroList <- function(list0){
-    return(lapply(list0, function(x) 0))
-}

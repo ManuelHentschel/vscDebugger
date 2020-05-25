@@ -10,19 +10,13 @@
 #' @param includePackages Whether to set breakpoints in packages
 #' @param id The id of the answer sent to vsc
 #' 
-.vsc.setBreakpoint <- function(srcfile, lines=list(), ids=NULL, includePackages=TRUE, maxOffset=3, id=0){
+.vsc.setBreakpoints <- function(file, bps=NULL, includePackages=NULL){
     # breakpoints: bp[]
     # bp: {id: number; line: number; verified: boolean}
 
-    # make sure that lines is a list
-    if(!is.list(lines)){
-        lines <- as.list(lines)
-    }
-    # make sure ids is a matching list
-    if(is.null(ids)){
-        ids <- zeroList(lines)
-    } else if(!is.list(ids)){
-        ids <- as.list(ids)
+    # make sure includePackages is bool:
+    if(is.null(includePackages)){
+        includePackages <- FALSE
     }
 
     if(includePackages){
@@ -31,35 +25,35 @@
         lastenv <- .GlobalEnv # searches only through 'user'-envs
     }
 
-    linesInFile <- length(readLines(srcfile))
+    linesInFile <- length(readLines(file))
 
     refList <- list()
-    verifiedList <- zeroList(lines)
-    actualLines <- zeroList(lines)
-    for(i in seq2(lines)){
-        line <- lines[[i]]
-
-        if(is.null(maxOffset)){
-            maxLine <- linesInFile
-        } else{
-            maxLine <- line + maxOffset
-        }
+    # for(i in seq2(lines)){
+    for(i in seq2(bps)){
+        bp <- bps[[i]]
+        line <- bp$requestedLine
+        maxOffset <- bp$maxOffset
+        maxLine <- min(line + maxOffset, linesInFile)
 
         # find line numbers in functions
         # might return multiple refs
-        refs <- findLineNum2(srcfile, line, maxLine, lastenv=lastenv)
+        refs <- findLineNum2(file, line, maxLine, lastenv=lastenv)
 
         # store occurences of line (for R)
         refList <- append(refList, refs)
 
         # store info about bp (for vsc)
         if(length(refs)>0){
-            verifiedList[[i]] <- TRUE
-            actualLines[[i]] <- refs[[1]]$line
+            bp$verified <- TRUE
+            bp$line <- refs[[1]]$line
+            bp$rAt <- refs
         } else{
-            verifiedList[[i]] <- FALSE
-            actualLines[[i]] <- 0
+            bp$verified <- FALSE
+            bp$line <- 0
+            bp$rAt <- NULL
         }
+        bp$attempted <- TRUE
+        bps[[i]] <- bp
     }
 
     # summarize refs: all bps in the same function need to be set with one call to trace()
@@ -75,17 +69,17 @@
         )
     }
 
+    smBps <- summarizeList(bps)
+
     # send breakpoints to vsc
-    sendBreakpoints(lines=actualLines, ids=ids, verifiedList=verifiedList, id=id)
+    sendBreakpoints(bps, id=id)
+
+    return(bps)
 }
 
-sendBreakpoints <- function(lines, ids, verifiedList, id=0){
-    for(i in seq2(lines)){
-        bp <- list(
-            line=lines[[i]],
-            id = ids[[i]],
-            verified = verifiedList[[i]]
-        )
+
+sendBreakpoints <- function(bps, id=0){
+    for(bp in bps){
         .vsc.sendToVsc(message='breakpointVerification', body=bp, id=0)
     }
     # send separate acknowledge message to make sure that all breakpoints are received first
