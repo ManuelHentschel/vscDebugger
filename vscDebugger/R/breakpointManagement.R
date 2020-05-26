@@ -1,8 +1,36 @@
 
 
+# Funtions to manage breakpoints from inside the R package
+# Is necessary e.g. to use .vsc.debugSource() without specifying the breaklines on each call
+# Is probably a bit over-complilcated for the current use cases.
+# Might be necessary in more complex cases:
+# - Adding/removing individual breakpoints during debugging (without resetting all other bps)
+# - Verifying breakpoints during runtime (after function definition etc.)
+# - Conditional breakpoints?
+# - Setting/Getting breakpoints by line-range
+
+# The breakpoints are actually set by .vsc.setBreakpoints() in ./breakpoints.R
+
+# Structure of breakpoints is:
+# interface srcBreakpoint {
+#     file: string;
+#     breakpoints: breakpoint[];
+#     includePackages: boolean;
+# }
+# interface breakpoint {
+#     requestedLine?: number;
+#     line?: number; //ignore if verified==false
+#     maxOffset?: number;
+#     id?: number;
+#     attempted: boolean; //default false
+#     verified: boolean; //default false
+#     message?: string;
+#     rFunction?: rFunction; //only in R: function that contains the bp
+#     rAt?: number[][]; //only in R: step that contains the bp
+# }
+
 
 .packageEnv$breakpoints <- list()
-
 
 
 #' @export

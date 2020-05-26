@@ -293,7 +293,6 @@ getSource <- function(frameId){
     }
     call <- sys.call(frameId+1)
     ref <- attr(call, 'srcref')
-    if(is.null(ref)) print('ref is NULL :(')
     sf <- attr(ref, 'srcfile')
 
     if(is.null(sf)){
@@ -301,7 +300,6 @@ getSource <- function(frameId){
         call <- sys.call(frameId)
         fun <- eval(call[[1]], envir=sys.frame(frameId))
         sf <- attr(attr(attr(fun,'original'),'srcref'),'srcfile')
-        if(is.null(sf)) print('sf still NULL')
     }
 
     if(is.null(sf)){
@@ -595,7 +593,7 @@ getVarRefForVar <- function(valueR, depth=10, maxVars=1000, includeAttributes=TR
 getCustomInfo <- function(v, info, default=NULL, onError=NULL){
     # checks the entries in .packageEnv$varInfo (specified in customVarinfo.R) for a matching entry
     # returns the requested info if available
-    # info cane be a string from the list:
+    # info can be a string from the list:
     #     childVars
     #     customAttributes
     #     hasChildren

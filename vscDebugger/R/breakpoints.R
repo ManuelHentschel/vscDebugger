@@ -46,7 +46,7 @@
         if(length(refs)>0){
             bp$verified <- TRUE
             bp$line <- refs[[1]]$line
-            bp$rAt <- refs
+            bp$rAt <- refs[[1]]$at
         } else{
             bp$verified <- FALSE
             bp$line <- 0
@@ -60,6 +60,8 @@
     summarizedRefs <- summarizeRefs(refList)
 
     # set breakpoints
+    # ISSUE: trace does not preserve src-info for the line that is modified
+    # --> replace with custom trace()? Handle complex cases (see source code of trace)?
     for(sRef in summarizedRefs){
         trace(
             what = sRef$name,

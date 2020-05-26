@@ -151,12 +151,17 @@ isPackageFrame <- function(env=parent.frame()){
 #' @return The filename
 .vsc.getFileName <- function(call, frame){
     fullpath <- try({
-        fileName <- getSrcFilename(eval(call[[1]], envir=frame))
-        dirName <- getSrcDirectory(eval(call[[1]], envir=frame))
-        dirName <- suppressWarnings(normalizePath(dirName, winslash = '/'))
-        fullPath <- file.path(dirName, fileName)
-        fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
-        fullPath <- toString(fullPath)
+        if(identical(call[[1]], call('::', quote(vscDebugger), quote(.vsc.debugSource)))){
+            fileName <- call[[2]]
+            fullPath <- normalizePath(fileName)
+        } else{
+            fileName <- getSrcFilename(eval(call[[1]], envir=frame))
+            dirName <- getSrcDirectory(eval(call[[1]], envir=frame))
+            dirName <- suppressWarnings(normalizePath(dirName, winslash = '/'))
+            fullPath <- file.path(dirName, fileName)
+            fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
+            fullPath <- toString(fullPath)
+        }
     }, silent=TRUE)
     if(class(fullPath)=='try-error'){
         fullPath <- ''
