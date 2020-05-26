@@ -117,7 +117,7 @@
 getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile=NULL){
     env <- .GlobalEnv
     id <- frameIdVsc
-    name <- 'Global Workspace'
+    name <- 'Global Workspace (click here to see variables)'
     if(is.null(dummyFile)){
         source <- NULL
     } else{
