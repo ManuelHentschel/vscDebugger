@@ -288,14 +288,25 @@ getLine <- function(frameId){
 
 getSource <- function(frameId){
     if(frameId>=sys.nframe()){
+        print('frameId>sys.nframe()')
         return(NULL)
     }
     call <- sys.call(frameId+1)
     ref <- attr(call, 'srcref')
+    if(is.null(ref)) print('ref is NULL :(')
     sf <- attr(ref, 'srcfile')
-    if(is.null(ref)){
+
+    if(is.null(sf)){
+        print('Trying again')
+        call <- sys.call(frameId)
+        fun <- eval(call[[1]], envir=sys.frame(frameId))
+        sf <- attr(attr(attr(fun,'original'),'srcref'),'srcfile')
+        if(is.null(sf)) print('sf still NULL')
+    }
+
+    if(is.null(sf)){
         return(NULL)
-    } else{
+    } else {
         ret <- try({
             filename <- sf$filename
             dirname <- sf$wd

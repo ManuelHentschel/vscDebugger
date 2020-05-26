@@ -10,7 +10,7 @@
 #' @param includePackages Whether to set breakpoints in packages
 #' @param id The id of the answer sent to vsc
 #' 
-.vsc.setBreakpoints <- function(file, bps=NULL, includePackages=NULL){
+.vsc.setBreakpoints <- function(file, bps=NULL, includePackages=NULL, id=0){
     # breakpoints: bp[]
     # bp: {id: number; line: number; verified: boolean}
 
@@ -69,7 +69,7 @@
         )
     }
 
-    smBps <- summarizeList(bps)
+    smBps <- summarizeLists(bps)
 
     # send breakpoints to vsc
     sendBreakpoints(bps, id=id)

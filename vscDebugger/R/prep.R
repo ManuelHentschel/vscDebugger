@@ -38,7 +38,7 @@
         , silent=silent
     )
     if(class(ret)=='try-error'){
-        ret <- 'ERROR'
+        ret <- '<ERROR>'
     }
     options(error=.vsc.onError)
     .packageEnv$isEvaluating <- FALSE
@@ -288,6 +288,7 @@ getCallingLine <- function(skipCalls=0){
     .packageEnv$debugGlobal <- debugGlobal
 
     options(prompt = "<#v\\s\\c>\n")
+    options(continue = "<##v\\s\\c>\n")
     options(browserNLdisabled = TRUE)
 
     require(pryr, quietly = TRUE, warn.conflicts = FALSE)

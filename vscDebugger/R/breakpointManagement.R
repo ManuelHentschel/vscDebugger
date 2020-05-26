@@ -8,7 +8,7 @@
 #' @export
 .vsc.setStoredBreakpoints <- function(){
     for(sbp in .packageEnv$breakpoints){
-        sbp$bps <- .vsc.setBreakpoints(bps)
+        sbp$bps <- .vsc.setBreakpoints(sbp$file, sbp$breakpoints, includePackages = sbp$includePackages)
     }
 }
 
