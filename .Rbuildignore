@@ -1,0 +1,7 @@
+.gitignore
+^\.Rproj\.user$
+^.*\.Rproj$
+^\.github$
+^\.vscode$
+^build\.bat$
+^lib$

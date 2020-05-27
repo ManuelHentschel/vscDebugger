@@ -8,7 +8,7 @@
             "type": "shell",
             "command": "R",
             "args": [
-                "--file=testPackage.R",
+                "--file=tests/test.R",
                 "--silent",
                 "--no-save",
                 "--no-restore"
@@ -20,19 +20,17 @@
             }
         },
         {
-            "label": "Build and install package",
+            "label": "Build and install package for testing",
             "type": "shell",
+            "command": "Rscript build.R",
             "windows": {
-                "command": ".\\buildPackage.bat"
-            },
-            "linux": {
-                "command": "./buildPackage.sh"
+                "command": ".\\build.bat"
             },
             "problemMatcher": [],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
-        },
+        }
     ]
 }
