@@ -69,6 +69,11 @@
       at = sRef$at,
       where = sRef$env
     )
+    fixSrcrefOnTracedFunction(
+      what = sRef$name,
+      at = sRef$at,
+      where = sRef$env
+    )
   }
 
   smBps <- summarizeLists(bps)
@@ -79,6 +84,34 @@
   return(bps)
 }
 
+fixSrcref <- function(f, at){
+  at0 <- at[ -length(at) ]
+  at1 <- at[ length(at) ]
+  if(length(at)==0){
+    return(f)
+  } else if(length(at)==1){
+    b <- body(f)
+  } else{
+    b <- body(f)[[at0]]
+  }
+  sr <- attr(b, 'srcref')[[at1]]
+  srNew <- lapply(body(f)[[at]], function(...) sr)
+  attr(body(f)[[at]], 'srcref') <- srNew
+  return(f)
+}
+
+fixSrcrefOnTracedFunction <- function(what, at, where){
+  f <- get(what, envir=where)
+  if(!is.list(at)){
+    at <- list(at)
+  }
+  f2 <- f@.Data
+  for(atEntry in at){
+    f2 <- fixSrcref(f2, atEntry)
+  }
+  f@.Data <- f2
+  methods:::.assignOverBinding(what, f, where, FALSE)
+}
 
 sendBreakpoints <- function(bps, id = 0) {
   for (bp in bps) {

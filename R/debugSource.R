@@ -4,9 +4,7 @@
 # TODO: function definitions:
 #       - do not modify function body directly
 #       - instead: define function normally, then trace function (-> bp can be easily unset)
-# TODO: recursive debugSource():
-#       - find calls to source() and replace with debugSource()
-#       - handle lines for breakpoints
+# TODO: recursive debugSource() -> simply replace source() in .GlobalEnv
 # TODO: enable breakpoints in specific columns?
 
 #' @export
@@ -71,8 +69,9 @@ mySetBreakpoint <- function(body, at, finalize = FALSE) {
   } else if (length(at) == 1) {
     # innermost step: replace expression expr with {browser(), expr}
     atr <- attributes(body)
-    srcref <- list(atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]])
-    b2 <- call('{', quote(browser()), body[[at]])
+    srcref <- list(atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]])
+    # cat() a dummy tracing statement to indicate to vsc that this breakpoint is set by the debugger (-> sends 1x 'n' immediately)
+    b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step\n')), quote(browser()), body[[at]])
     b2 <- structure(
       b2,
       srcref = srcref,
