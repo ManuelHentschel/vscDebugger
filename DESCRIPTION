@@ -17,3 +17,5 @@ Imports:
     jsonlite(>= 1.6.0),
     pryr (>= 0.1.4)
 KeepSource: TRUE
+Suggests: 
+    testthat

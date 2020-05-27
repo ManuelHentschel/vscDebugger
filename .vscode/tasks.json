@@ -8,7 +8,7 @@
             "type": "shell",
             "command": "R",
             "args": [
-                "--file=testPackage.R",
+                "--file=tests/test.R",
                 "--silent",
                 "--no-save",
                 "--no-restore"
@@ -23,10 +23,10 @@
             "label": "Build and install package",
             "type": "shell",
             "windows": {
-                "command": ".\\buildPackage.bat"
+                "command": ".\\build.bat"
             },
             "linux": {
-                "command": "./buildPackage.sh"
+                "command": "Rscript -e 'devtools::document()' && Rscript -e 'devtools::install()'"
             },
             "problemMatcher": [],
             "group": {
