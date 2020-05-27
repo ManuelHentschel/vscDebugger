@@ -26,7 +26,7 @@
                 "command": ".\\build.bat"
             },
             "linux": {
-                "command": "Rscript -e 'devtools::document()' && Rscript -e 'devtools::install()'"
+                "command": "Rscript build.R"
             },
             "problemMatcher": [],
             "group": {
