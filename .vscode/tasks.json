@@ -20,19 +20,17 @@
             }
         },
         {
-            "label": "Build and install package",
+            "label": "Build and install package for testing",
             "type": "shell",
+            "command": "Rscript build.R",
             "windows": {
                 "command": ".\\build.bat"
-            },
-            "linux": {
-                "command": "Rscript build.R"
             },
             "problemMatcher": [],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
-        },
+        }
     ]
 }
