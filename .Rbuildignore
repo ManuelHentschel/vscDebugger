@@ -4,3 +4,4 @@
 ^\.github$
 ^\.vscode$
 ^build\.bat$
+^lib$
