@@ -214,7 +214,8 @@ getStackFrame <- function(frameIdR, frameIdVsc) {
   name <- getFrameName(call)
   # source <- getSource(env, call)
   source <- getSource(frameIdR)
-  line <- getLine(frameIdR)
+  line <- getCallingLineAndFile(frameId=frameIdR, skipCalls=-1)$line
+  if(is.null(line)) line <- 0
   column <- 0
   frame <- list(
     env = env,
@@ -245,85 +246,22 @@ getFrameName <- function(call) {
   return(name)
 }
 
-#' Get Source Info about a call in a given environment
-#'
-#' Get Source Info about a call in a given environment
-# getSource <- function(env, call) {
-#     source <- try({
-#         fileName <- getSrcFilename(eval(call[[1]], envir=env))
-#         dirName <- getSrcDirectory(eval(call[[1]], envir=env))
-#         dirName <- suppressWarnings(normalizePath(dirName, winslash = '/'))
-#         fullPath <- file.path(dirName, fileName)
-#         fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
-#         fullPath <- toString(fullPath)
-#         fileName <- toString(fileName)
-
-#         source <- list(
-#             name = fileName,
-#             path = fullPath,
-#             sourceReference = 0
-#         )
-#     }, silent=TRUE)
-#     if(class(source)=='try-error' || source$name=='') {
-#         source <- NULL
-#     }
-#     return(source)
-# }
-
-#' Get the source line of the function call corresponding to a frameId
-#'
-#' Get the source line of the function call corresponding to a frameId
-getLine <- function(frameId) {
-  if (frameId >= sys.nframe()) {
-    return(1)
-  }
-  call <- sys.call(frameId + 1)
-  ref <- attr(call, 'srcref')
-  if (is.null(ref)) {
-    ref <- 0
-  }
-  return(ref[1])
-  # return(1)
-}
 
 getSource <- function(frameId) {
   if (frameId >= sys.nframe()) {
-    print('frameId>sys.nframe()')
     return(NULL)
   }
   call <- sys.call(frameId + 1)
-  ref <- attr(call, 'srcref')
-  sf <- attr(ref, 'srcfile')
+  lineAndFile <- getLineAndFile(call)
+  filename <- lineAndFile$filename
 
-  if (is.null(sf)) {
-    print('Trying again')
-    call <- sys.call(frameId)
-    fun <- eval(call[[1]], envir = sys.frame(frameId))
-    sf <- attr(attr(attr(fun, 'original'), 'srcref'), 'srcfile')
-  }
-
-  if (is.null(sf)) {
-    return(NULL)
-  } else {
-    ret <- try({
-      filename <- sf$filename
-      dirname <- sf$wd
-      # dirname <- suppressWarnings(normalizePath(dirname, winslash = '/'))
-      # fullPath <- file.path(dirname, filename)
-      # fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
-      # fullPath <- toString(fullPath)
-      # filename <- toString(filename)
-      ret <- list(
-        name = basename(filename),
-        path = filename,
-        sourceReference = 0
-      )
-    })
-    if (class(ret) == 'try-error') {
-      ret <- NULL
-    }
-    return(ret)
-  }
+  ret <- list(
+    name = basename(filename),
+    path = filename,
+    sourceReference = 0
+  )
+  
+  return(ret)
 }
 
 ########################################################################

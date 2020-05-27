@@ -170,6 +170,24 @@ isPackageFrame <- function(env = parent.frame()) {
 }
 
 
+getLineAndFile <- function(call){
+  ret <- tryCatch({
+    srcref <- attr(call, 'srcref')
+    srcfile <- attr(srcref, 'srcfile')
+    ret <- list(
+      wd = srcfile$wd,
+      filename = srcfile$filename,
+      line = srcref[1]
+  )}, error=function(e) NULL, silent=TRUE)
+  return(ret)
+}
+
+getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
+  call <- sys.call(frameId - skipCalls)
+  return(getLineAndFile(call))
+}
+
+
 #' Get Line-number corresponding to a call in a given frame
 #'
 #' Get Line-number corresponding to a call in a given frame
@@ -178,63 +196,10 @@ isPackageFrame <- function(env = parent.frame()) {
 #' @param frame The corresponding frame
 #' @return The line-numer
 .vsc.getLineNumber <- function(call) {
-  ref <- try(attr(call, 'srcref')[1], silent = TRUE)
-  if (class(ref) == 'try-error') {
-    ref <- 0
-  }
-  return(ref)
-}
-
-#' @export
-.vsc.getLineAtBreakpoint <- function(id = 0) {
-  line <- getCallingLineAtTracingBreakpoint(1)
-  .vsc.sendToVsc(message = 'lineAtBreakpoint', body = line, id = id)
-}
-
-getCallingLineAtTracingBreakpoint <- function(skipCalls = 0) {
-  ret <- try({
-    argList <- as.list(sys.call(-4 - skipCalls))
-    stepInfo <- argList[[3]]
-    stepNumber <- as.integer(substring(stepInfo, 6))
-
-    functionBody <- body(sys.function(-5 - skipCalls))
-    srcref <- attr(functionBody, 'srcref')[[stepNumber]]
-    srcfile <- attr(srcref, 'srcfile')
-    ret <- list(
-      wd = srcfile$wd,
-      filename = srcfile$filename,
-      line = srcref[1]
-    )
-  }, silent = TRUE)
-  if (class(ret) == 'try-error') {
-    ret = list(
-      wd = '',
-      filename = '',
-      line = 0
-    )
-  }
+  lineAndFile <- getLineAndFile(call)
+  ret <- lineAndFile$line
   return(ret)
 }
-
-#' @export
-.vsc.getLineAtBrowser <- function(id = 0) {
-  line <- getCallingLine(1)
-  .vsc.sendToVsc(message = 'lineAtBreakpoint', body = line, id = id)
-}
-
-getCallingLine <- function(skipCalls = 0) {
-  srcref <- attr(sys.call(-skipCalls), 'srcref')
-  srcfile <- attr(srcref, 'srcfile')
-  ret <- list(
-    wd = srcfile$wd,
-    filename = srcfile$filename,
-    line = srcref[1]
-  )
-  return(ret)
-}
-
-
-
 
 #' Send a message to vsc
 #'

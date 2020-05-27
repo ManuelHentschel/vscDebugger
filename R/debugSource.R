@@ -71,8 +71,8 @@ mySetBreakpoint <- function(body, at, finalize = FALSE) {
   } else if (length(at) == 1) {
     # innermost step: replace expression expr with {browser(), expr}
     atr <- attributes(body)
-    srcref <- list(atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]])
-    b2 <- call('{', quote(browser()), body[[at]])
+    srcref <- list(atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]])
+    b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step\n')), quote(browser()), body[[at]])
     b2 <- structure(
       b2,
       srcref = srcref,
