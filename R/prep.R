@@ -305,19 +305,23 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
   options(continue = "<##v\\s\\c>\n")
   options(browserNLdisabled = TRUE)
 
-  require(pryr, quietly = TRUE, warn.conflicts = FALSE)
+  suppressPackageStartupMessages(loadNamespace("pryr"))
+
+  attachList <- list()
 
   if (overwritePrint) {
-    .GlobalEnv$print <- .vsc.print
+    attachList$print <- .vsc.print
   }
 
   if (overwriteCat) {
-    .GlobalEnv$cat <- .vsc.cat
+    attachList$cat <- .vsc.cat
   }
 
   if (overwriteSource) {
-    .GlobalEnv$source <- .vsc.debugSource
+    attachList$source <- .vsc.debugSource
   }
+
+  attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
 
   .packageEnv$isEvaluating <- FALSE
 
