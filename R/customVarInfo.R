@@ -34,16 +34,17 @@
 
 #' @export
 .vsc.addVarInfo <- function(
-                            doesApply = NULL,
-                            childVars = NULL,
-                            customAttributes = NULL,
-                            hasChildren = NULL,
-                            toString = NULL,
-                            shortType = NULL,
-                            longType = NULL,
-                            includeAttributes = NULL,
-                            varInfo = NULL,
-                            position = 1
+  name = NULL,
+  doesApply = NULL,
+  childVars = NULL,
+  customAttributes = NULL,
+  hasChildren = NULL,
+  toString = NULL,
+  shortType = NULL,
+  longType = NULL,
+  includeAttributes = NULL,
+  varInfo = list(),
+  position = 1
 ) {
   if (position < 0) {
     # negative positions count from the end, -1 = last position
@@ -56,6 +57,7 @@
     varInfo <- list()
   }
   # add entries to varInfo (entires already in varInfo will be overwritten)
+  varInfo$name <- name
   varInfo$doesApply <- doesApply
   varInfo$childVars <- childVars
   varInfo$customAttributes <- customAttributes
@@ -118,6 +120,7 @@ getVarsInEnv <- function(env, all.names = TRUE) {
 defaultVarInfo <- list(
   # NULL
   list(
+    name = 'NULL',
     doesApply = is.null,
     childVars = list(),
     hasChildren = FALSE,
@@ -127,6 +130,7 @@ defaultVarInfo <- list(
   ),
   # promise (custom type)
   list(
+    name = 'Promise',
     doesApply = function(v) class(v) == ".vsc.promise",
     childVars = list(),
     shortType = '',
@@ -143,6 +147,7 @@ defaultVarInfo <- list(
   ),
   # .Random.seed (TEMPORARY FIX)
   list(
+    name = '.Random.seed',
     doesApply = function(v) tryCatch(identical(v, get('.Random.seed', envir = globalenv())), error = function(e) FALSE),
     childVars = list(),
     hasChildren = FALSE,
@@ -150,6 +155,7 @@ defaultVarInfo <- list(
   ),
   # environment
   list(
+    name = 'Environment',
     doesApply = is.environment,
     childVars = getVarsInEnv,
     toString = format,
@@ -157,6 +163,7 @@ defaultVarInfo <- list(
   ),
   # data.frame
   list(
+    name = 'Data.frame',
     doesApply = is.data.frame,
     childVars = function(v) list(values = as.list(v)),
     hasChildren = TRUE,
@@ -165,14 +172,53 @@ defaultVarInfo <- list(
   ),
   # factor
   list(
+    name = 'Factor',
     doesApply = is.factor,
     childVars = function(v) list(values = format(v)),
     hasChildren = function(v) length(v) > 0,
     shortType = 'factor',
     longType = 'factor'
   ),
+  # matrix row
+  list(
+    name = 'MatrixRow',
+    doesApply = function(v) '.vsc.matrixRow' %in% class(v),
+    includeAttributes = FALSE,
+    customAttributes = list()
+  ),
+  # matrix
+  list(
+    name = 'Matrix',
+    doesApply = is.matrix,
+    childVars = function(v) {
+      getRow <- function(i){
+        row <- v[i,]
+        if(is.null(names(row))){
+          names(row) <- lapply(seq(1,ncol(v)), function(j) paste0('[', i, ',', j, ']'))
+        }
+        class(row) <- '.vsc.matrixRow'
+        return(row)
+      }
+      vars <- lapply(seq2(nrow(v)), getRow)
+      names <- rownames(v)
+      if(is.null(names)){
+        names <- lapply(seq(1,nrow(v)), function(i) paste0('[',i,',]'))
+      }
+      return(list(
+        names = names,
+        values = vars
+      ))
+    },
+    hasChildren = TRUE,
+    shortType = function(v){
+      paste0('matrix[', nrow(v), ',', ncol(v), ']')
+    },
+    'matrix',
+    longType = 'matrix'
+  ),
   # list
   list(
+    name = 'List',
     doesApply = is.list,
     childVars = function(v) {
       values <- as.list(v)
@@ -189,6 +235,7 @@ defaultVarInfo <- list(
   ),
   # vector
   list(
+    name = 'Vector',
     doesApply = function(v) {
       attributes(v) <- NULL
       is.vector(v) && length(v) > 1
@@ -208,6 +255,7 @@ defaultVarInfo <- list(
   ),
   # language: name, call, expression, name
   list(
+    name = 'Language',
     doesApply = function(v) is.language(v),
     childVars = function(v) {
       if (is.name(v) || is.symbol(v)) {
@@ -228,29 +276,16 @@ defaultVarInfo <- list(
       ret
     }
   ),
-  # matrix
-  list(
-    doesApply = is.matrix,
-    childVars = function(v) {
-      vars <- lapply(seq2(nrow(v)), function(i) v[i, ])
-      names(vars) <- rownames(v)
-      return(list(
-        names = rownames(v),
-        values = vars
-      ))
-    },
-    hasChildren = TRUE,
-    shortType = 'matrix',
-    longType = 'matrix'
-  ),
   # string
   list(
+    name = 'String',
     doesApply = is.character,
     longType = 'string',
     hasChildren = FALSE
   ),
   # non-standard class
   list(
+    name = 'NonStandardClass',
     doesApply = function(v) {
       return('class' %in% names(attributes(v)) && !is.environment(v))
     },
@@ -264,6 +299,7 @@ defaultVarInfo <- list(
   ),
   # function
   list(
+    name = 'Function',
     doesApply = is.function,
     customAttributes = function(v) {
       return(list(
@@ -280,12 +316,13 @@ defaultVarInfo <- list(
   ),
   # default case
   list(
+    name = 'Default',
     doesApply = function(v) TRUE,
     childVars = list(),
     shortType = '',
     longType = function(v) typeof(v),
     includeAttributes = TRUE,
-    hasChildren = FALSE,
-    toString = function(v) paste0(format(v), collapse = ',')
+    hasChildren = FALSE
+    # toString = function(v) paste0(format(v), collapse = ',')
   )
 )
