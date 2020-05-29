@@ -60,8 +60,12 @@
   } else{
     # eval
     value <- tryCatch({
-      cl <- call('withVisible', parse(text=expr)[[1]])
-      valueAndVisible <- eval(cl, envir=env)
+      b <- parse(text=expr)
+      valueAndVisible <- list(value='', visible=FALSE)
+      for(exp in b){
+        cl <- call('withVisible', exp)
+        valueAndVisible <- eval(cl, envir=env)
+      }
       if(valueAndVisible$visible){
         value <- valueAndVisible$value
       } else{
