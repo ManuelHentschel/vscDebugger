@@ -59,7 +59,7 @@
     options(error = .vsc.onError)
   } else{
     # eval
-    value <- try({
+    value <- tryCatch({
       cl <- call('withVisible', parse(text=expr)[[1]])
       valueAndVisible <- eval(cl, envir=env)
       if(valueAndVisible$visible){
@@ -68,7 +68,7 @@
         value <- ''
       }
       value
-    })
+    }, error=function(e) toString(e))
   }
 
   # reset settings
@@ -251,6 +251,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @param message A string identifying the type of message
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
 #' @param id The message id. Is usually provided in the function call from vsc.
+#' @export
 .vsc.sendToVsc <- function(message, body = "", id = 0) {
   s <- .vsc.makeStringForVsc(message, body, id)
   # base::cat(s)
@@ -320,24 +321,26 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 
   .packageEnv$isEvaluating <- FALSE
 
-  ignoreMain <- (
-    !findMain ||
-      is.null(mainFunction) || length(mainFunction) == 0 ||
-      nchar(mainFunction) == 0 || isFALSE(mainFunction)
-  )
+  options(error = .vsc.onError)
+  .vsc.sendToVsc('go')
+}
 
-  if (ignoreMain) {
-    options(error = .vsc.onError)
-    .vsc.sendToVsc('go')
-  } else if (!(mainFunction %in% ls(globalenv()))) {
-    .vsc.sendToVsc('noMain')
-  } else if (typeof(get(mainFunction, envir = globalenv())) != 'closure') {
-    # is there no short-circuit evaluation???
-    .vsc.sendToVsc('noMain')
-  } else {
-    options(error = .vsc.onError)
-    .vsc.sendToVsc('callMain')
+#' @export
+.vsc.lookForMain <- function(mainFunction='main'){
+  foundMain <- FALSE
+  # look for main():
+  if(mainFunction %in% ls(globalenv())){
+    if(typeof(get(mainFunction, envir=globalenv())) == 'closure'){
+      foundMain <- TRUE
+    }
   }
+  # report back to vsc:
+  if(foundMain){
+    .vsc.sendToVsc('callMain')
+  } else{
+    .vsc.sendToVsc('noMain')
+  }
+  return(invisible(foundMain))
 }
 
 .vsc.onError <- function() {

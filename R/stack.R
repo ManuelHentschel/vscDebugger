@@ -292,7 +292,7 @@ getSource <- function(frameId) {
     if(lineAndFile$isFile){
       sourceReference = 0
     } else{
-      sourceReference = 1
+      sourceReference = frameId + 1
     }
 
 
@@ -408,11 +408,16 @@ getVarListsEntry <- function(varRef) {
   # to avoid excessive nested calls, the varList is only computed once requested
   # before the varList is requested, only the arguments for getVarList() that will return it is stored in .packageEnv$varListArgs
 
-  # return dummy entries for invalid requests:
-  returnDummy <- (varRef > length(.packageEnv$varLists))
-  if(!returnDummy){
-    returnDummy <- length(.packageEnv$varLists)==0
+
+  # retrieve varList (if exists)
+  if(varRef <= length(.packageEnv$varLists)){
+    varList <- .packageEnv$varLists[[varRef]]
+    returnDummy <- is.null(varList$isReady)
+  } else{
+    returnDummy <- TRUE
   }
+
+  # return dummy variable if no varList entry found
   if (returnDummy) {
     return(list(
       reference = varRef,
@@ -420,9 +425,6 @@ getVarListsEntry <- function(varRef) {
       variables = list()
     ))
   }
-
-  # retrieve varList
-  varList <- .packageEnv$varLists[[varRef]]
 
   # compute varList if necessary
   if (!varList$isReady) {
