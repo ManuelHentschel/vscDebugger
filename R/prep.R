@@ -3,8 +3,8 @@
 
 
 .packageEnv$varLists <- list()
-.packageEnv$varListCalls <- list()
 .packageEnv$varListArgs <- list()
+.packageEnv$varListPersistent <- list()
 .packageEnv$isEvaluating <- FALSE
 .packageEnv$frameIdsR <- list()
 .packageEnv$frameIdsVsc <- list()
@@ -25,24 +25,60 @@
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc
 .vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0) {
+  # evaluate calls that were made from top level cmd line in the .GlobalEnv
   if (.packageEnv$debugGlobal && calledFromGlobal()) {
     env <- .GlobalEnv
   } else {
     frameIdR <- convertFrameId(vsc = frameId)
     env <- sys.frame(frameIdR)
   }
-  .packageEnv$isEvaluating <- TRUE
-  options(error = traceback)
-  ret <- try(
-    capture.output(eval(parse(text = expr), envir = env))
-    , silent = silent
-  )
-  if (class(ret) == 'try-error') {
-    ret <- '<ERROR>'
+
+  # prepare settings
+  tmpDebugGlobal <- .packageEnv$debugGlobal
+  .packageEnv$debugGlobal <- FALSE
+
+  if(silent){
+    # prepare settings
+    options(error=traceback)
+    .packageEnv$isEvaluating <- TRUE
+    ts <- tracingState(FALSE)
+
+    # eval
+    value <- tryCatch(
+      {
+        capture.output( value <- eval(parse(text=expr), envir=env))
+        value
+      },
+      silent = TRUE,
+      error = function(e) '<ERROR>'
+    )
+
+    # reset settings
+    tracingState(ts)
+    .packageEnv$isEvaluating <- FALSE
+    options(error = .vsc.onError)
+  } else{
+    # eval
+    value <- tryCatch({
+      cl <- call('withVisible', parse(text=expr)[[1]])
+      valueAndVisible <- eval(cl, envir=env)
+      if(valueAndVisible$visible){
+        value <- valueAndVisible$value
+      } else{
+        value <- ''
+      }
+      value
+    }, error=function(e) toString(e))
   }
-  options(error = .vsc.onError)
-  .packageEnv$isEvaluating <- FALSE
-  ret <- paste(ret, sep = "", collapse = "\n")
+
+  # reset settings
+  .packageEnv$debugGlobal <- tmpDebugGlobal
+
+
+  # prepare and send result
+  ret <- getVariableForEval(value)
+
+  # value <- paste(value, sep = "", collapse = "\n")
   .vsc.sendToVsc('eval', ret, id = id)
 }
 
@@ -59,8 +95,6 @@ calledFromGlobal <- function() {
     return(FALSE)
   }
 }
-
-
 isPackageFrame <- function(env = parent.frame()) {
   while (!identical(env, emptyenv())) {
     if (identical(env, globalenv())) {
@@ -70,6 +104,7 @@ isPackageFrame <- function(env = parent.frame()) {
   }
   return(TRUE)
 }
+
 
 #' Modified version of \code{cat()} for vsc
 #'
@@ -174,10 +209,18 @@ getLineAndFile <- function(call){
   ret <- tryCatch({
     srcref <- attr(call, 'srcref')
     srcfile <- attr(srcref, 'srcfile')
+    srcbody <- paste0(srcfile$lines, collapse='\n')
+    isFile <- srcfile$isFile
+
     ret <- list(
       wd = srcfile$wd,
       filename = srcfile$filename,
-      line = srcref[1]
+      line = srcref[1],
+      endLine = srcref[3],
+      column = srcref[2],
+      endColumn = srcref[4],
+      srcbody = srcbody,
+      isFile = isFile
   )}, error=function(e) NULL, silent=TRUE)
   return(ret)
 }
@@ -208,6 +251,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @param message A string identifying the type of message
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
 #' @param id The message id. Is usually provided in the function call from vsc.
+#' @export
 .vsc.sendToVsc <- function(message, body = "", id = 0) {
   s <- .vsc.makeStringForVsc(message, body, id)
   # base::cat(s)
@@ -281,24 +325,26 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 
   .packageEnv$isEvaluating <- FALSE
 
-  ignoreMain <- (
-    !findMain ||
-      is.null(mainFunction) || length(mainFunction) == 0 ||
-      nchar(mainFunction) == 0 || isFALSE(mainFunction)
-  )
+  options(error = .vsc.onError)
+  .vsc.sendToVsc('go')
+}
 
-  if (ignoreMain) {
-    options(error = .vsc.onError)
-    .vsc.sendToVsc('go')
-  } else if (!(mainFunction %in% ls(globalenv()))) {
-    .vsc.sendToVsc('noMain')
-  } else if (typeof(get(mainFunction, envir = globalenv())) != 'closure') {
-    # is there no short-circuit evaluation???
-    .vsc.sendToVsc('noMain')
-  } else {
-    options(error = .vsc.onError)
-    .vsc.sendToVsc('callMain')
+#' @export
+.vsc.lookForMain <- function(mainFunction='main'){
+  foundMain <- FALSE
+  # look for main():
+  if(mainFunction %in% ls(globalenv())){
+    if(typeof(get(mainFunction, envir=globalenv())) == 'closure'){
+      foundMain <- TRUE
+    }
   }
+  # report back to vsc:
+  if(foundMain){
+    .vsc.sendToVsc('callMain')
+  } else{
+    .vsc.sendToVsc('noMain')
+  }
+  return(invisible(foundMain))
 }
 
 .vsc.onError <- function() {

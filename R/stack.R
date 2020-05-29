@@ -78,8 +78,7 @@
 #' @return The current stack, formatted as a nested named list
 #'
 .vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop = 0, skipFromBottom = 1, isError = FALSE) {
-  .packageEnv$varLists <- list()
-  .packageEnv$varListArgs <- list()
+  clearVarLists()
   if (isError) {
     skipFromTop = skipFromTop + 1
   }
@@ -97,10 +96,25 @@
 }
 
 
+clearVarLists <- function(deleteAll = FALSE){
+  for(i in seq2(.packageEnv$varLists)){
+    if(deleteAll || !.packageEnv$varListPersistent[[i]]){
+      .packageEnv$varLists[[i]] <- list()
+      .packageEnv$varListArgs[[i]] <- list()
+    }
+  }
+}
 
+
+#' Build a dummy stack
+#' 
+#' Build a dummy stack that contains only one frame with the .GlobalEnv as only scope.
+#' 
+#' @param dummyFile The file that is returned as the source file
+#' @return A stack with the same structure as \code{.vsc.buildStack}
+#' 
 .vsc.getDummyStack <- function(dummyFile = NULL) {
-  .packageEnv$varLists <- list()
-  .packageEnv$varListArgs <- list()
+  clearVarLists()
   nFrames <- 1
   frameIdsR <- seq(nFrames, 1, -1)
   frameIdsVsc <- seq2(length(frameIdsR)) - 1
@@ -114,6 +128,14 @@
   return(stack)
 }
 
+#' Get a dummy frame
+#' 
+#' Returns a dummy frame used in \code{.vsc.getDummyStack}.
+#' 
+#' @param frameIdR The internal id of the frame
+#' @param frameIdVsc The id of the frame that is reported to vsc
+#' @param dummyFile The name of the file used as source file
+#' 
 getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile = NULL) {
   env <- .GlobalEnv
   id <- frameIdVsc
@@ -214,16 +236,22 @@ getStackFrame <- function(frameIdR, frameIdVsc) {
   name <- getFrameName(call)
   # source <- getSource(env, call)
   source <- getSource(frameIdR)
-  line <- getCallingLineAndFile(frameId=frameIdR, skipCalls=-1)$line
+  lineAndFile <- getCallingLineAndFile(frameId=frameIdR, skipCalls=-1)
+  line <- lineAndFile$line
+  endLine <- lineAndFile$endLine
+  # column <- 0
+  column <- lineAndFile$column
+  endColumn <- lineAndFile$endColumn+1 # vsc does not include the last column
   if(is.null(line)) line <- 0
-  column <- 0
   frame <- list(
     env = env,
     id = id,
     index = id,
     name = name,
     line = line,
-    column = column
+    endLine = endLine,
+    column = column,
+    endColumn = endColumn
   )
   if (!is.null(source) && length(source) > 0) {
     frame$source <- source
@@ -247,19 +275,35 @@ getFrameName <- function(call) {
 }
 
 
+#' Gather info about a frame's source code
+#' 
+#' Gathers and returns a named list containing info about the name, path, and content of the source file of a frame
+#' 
+#' @param frameId A frame id (as used by R) that can be passed to sys.call
+#' @return A named list containing info about the source file
 getSource <- function(frameId) {
   if (frameId >= sys.nframe()) {
     return(NULL)
   }
-  call <- sys.call(frameId + 1)
-  lineAndFile <- getLineAndFile(call)
-  filename <- lineAndFile$filename
+  ret <- tryCatch({
+    call <- sys.call(frameId + 1)
+    lineAndFile <- getLineAndFile(call)
+    filename <- lineAndFile$filename
+    if(lineAndFile$isFile){
+      sourceReference = 0
+    } else{
+      sourceReference = frameId + 1
+    }
 
-  ret <- list(
-    name = basename(filename),
-    path = filename,
-    sourceReference = 0
-  )
+
+    ret <- list(
+      name = basename(filename),
+      path = filename,
+      sourceReference = sourceReference,
+      isFile = lineAndFile$isFile,
+      srcbody = lineAndFile$srcbody
+    )
+  }, error = function(e) NULL, silent = TRUE)
   
   return(ret)
 }
@@ -267,12 +311,24 @@ getSource <- function(frameId) {
 ########################################################################
 # Scopes
 
+#' Gather info about scopes in a frame
+#' 
+#' Gathers and returns info about the scopes in a frame
+#' 
+#' @param frame A frame as constructed by \code{getStackFrame}
+#' @return A list of scopes as constructed by \code{getScope}
 getScopes <- function(frame) {
   envs <- getScopeEnvs(frame$env)
   scopes <- lapply(envs, getScope)
   return(scopes)
 }
 
+#' Gather info about a scope
+#' 
+#' Gathers and returns info about the variables in a scope
+#' 
+#' @param env The environment (=scope) that is to be analyzed
+#' @return A named list containing the name of the scope an a variablesReference
 getScope <- function(env) {
   name <- capture.output(str(env))[1]
   varRef <- getVarRefForVar(env)
@@ -283,6 +339,12 @@ getScope <- function(env) {
   return(scope)
 }
 
+#' Get the scopes corresponding to a frame
+#' 
+#' Gets the scopes corresponding to a frame
+#' 
+#' @param firstenv The top environment of the current frame
+#' @param lastenv The last environment to be considered. By default .GlobalEnv, use emptyenv() to consider package environments
 getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
   env <- firstenv
   scopes <- list(env)
@@ -293,11 +355,23 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
   return(scopes)
 }
 
-getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef = NULL) {
+#' Get VariablesReference for varListArgs
+#' 
+#' @description 
+#' Gets a variablesReference for a list of arguments meant for \code{getVarList}.
+#' Unless specified the actual call to \code{getVarList} is not evaluated.
+#' Instead the arguments are stored and evaluated when the variablesReference is requested.
+#' 
+#' @param varListArgs A named list containing the arguments that are passed to \code{getVarList}
+#' @param evalCall A boolean indicating whether to evaluate the call already (defaults to \code{FALSE})
+#' @param varRef If specified, this varRef is used instead of incrementing the last varRef by 1
+#' 
+getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef = NULL, persistent=FALSE) {
   if (is.null(varRef)) {
     varRef <- length(.packageEnv$varListArgs) + 1
   }
   .packageEnv$varListArgs[[varRef]] <- varListArgs
+  .packageEnv$varListPersistent[[varRef]] <- persistent
   if (evalCall) {
     # use arglist instead of call/eval/do.call to avoid evaluating the content of variables that contain expressions
     v <- varListArgs$v
@@ -322,22 +396,35 @@ getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef
   return(varRef)
 }
 
+#' Get the variable corresponding to a variablesReference
+#' 
+#' Is basically is a wrapper for \code{.packageEnv$varLists[[varRef]]}.
+#' If necessary evaluates the call for a given varRef and returns the result.
+#' 
+#' @param varRef The variablesReference as returned by \code{getVarRefForVarListArgs} or \code{getVarRefForVar}
+#' @return A list of variables corresponding to the varRef
 getVarListsEntry <- function(varRef) {
-  # basically is a wrapper for ".packageEnv$varLists[[varRef]]"
+  # 
   # to avoid excessive nested calls, the varList is only computed once requested
   # before the varList is requested, only the arguments for getVarList() that will return it is stored in .packageEnv$varListArgs
 
-  # return dummy entries for invalid requests:
-  if (varRef > length(.packageEnv$varLists)) {
+
+  # retrieve varList (if exists)
+  if(varRef <= length(.packageEnv$varLists)){
+    varList <- .packageEnv$varLists[[varRef]]
+    returnDummy <- is.null(varList$isReady)
+  } else{
+    returnDummy <- TRUE
+  }
+
+  # return dummy variable if no varList entry found
+  if (returnDummy) {
     return(list(
       reference = varRef,
       isReady = TRUE,
       variables = list()
     ))
   }
-
-  # retrieve varList
-  varList <- .packageEnv$varLists[[varRef]]
 
   # compute varList if necessary
   if (!varList$isReady) {
@@ -365,7 +452,13 @@ getVarListsEntry <- function(varRef) {
 # Variables
 
 
-
+#' Get variable from environment
+#' 
+#' Is basically a wrapper for \code{get(name, envir=env)}, but does not forces promises.
+#' 
+#' @param name The name of the variable
+#' @param env The environment in which to evaluate
+#' @return Returns the value of the variable or a representation of a promise as returned by \code{getPromiseVar}
 getVarInEnv <- function(name, env) {
   # get Info about a variable in an environment
   # separate from getVariable(), since environments might contain promises
@@ -377,6 +470,14 @@ getVarInEnv <- function(name, env) {
   return(var)
 }
 
+#' Get a representation of a promise
+#' 
+#' Gets a representation of a promise without forcing the promise
+#' 
+#' @param name The name of the variable
+#' @param env The environment in which to evaluate
+#' @return A named list containing the expression that will be evaluated, the environment in which it will be evaluated and a string representation of the expression
+#' 
 getPromiseVar <- function(name, env) {
   promiseExpr <- pryr:::promise_code(name, env)
   promiseCode <- try(paste0(toString(promiseExpr), collapse = ';'))
@@ -390,6 +491,8 @@ getPromiseVar <- function(name, env) {
   class(var) <- '.vsc.promise'
   return(var)
 }
+
+
 
 getVariableInEnv <- function(name, env) {
   # get Info about a variable in an environment
@@ -439,7 +542,6 @@ getDummyVariable <- function(name) {
 getVariable <- function(valueR, name, depth = 20) {
   value <- varToString(valueR)
   type <- getType(valueR)
-
   variablesReference <- getVarRefForVar(valueR, depth)
 
   variable <- list(
@@ -450,6 +552,18 @@ getVariable <- function(valueR, name, depth = 20) {
     depth = depth
   )
   return(variable)
+}
+
+getVariableForEval <- function(valueR, name, depth = 20){
+  value <- varToString(valueR)
+  type <- getType(valueR)
+  variablesReference <- getVarRefForVar(valueR, depth, persistent=TRUE)
+
+  variable <- list(
+    result = value,
+    type = type,
+    variablesReference = variablesReference
+  )
 }
 
 
@@ -516,10 +630,10 @@ getType <- function(valueR, short = FALSE) {
 
 
 
-getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttributes = TRUE) {
+getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttributes = TRUE, persistent=FALSE) {
   if (depth > 0 && getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)) {
     varListArgs <- list(v = valueR, depth = depth, maxVars = maxVars, includeAttributes = includeAttributes)
-    varRef <- getVarRefForVarListArgs(varListArgs)
+    varRef <- getVarRefForVarListArgs(varListArgs, persistent=persistent)
   } else {
     varRef <- 0
   }
