@@ -43,6 +43,7 @@
 
 #' @export
 .vsc.getBreakpointLines <- function(file, getActualLines = FALSE) {
+  file <- normalizePath(file)
   bps <- .vsc.getBreakpoints(file)
   if (getActualLines) {
     lines <- summarizeLists(bps)$line
@@ -59,6 +60,7 @@
 
 #' @export
 .vsc.getBreakpoints <- function(file) {
+  file <- normalizePath(file)
   allBps <- .packageEnv$breakpoints
   matchingBps <- allBps[which(lapply(allBps, function(sbp) sbp$file) == file)]
   if (length(matchingBps) > 0) {
@@ -72,6 +74,7 @@
 
 #' @export
 .vsc.addBreakpoints <- function(file = '', lines = list(), maxOffset = 0, ids = NULL, includePackages = FALSE) {
+  file <- normalizePath(file)
   if (!is.list(lines)) {
     lines <- as.list(lines)
   }
@@ -98,6 +101,9 @@
 
 #' @export
 .vsc.addBreakpoint <- function(sbp = NULL, file = NULL, line = NULL, maxOffset = NULL, id = NULL, message = NULL, includePackages = NULL) {
+  if(!is.null(file)){
+    file <- normalizePath(file)
+  }
   if (length(sbp) == 0) {
     sbp <- list()
   }
@@ -128,6 +134,7 @@
 
 #' @export
 .vsc.clearBreakpointsByFile <- function(file = '') {
+  file <- normalizePath(file)
   whichBreakpoints <- which(lapply(.packageEnv$breakpoints, function(bp) bp$file) == file)
   .packageEnv$breakpoints[whichBreakpoints] <- NULL
 }
