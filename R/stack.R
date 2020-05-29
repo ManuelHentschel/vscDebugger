@@ -568,7 +568,7 @@ getVariableForEval <- function(valueR, name, depth = 20){
 
 
 varToString <- function(v) {
-  ret <- getCustomInfo(v, 'toString', '???', '???')
+  ret <- getCustomInfo(v, 'toString', NULL, NULL)
   if (is.null(ret)) {
     ret <- toString2(v)
   }
@@ -584,9 +584,13 @@ toString2 <- function(v, quoteStrings = FALSE) {
   } else if (is.data.frame(v)) {
     v <- as.list(v)
   }
-  if (is.list(v) || is.vector(v) && length(v) > 1) {
+  if (is.list(v) || is.vector(v) && length(v) > 1 || is.matrix(v)) {
     l <- lapply(v, toString2, quoteStrings = TRUE)
+    type <- getType(v, TRUE)
     s <- paste0(l, collapse = ',')
+    if(!is.null(type) || nchar(type)>0){
+      s <- paste0(type, '(', s, ')')
+    }
   } else {
     s <- toString(v)
     if (quoteStrings && is.character(v)) {
