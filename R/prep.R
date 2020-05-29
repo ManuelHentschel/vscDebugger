@@ -189,7 +189,7 @@ isPackageFrame <- function(env = parent.frame()) {
 #' @param frame The corresponding frame
 #' @return The filename
 .vsc.getFileName <- function(call, frame) {
-  fullpath <- try({
+  fullPath <- try({
     if (identical(call[[1]], call('::', quote(vscDebugger), quote(.vsc.debugSource)))) {
       fileName <- call[[2]]
       fullPath <- normalizePath(fileName)
