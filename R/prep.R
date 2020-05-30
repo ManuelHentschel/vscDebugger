@@ -60,8 +60,12 @@
   } else{
     # eval
     value <- tryCatch({
-      cl <- call('withVisible', parse(text=expr)[[1]])
-      valueAndVisible <- eval(cl, envir=env)
+      b <- parse(text=expr)
+      valueAndVisible <- list(value='', visible=FALSE)
+      for(exp in b){
+        cl <- call('withVisible', exp)
+        valueAndVisible <- eval(cl, envir=env)
+      }
       if(valueAndVisible$visible){
         value <- valueAndVisible$value
       } else{
@@ -185,7 +189,7 @@ isPackageFrame <- function(env = parent.frame()) {
 #' @param frame The corresponding frame
 #' @return The filename
 .vsc.getFileName <- function(call, frame) {
-  fullpath <- try({
+  fullPath <- try({
     if (identical(call[[1]], call('::', quote(vscDebugger), quote(.vsc.debugSource)))) {
       fileName <- call[[2]]
       fullPath <- normalizePath(fileName)
