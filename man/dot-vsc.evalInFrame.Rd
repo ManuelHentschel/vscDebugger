@@ -4,7 +4,7 @@
 \alias{.vsc.evalInFrame}
 \title{Evaluate an expression and send result to vsc}
 \usage{
-.vsc.evalInFrame(expr, frameId, silent = TRUE, id = 0)
+.vsc.evalInFrame(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE)
 }
 \arguments{
 \item{expr}{The espression to be evaluated}
@@ -12,6 +12,8 @@
 \item{frameId}{The Id of the frame (as given by vsc)}
 
 \item{id}{The Id of the message sent to vsc}
+
+\item{assignToAns}{Whether to assign the result of the evaluation to .GlobalEnv$.ans}
 }
 \description{
 Evaluates an expression in a given frameId and sends the result to vsc

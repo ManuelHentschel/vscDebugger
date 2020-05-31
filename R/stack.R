@@ -480,7 +480,7 @@ getVarInEnv <- function(name, env) {
 #' 
 getPromiseVar <- function(name, env) {
   promiseExpr <- pryr:::promise_code(name, env)
-  promiseCode <- try(paste0(toString(promiseExpr), collapse = ';'))
+  promiseCode <- try(paste0(toString(promiseExpr), collapse = ';'), silent=TRUE)
   if (class(promiseCode) == 'try-error') promiseCode <- '???'
   promiseEnv <- pryr:::promise_env(name, env)
   var <- list(
@@ -503,7 +503,7 @@ getVariableInEnv <- function(name, env) {
     variable <- try({
       valueR <- get(name, envir = env)
       getVariable(valueR, name)
-    }, silent = FALSE)
+    }, silent = TRUE)
   }
   if (class(variable) == 'try-error') {
     variable <- getDummyVariable(name)
