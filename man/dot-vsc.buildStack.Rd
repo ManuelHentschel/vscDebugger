@@ -8,7 +8,8 @@
   topFrame = parent.frame(),
   skipFromTop = 0,
   skipFromBottom = 1,
-  isError = FALSE
+  isError = FALSE,
+  lastenv = .GlobalEnv
 )
 }
 \arguments{

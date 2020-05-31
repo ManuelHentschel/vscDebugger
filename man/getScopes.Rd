@@ -4,7 +4,7 @@
 \alias{getScopes}
 \title{Gather info about scopes in a frame}
 \usage{
-getScopes(frame)
+getScopes(frame, lastenv = .GlobalEnv)
 }
 \arguments{
 \item{frame}{A frame as constructed by \code{getStackFrame}}

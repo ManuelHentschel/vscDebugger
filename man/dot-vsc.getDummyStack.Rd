@@ -4,7 +4,7 @@
 \alias{.vsc.getDummyStack}
 \title{Build a dummy stack}
 \usage{
-.vsc.getDummyStack(dummyFile = NULL)
+.vsc.getDummyStack(dummyFile = NULL, lastenv = .GlobalEnv)
 }
 \arguments{
 \item{dummyFile}{The file that is returned as the source file}
