@@ -4,7 +4,7 @@
 \alias{getDummyFrame}
 \title{Get a dummy frame}
 \usage{
-getDummyFrame(frameIdR, frameIdVsc, dummyFile = NULL)
+getDummyFrame(frameIdR, frameIdVsc, dummyFile = NULL, lastenv = .GlobalEnv)
 }
 \arguments{
 \item{frameIdR}{The internal id of the frame}
