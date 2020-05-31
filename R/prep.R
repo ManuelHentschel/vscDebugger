@@ -121,7 +121,7 @@ isPackageFrame <- function(env = parent.frame()) {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (.packageEnv$isEvaluating) {
+  if (.packageEnv$isEvaluating || !identical(list(...)$file, "")) {
     # return(base::cat(...))
     return(base::cat(...))
   }
