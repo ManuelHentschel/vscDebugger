@@ -9,7 +9,8 @@
   id = 0,
   isError = 0,
   dummyFile = NULL,
-  forceDummyStack = FALSE
+  forceDummyStack = FALSE,
+  includePackages = FALSE
 )
 }
 \arguments{

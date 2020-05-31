@@ -4,7 +4,7 @@
 \alias{getStackFrame}
 \title{Gather info about a stack frame}
 \usage{
-getStackFrame(frameIdR, frameIdVsc)
+getStackFrame(frameIdR, frameIdVsc, lastenv = .GlobalEnv)
 }
 \arguments{
 \item{frameIdR}{Frame Id as used by R. Used to identify the frame}

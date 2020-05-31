@@ -55,11 +55,17 @@
 #' @param id The id of the message sent to vsc
 #' @return None (The current stack, formatted as a nested named list is sent to vsc)
 #'
-.vsc.getStack <- function(topFrame = parent.frame(), id = 0, isError = 0, dummyFile = NULL, forceDummyStack = FALSE) {
+.vsc.getStack <- function(topFrame = parent.frame(), id = 0, isError = 0, dummyFile = NULL, forceDummyStack = FALSE, includePackages = FALSE) {
+  if(includePackages){
+    lastenv <- emptyenv()
+  } else{
+    lastenv <- globalenv()
+  }
+
   if (forceDummyStack || .packageEnv$debugGlobal && calledFromGlobal()) {
-    stack <- .vsc.getDummyStack(dummyFile = dummyFile)
+    stack <- .vsc.getDummyStack(dummyFile = dummyFile, lastenv = lastenv)
   } else {
-    stack <- .vsc.buildStack(topFrame = topFrame, isError = isError, skipFromBottom = 0)
+    stack <- .vsc.buildStack(topFrame = topFrame, isError = isError, skipFromBottom = 0, lastenv = lastenv)
   }
   .vsc.sendToVsc('stack', stack, id)
 }
@@ -77,15 +83,20 @@
 #' @param isError Boolean indicating whether the function is called from an error state. Adds 1 to \code{skipFromTop}
 #' @return The current stack, formatted as a nested named list
 #'
-.vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop = 0, skipFromBottom = 1, isError = FALSE) {
+.vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop = 0, skipFromBottom = 1, isError = FALSE, lastenv = .GlobalEnv) {
   clearVarLists()
   if (isError) {
     skipFromTop = skipFromTop + 1
   }
+
   nFrames <- getNFrames(topFrame)
   frameIdsR <- seq2((nFrames - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
   frameIdsVsc <- seq2(length(frameIdsR)) - 1
-  frames <- mapply(getStackFrame, frameIdsR, frameIdsVsc, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  frames <- mapply(
+    getStackFrame, frameIdsR, frameIdsVsc,
+    MoreArgs = list(lastenv = lastenv),
+    SIMPLIFY = FALSE, USE.NAMES = FALSE
+  )
   stack <- list(
     frames = frames,
     varLists = .packageEnv$varLists
@@ -113,12 +124,22 @@ clearVarLists <- function(deleteAll = FALSE){
 #' @param dummyFile The file that is returned as the source file
 #' @return A stack with the same structure as \code{.vsc.buildStack}
 #' 
-.vsc.getDummyStack <- function(dummyFile = NULL) {
+.vsc.getDummyStack <- function(dummyFile = NULL, lastenv = .GlobalEnv) {
   clearVarLists()
   nFrames <- 1
   frameIdsR <- seq(nFrames, 1, -1)
   frameIdsVsc <- seq2(length(frameIdsR)) - 1
-  frames <- mapply(getDummyFrame, frameIdsR, frameIdsVsc, MoreArgs = list(dummyFile = dummyFile), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  frames <- mapply(
+    getDummyFrame,
+    frameIdsR,
+    frameIdsVsc,
+    MoreArgs = list(
+      dummyFile = dummyFile,
+      lastenv = lastenv
+    ),
+    SIMPLIFY = FALSE,
+    USE.NAMES = FALSE
+  )
   stack <- list(
     frames = frames,
     varLists = .packageEnv$varLists
@@ -136,7 +157,7 @@ clearVarLists <- function(deleteAll = FALSE){
 #' @param frameIdVsc The id of the frame that is reported to vsc
 #' @param dummyFile The name of the file used as source file
 #' 
-getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile = NULL) {
+getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile = NULL, lastenv = .GlobalEnv) {
   env <- .GlobalEnv
   id <- frameIdVsc
   name <- 'Global Workspace (click here to see variables)'
@@ -161,7 +182,7 @@ getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile = NULL) {
   if (!is.null(source) && length(source) > 0) {
     frame$source <- source
   }
-  scopes <- getScopes(frame)
+  scopes <- getScopes(frame, lastenv)
   frame$scopes <- scopes
   # only for dummy:
   frame$presentationHint <- 'label'
@@ -228,7 +249,7 @@ getNFrames <- function(topFrame) {
 #'
 #' @param frameIdR Frame Id as used by R. Used to identify the frame
 #' @param frameIdVsc Frame Id as used by vsc. Is only added as info
-getStackFrame <- function(frameIdR, frameIdVsc) {
+getStackFrame <- function(frameIdR, frameIdVsc, lastenv=.GlobalEnv) {
   env <- sys.frame(frameIdR)
   # id <- nFrames + 1 - frameIdR # vsc considers frames in the opposite order!
   id <- frameIdVsc
@@ -256,7 +277,7 @@ getStackFrame <- function(frameIdR, frameIdVsc) {
   if (!is.null(source) && length(source) > 0) {
     frame$source <- source
   }
-  scopes <- getScopes(frame)
+  scopes <- getScopes(frame, lastenv)
   frame$scopes <- scopes
   return(frame)
 }
@@ -317,8 +338,8 @@ getSource <- function(frameId) {
 #' 
 #' @param frame A frame as constructed by \code{getStackFrame}
 #' @return A list of scopes as constructed by \code{getScope}
-getScopes <- function(frame) {
-  envs <- getScopeEnvs(frame$env)
+getScopes <- function(frame, lastenv = .GlobalEnv) {
+  envs <- getScopeEnvs(frame$env, lastenv)
   scopes <- lapply(envs, getScope)
   return(scopes)
 }
@@ -569,8 +590,13 @@ getVariableForEval <- function(valueR, name, depth = 20){
 
 varToString <- function(v) {
   ret <- getCustomInfo(v, 'toString', NULL, NULL)
-  if (is.null(ret)) {
-    ret <- toString2(v)
+  try({
+    if (is.null(ret)) {
+      ret <- toString2(v)
+    }
+  }, silent = TRUE)
+  if(is.null(ret) || class(ret) == 'try-error'){
+    ret <- '???'
   }
   return(ret)
 }
