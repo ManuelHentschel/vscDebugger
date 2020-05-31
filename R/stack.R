@@ -55,8 +55,8 @@
 #' @param id The id of the message sent to vsc
 #' @return None (The current stack, formatted as a nested named list is sent to vsc)
 #'
-.vsc.getStack <- function(topFrame = parent.frame(), id = 0, isError = 0, dummyFile = NULL) {
-  if (.packageEnv$debugGlobal && calledFromGlobal()) {
+.vsc.getStack <- function(topFrame = parent.frame(), id = 0, isError = 0, dummyFile = NULL, forceDummyStack = FALSE) {
+  if (forceDummyStack || .packageEnv$debugGlobal && calledFromGlobal()) {
     stack <- .vsc.getDummyStack(dummyFile = dummyFile)
   } else {
     stack <- .vsc.buildStack(topFrame = topFrame, isError = isError, skipFromBottom = 0)

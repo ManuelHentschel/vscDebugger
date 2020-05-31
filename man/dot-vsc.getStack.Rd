@@ -4,7 +4,13 @@
 \alias{.vsc.getStack}
 \title{Build current stack and send to vsc}
 \usage{
-.vsc.getStack(topFrame = parent.frame(), id = 0, isError = 0, dummyFile = NULL)
+.vsc.getStack(
+  topFrame = parent.frame(),
+  id = 0,
+  isError = 0,
+  dummyFile = NULL,
+  forceDummyStack = FALSE
+)
 }
 \arguments{
 \item{topFrame}{The first stack frame to consider (= the current function call)}
