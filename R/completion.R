@@ -97,7 +97,3 @@ getNameListForPromise <- function(var, env){
   names <- names(val)
   return(names)
 }
-
-getNameListFromSearch <- function(text) {
-  
-}
