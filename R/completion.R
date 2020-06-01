@@ -1,13 +1,19 @@
 getSymbolsFromAttachedPackages <- function(text) {
-  pkgs <- search()
-  pkgs <- pkgs[startsWith(pkgs, "package:")]
-  pkgs <- gsub("package:", "", pkgs, fixed = TRUE)
+  pkgs <- getPackages()
   symbols <- lapply(pkgs, function(pkg) {
     ns <- getNamespace(pkg)
     exported <- getNamespaceExports(ns)
     exported[startsWith(exported, text)]
   })
   unlist(symbols, use.names = FALSE)
+}
+
+
+getPackages <- function() {
+  pkgs <- search()
+  pkgs <- pkgs[startsWith(pkgs, "package:")]
+  pkgs <- gsub("package:", "", pkgs, fixed = TRUE)
+  return(pkgs)
 }
 
 #' @export
@@ -24,7 +30,7 @@ getSymbolsFromAttachedPackages <- function(text) {
   lastenv <- globalenv()
   envs <- getScopeEnvs(firstenv=firstenv, lastenv=lastenv)
 
-  pattern0 <- "(\\$|\\[\\[|\\[)$"
+  pattern0 <- "(\\$|\\[\\[|\\[|:::|::|:)$"
   ind <- regexpr(pattern0, text)
   if(ind!=-1){
     text1 <- substring(text = text, first = 1, last = ind-1)
@@ -42,17 +48,17 @@ getSymbolsFromAttachedPackages <- function(text) {
   } else if(text2==""){
     # find all matching variable names
     pattern = paste0("^", var)
+    pkgs <- getPackages()
+    pkgCompletion <- lapply(pkgs, function(s) paste0(s, '::'))
     matches <- c(
       lapply(envs, ls, all.names = TRUE, pattern = pattern, sorted = FALSE),
+      pkgCompletion,
       getSymbolsFromAttachedPackages(var)
     )
     matches <- unlist(matches)
   } else{
     # find all children of the last variable
-    matches <- getNameList(var, envs)
-    if(text2!="$"){
-      matches <- lapply(matches, function(s) paste0('"', s, '"'))
-    }
+    matches <- getNameList(var, text2, envs)
   }
 
   targets <- lapply(matches, function(s) list(label=s))
@@ -73,19 +79,33 @@ getLastVar <- function(text){
 
 
 #' @export
-getNameList <- function(var, envs){
+getNameList <- function(var, delimiter, envs){
   names <- list()
-  for(env in envs){
-    if(var %in% ls(env, sorted=FALSE)){
-      if(isPromise(var, env)){
-        names <- getNameListForPromise(var,env)
-      } else{
-        names <- names(get(var, envir=env))
+  if(delimiter %in% c('[', '[[', '$')){
+    for(env in envs){
+      if(var %in% ls(env, sorted=FALSE)){
+        if(isPromise(var, env)){
+          names <- getNameListForPromise(var,env)
+        } else{
+          names <- names(get(var, envir=env))
+        }
+        break
       }
-      names <- as.list(names)
-      break
     }
+    if(delimiter %in% c('[', '[[')){
+      names <- lapply(names, function(s) paste0('"', s, '"'))
+    }
+  } else if(delimiter %in% c('::', ':')){
+    ns <- getNamespace(var)
+    names <- getNamespaceExports(ns)
+    if(delimiter == ':'){
+      names <- lapply(names, function(s) paste0(':', s))
+    }
+  } else if(delimiter == ':::'){
+    ns <- getNamespace(var)
+    names <- ls(ns)
   }
+  names <- as.list(names)
   return(names)
 }
 
