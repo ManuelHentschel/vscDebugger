@@ -1,5 +1,14 @@
-
-
+getAttachedPackageSymbols <- function(text) {
+  pkgs <- search()
+  pkgs <- pkgs[startsWith(pkgs, "package:")]
+  pkgs <- gsub("package:", "", pkgs, fixed = TRUE)
+  symbols <- lapply(pkgs, function(pkg) {
+    ns <- getNamespace(pkg)
+    exported <- getNamespaceExports(ns)
+    exported[startsWith(exported, text)]
+  })
+  unlist(symbols, use.names = FALSE)
+}
 
 #' @export
 .vsc.getCompletion <- function(frameIdVsc, text, column=0, line=1, id=0, onlyGlobalEnv=FALSE){
@@ -33,7 +42,10 @@
   } else if(text2==""){
     # find all matching variable names
     pattern = paste0("^", var)
-    matches <- lapply(envs, ls, all.names=TRUE, pattern=pattern, sorted=FALSE)
+    matches <- c(
+      lapply(envs, ls, all.names = TRUE, pattern = pattern, sorted = FALSE),
+      getAttachedPackageSymbols(var)
+    )
     matches <- unlist(matches)
   } else{
     # find all children of the last variable
@@ -47,8 +59,6 @@
 
   .vsc.sendToVsc('completion', targets, id)
 }
-
-
 
 #' @export
 getLastVar <- function(text){
@@ -88,3 +98,6 @@ getNameListForPromise <- function(var, env){
   return(names)
 }
 
+getNameListFromSearch <- function(text) {
+  
+}
