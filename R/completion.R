@@ -1,4 +1,4 @@
-getAttachedPackageSymbols <- function(text) {
+getSymbolsFromAttachedPackages <- function(text) {
   pkgs <- search()
   pkgs <- pkgs[startsWith(pkgs, "package:")]
   pkgs <- gsub("package:", "", pkgs, fixed = TRUE)
@@ -44,7 +44,7 @@ getAttachedPackageSymbols <- function(text) {
     pattern = paste0("^", var)
     matches <- c(
       lapply(envs, ls, all.names = TRUE, pattern = pattern, sorted = FALSE),
-      getAttachedPackageSymbols(var)
+      getSymbolsFromAttachedPackages(var)
     )
     matches <- unlist(matches)
   } else{
