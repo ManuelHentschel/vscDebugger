@@ -2,12 +2,23 @@ constants <- c("TRUE", "FALSE", "NULL",
   "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_",
   "Inf", "NaN")
 
+getLazyDataFromNamespace <- function(ns) {
+  lazydata <- ns$.__NAMESPACE__.$lazydata
+  if (length(lazydata)) {
+    ls(lazydata)
+  } else {
+    character()
+  }
+}
+
 getSymbolsFromAttachedPackages <- function(text) {
   pkgs <- getAttachedPackages()
   symbols <- lapply(pkgs, function(pkg) {
     ns <- getNamespace(pkg)
-    exported <- getNamespaceExports(ns)
-    exported[startsWith(exported, text)]
+    exports <- getNamespaceExports(ns)
+    lazydata <- getLazyDataFromNamespace(ns)
+    names <- c(exports, lazydata)
+    names[startsWith(names, text)]
   })
   unlist(symbols, use.names = FALSE)
 }
@@ -106,7 +117,9 @@ getNameList <- function(var, delimiter, envs){
     }
   } else if(delimiter %in% c('::', ':')){
     ns <- getNamespace(var)
-    names <- getNamespaceExports(ns)
+    exports <- getNamespaceExports(ns)
+    lazydata <- getLazyDataFromNamespace(ns)
+    names <- c(exports, lazydata)
     if(delimiter == ':'){
       names <- lapply(names, function(s) paste0(':', s))
     }
