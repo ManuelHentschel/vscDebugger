@@ -1,3 +1,7 @@
+constants <- c("TRUE", "FALSE", "NULL",
+  "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_",
+  "Inf", "NaN")
+
 getSymbolsFromAttachedPackages <- function(text) {
   pkgs <- getAttachedPackages()
   symbols <- lapply(pkgs, function(pkg) {
@@ -55,6 +59,7 @@ getInstalledPackages <- function() {
     pkgs <- getInstalledPackages()
     pkgCompletion <- lapply(pkgs, function(s) paste0(s, '::'))
     matches <- c(
+      constants,
       lapply(envs, ls, all.names = TRUE, pattern = pattern, sorted = FALSE),
       pkgCompletion,
       getSymbolsFromAttachedPackages(var)
