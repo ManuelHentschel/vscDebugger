@@ -1,5 +1,5 @@
 getSymbolsFromAttachedPackages <- function(text) {
-  pkgs <- getPackages()
+  pkgs <- getAttachedPackages()
   symbols <- lapply(pkgs, function(pkg) {
     ns <- getNamespace(pkg)
     exported <- getNamespaceExports(ns)
@@ -9,11 +9,15 @@ getSymbolsFromAttachedPackages <- function(text) {
 }
 
 
-getPackages <- function() {
+getAttachedPackages <- function() {
   pkgs <- search()
   pkgs <- pkgs[startsWith(pkgs, "package:")]
   pkgs <- gsub("package:", "", pkgs, fixed = TRUE)
   return(pkgs)
+}
+
+getInstalledPackages <- function() {
+  .packages(all.available = TRUE)
 }
 
 #' @export
@@ -48,7 +52,7 @@ getPackages <- function() {
   } else if(text2==""){
     # find all matching variable names
     pattern = paste0("^", var)
-    pkgs <- getPackages()
+    pkgs <- getInstalledPackages()
     pkgCompletion <- lapply(pkgs, function(s) paste0(s, '::'))
     matches <- c(
       lapply(envs, ls, all.names = TRUE, pattern = pattern, sorted = FALSE),
