@@ -31,7 +31,11 @@
     env <- .GlobalEnv
   } else {
     frameIdR <- convertFrameId(vsc = frameId)
-    env <- sys.frame(frameIdR)
+    if(is.null(frameIdR)){
+      env <- .GlobalEnv
+    } else{
+      env <- sys.frame(frameIdR)
+    }
   }
 
   # prepare settings
@@ -60,7 +64,7 @@
     options(error = .vsc.onError)
   } else{
     # eval
-    value <- tryCatch(
+    # value <- tryCatch(
       {
         b <- parse(text=expr)
         valueAndVisible <- list(value=NULL, visible=FALSE)
@@ -74,9 +78,10 @@
           value <- ''
         }
         value
-      },
-      error=function(e) toString(e)
-    )
+      }#,
+      # error=function(e) toString(e)
+      # error=.vsc.onError
+    # )
   }
 
   # reset settings
@@ -361,8 +366,15 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
   return(invisible(foundMain))
 }
 
-.vsc.onError <- function() {
-  .vsc.sendToVsc('error')
+.vsc.onError <- function(err=NULL) {
+  if(is.null(err)){
+    message <- geterrmessage()
+  } else{
+    attributes(err) <- list()
+    message <- err
+  }
+  body <- list(message=message)
+  .vsc.sendToVsc('error', body)
   browser()
 }
 
