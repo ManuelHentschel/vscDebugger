@@ -1,3 +1,7 @@
+# type CompletionItemType = 'method' | 'function' | 'constructor' | 'field' | 'variable' |
+#   'class' | 'interface' | 'module' | 'property' | 'unit' | 'value' | 'enum' |
+#   'keyword' | 'snippet' | 'text' | 'color' | 'file' | 'reference' | 'customcolor';
+
 constants <- c("TRUE", "FALSE", "NULL",
   "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_",
   "Inf", "NaN")
@@ -10,19 +14,6 @@ getLazyDataFromNamespace <- function(ns) {
     character()
   }
 }
-
-getSymbolsFromAttachedPackages <- function(text) {
-  pkgs <- getAttachedPackages()
-  symbols <- lapply(pkgs, function(pkg) {
-    ns <- getNamespace(pkg)
-    exports <- getNamespaceExports(ns)
-    lazydata <- getLazyDataFromNamespace(ns)
-    names <- c(exports, lazydata)
-    names[startsWith(names, text)]
-  })
-  unlist(symbols, use.names = FALSE)
-}
-
 
 getAttachedPackages <- function() {
   pkgs <- search()
@@ -63,25 +54,56 @@ getInstalledPackages <- function() {
 
   if(var=="" && text2!=""){
     # only "$", "[", or "[[" --> no matches
-    matches <- list()
+    targets <- list()
   } else if(text2==""){
-    # find all matching variable names
-    pattern = paste0("^", var)
+    const_targets <- lapply(constants[startsWith(constants, var)], function(s) list(
+      label = s,
+      type = 'value'
+    ))
+
     pkgs <- getInstalledPackages()
-    pkgCompletion <- lapply(pkgs, function(s) paste0(s, '::'))
-    matches <- c(
-      constants,
-      lapply(envs, ls, all.names = TRUE, pattern = pattern, sorted = FALSE),
-      pkgCompletion,
-      getSymbolsFromAttachedPackages(var)
-    )
-    matches <- unlist(matches)
+    pkgs_targets <- lapply(pkgs[startsWith(pkgs, var)], function(s) list(
+      label = paste0(s, '::'),
+      type = 'module'
+    ))
+
+    pattern = paste0("^", var)
+    env_targets <- lapply(envs, function(env) {
+      names <- ls(env, all.names = TRUE, pattern = pattern, sorted = FALSE)
+      lapply(names, function(s) list(
+        label = s,
+        type = if (isPromise(s, env)) 'variable' else if (is.function(env[[s]])) 'function' else 'variable'
+      ))
+    })
+    env_targets <- unlist(env_targets, recursive = FALSE, use.names = FALSE)
+    
+    att_pkgs <- getAttachedPackages()
+    att_targets <- lapply(att_pkgs, function(pkg) {
+      ns <- getNamespace(pkg)
+      exports <- getNamespaceExports(ns)
+      lazydata <- getLazyDataFromNamespace(ns)
+      c(
+        lapply(exports[startsWith(exports, var)], function(s) list(
+          label = s,
+          type = if (is.function(ns[[s]])) 'function' else 'field'
+        )),
+        lapply(lazydata[startsWith(lazydata, var)], function(s) list(
+          label = s,
+          type = 'field'
+        ))
+      )
+    })
+    att_targets <- unlist(att_targets, recursive = FALSE, use.names = FALSE)
+
+    targets <- c(const_targets, pkgs_targets, env_targets, att_targets)
   } else{
     # find all children of the last variable
     matches <- getNameList(var, text2, envs)
+    targets <- lapply(matches, function(s) list(
+      label = s,
+      type = 'variable'
+    ))
   }
-
-  targets <- lapply(matches, function(s) list(label=s))
 
   .vsc.sendToVsc('completion', targets, id)
 }
