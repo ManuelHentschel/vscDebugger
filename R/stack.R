@@ -324,7 +324,7 @@ getSource <- function(frameId) {
       isFile = lineAndFile$isFile,
       srcbody = lineAndFile$srcbody
     )
-  }, error = function(e) NULL, silent = TRUE)
+  }, error = function(e) NULL, silent = getOption('vsc.trySilent', default=TRUE))
   
   return(ret)
 }
@@ -501,7 +501,7 @@ getVarInEnv <- function(name, env) {
 #' 
 getPromiseVar <- function(name, env) {
   promiseExpr <- pryr:::promise_code(name, env)
-  promiseCode <- try(paste0(toString(promiseExpr), collapse = ';'), silent=TRUE)
+  promiseCode <- try(paste0(toString(promiseExpr), collapse = ';'), silent=getOption('vsc.trySilent', default=TRUE))
   if (class(promiseCode) == 'try-error') promiseCode <- '???'
   promiseEnv <- pryr:::promise_env(name, env)
   var <- list(
@@ -524,7 +524,7 @@ getVariableInEnv <- function(name, env) {
     variable <- try({
       valueR <- get(name, envir = env)
       getVariable(valueR, name)
-    }, silent = TRUE)
+    }, silent = getOption('vsc.trySilent', default=TRUE))
   }
   if (class(variable) == 'try-error') {
     variable <- getDummyVariable(name)
@@ -600,7 +600,7 @@ varToString <- function(v) {
     if (is.null(ret)) {
       ret <- toString2(v)
     }
-  }, silent = TRUE)
+  }, silent = getOption('vsc.trySilent', default=TRUE))
   if(is.null(ret) || class(ret) == 'try-error'){
     ret <- '???'
   }
@@ -638,7 +638,7 @@ varToStringWithCaptureOutput <- function(v) {
   # TODO: replace with proper use of format(...)?
   ret <- try({
     paste0(capture.output(v), collapse = '\n')
-  }, silent = TRUE)
+  }, silent = getOption('vsc.trySilent', default=TRUE))
   if (class(ret) == 'try-error') {
     ret <- '???'
   }
@@ -709,7 +709,7 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
         }
       }
     }
-  }, silent = TRUE)
+  }, silent = getOption('vsc.trySilent', default=TRUE))
   if (class(ret) == 'try-error') {
     return(onError)
   } else {

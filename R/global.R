@@ -15,5 +15,6 @@ session <- local({
 .onLoad <- function(...) {
   options(error = traceback)
   options(vsc.previewPromises = FALSE)
+  options(vsc.trySilent = TRUE)
   session$varInfo <- defaultVarInfo
 }

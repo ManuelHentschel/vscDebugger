@@ -39,7 +39,7 @@
         }
         valueAndVisible
       },
-      silent = TRUE
+      silent = getOption('vsc.trySilent', default=TRUE)
     )
     if(class(valueAndVisible) == 'try-error'){
       valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
@@ -203,7 +203,7 @@ isPackageFrame <- function(env = parent.frame()) {
       fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
       fullPath <- toString(fullPath)
     }
-  }, silent = TRUE)
+  }, silent = getOption('vsc.trySilent', default=TRUE))
   if (class(fullPath) == 'try-error') {
     fullPath <- ''
   }
@@ -227,7 +227,7 @@ getLineAndFile <- function(call){
       endColumn = srcref[4],
       srcbody = srcbody,
       isFile = isFile
-  )}, error=function(e) NULL, silent=TRUE)
+  )}, error=function(e) NULL, silent=getOption('vsc.trySilent', default=TRUE))
   return(ret)
 }
 
