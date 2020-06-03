@@ -30,14 +30,20 @@
     ts <- tracingState(FALSE)
 
     # eval
-    value <- tryCatch(
+    valueAndVisible <- try(
       {
-        capture.output( value <- eval(parse(text=expr), envir=env))
-        value
+        b <- parse(text=expr)
+        for(exp in b){
+          cl <- call('withVisible', exp)
+          capture.output(valueAndVisible <- eval(cl, envir=env))
+        }
+        valueAndVisible
       },
-      silent = TRUE,
-      error = function(e) '<ERROR>'
+      silent = TRUE
     )
+    if(class(valueAndVisible) == 'try-error'){
+      valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
+    }
 
     # reset settings
     tracingState(ts)
@@ -45,23 +51,20 @@
     options(error = .vsc.onError)
   } else{
     # eval
-    value <- tryCatch(
+    valueAndVisible <- try(
       {
         b <- parse(text=expr)
-        valueAndVisible <- list(value=NULL, visible=FALSE)
         for(exp in b){
           cl <- call('withVisible', exp)
           valueAndVisible <- eval(cl, envir=env)
         }
-        if(valueAndVisible$visible){
-          value <- valueAndVisible$value
-        } else{
-          value <- ''
-        }
-        value
+        valueAndVisible
       },
-      error=function(e) toString(e)
+      silent = FALSE
     )
+    if(class(valueAndVisible) == 'try-error'){
+      valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
+    }
   }
 
   # reset settings
@@ -69,7 +72,11 @@
 
 
   # prepare and send result
-  ret <- getVariableForEval(value)
+  if(valueAndVisible$visible || silent){
+    ret <- getVariableForEval(valueAndVisible$value)
+  } else {
+    ret <- getEmptyVariableForEval()
+  }
 
   # value <- paste(value, sep = "", collapse = "\n")
   .vsc.sendToVsc('eval', ret, id = id)
@@ -78,7 +85,7 @@
   if(assignToAns && !silent){
     .GlobalEnv$.ans <- valueAndVisible$value
   }
-  invisible(value)
+  invisible(valueAndVisible$value)
 }
 
 calledFromGlobal <- function() {

@@ -586,6 +586,12 @@ getVariableForEval <- function(valueR, name, depth = 20){
     variablesReference = variablesReference
   )
 }
+getEmptyVariableForEval <- function(){
+  variable <- list(
+    result = '',
+    variablesReference = 0
+  )
+}
 
 
 varToString <- function(v) {
