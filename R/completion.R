@@ -104,7 +104,6 @@ getInstalledPackages <- function() {
   .vsc.sendToVsc('completion', targets, id)
 }
 
-#' @export
 getLastVar <- function(text) {
   pattern1 <- "((?:[a-zA-Z]|\\.[a-zA-Z_])[a-zA-Z\\._0-9]*|\\.)$" # matches the beggining of the last valid variable name
   ind <- regexpr(pattern1, text)
