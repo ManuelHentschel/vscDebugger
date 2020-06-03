@@ -1,21 +1,6 @@
 ########################################################################
 # Prep
 
-
-.packageEnv$varLists <- list()
-.packageEnv$varListArgs <- list()
-.packageEnv$varListPersistent <- list()
-.packageEnv$isEvaluating <- FALSE
-.packageEnv$frameIdsR <- list()
-.packageEnv$frameIdsVsc <- list()
-.packageEnv$varInfo <- defaultVarInfo
-.packageEnv$debugGlobal <- FALSE
-
-
-.onLoad <- function(...) {
-  options(error = traceback)
-}
-
 #' Evaluate an expression and send result to vsc
 #'
 #' Evaluates an expression in a given frameId and sends the result to vsc
@@ -27,7 +12,7 @@
 #' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
 .vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE) {
   # evaluate calls that were made from top level cmd line in the .GlobalEnv
-  if (.packageEnv$debugGlobal && calledFromGlobal()) {
+  if (session$debugGlobal && calledFromGlobal()) {
     env <- .GlobalEnv
   } else {
     frameIdR <- convertFrameId(vsc = frameId)
@@ -35,13 +20,13 @@
   }
 
   # prepare settings
-  tmpDebugGlobal <- .packageEnv$debugGlobal
-  .packageEnv$debugGlobal <- FALSE
+  tmpDebugGlobal <- session$debugGlobal
+  session$debugGlobal <- FALSE
 
   if(silent){
     # prepare settings
     options(error=traceback)
-    .packageEnv$isEvaluating <- TRUE
+    session$isEvaluating <- TRUE
     ts <- tracingState(FALSE)
 
     # eval
@@ -56,7 +41,7 @@
 
     # reset settings
     tracingState(ts)
-    .packageEnv$isEvaluating <- FALSE
+    session$isEvaluating <- FALSE
     options(error = .vsc.onError)
   } else{
     # eval
@@ -80,7 +65,7 @@
   }
 
   # reset settings
-  .packageEnv$debugGlobal <- tmpDebugGlobal
+  session$debugGlobal <- tmpDebugGlobal
 
 
   # prepare and send result
@@ -131,7 +116,7 @@ isPackageFrame <- function(env = parent.frame()) {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (.packageEnv$isEvaluating || !identical(list(...)$file, "")) {
+  if (session$isEvaluating || !identical(list(...)$file, "")) {
     # return(base::cat(...))
     return(base::cat(...))
   }
@@ -158,7 +143,7 @@ isPackageFrame <- function(env = parent.frame()) {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (.packageEnv$isEvaluating) {
+  if (session$isEvaluating) {
     return(base::print(x, ...))
   }
   ret <- capture.output(base::print(x, ...))
@@ -313,7 +298,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @param overWriteCat Whether to overwrite \code{base::cat} with a version that sends output to vsc
 .vsc.prepGlobalEnv <- function(overwritePrint = TRUE, overwriteCat = TRUE, overwriteSource = TRUE, findMain = TRUE, mainFunction = 'main', debugGlobal = FALSE) {
 
-  .packageEnv$debugGlobal <- debugGlobal
+  session$debugGlobal <- debugGlobal
 
   options(prompt = "<#v\\s\\c>\n")
   options(continue = "<##v\\s\\c>\n")
@@ -337,7 +322,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 
   attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
 
-  .packageEnv$isEvaluating <- FALSE
+  session$isEvaluating <- FALSE
 
   options(error = .vsc.onError)
   .vsc.sendToVsc('go')
@@ -374,7 +359,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @export
 #' @return Boolean indicating whether an expression is being evaluated
 .vsc.isEvaluating <- function() {
-  return(.packageEnv$isEvaluating)
+  return(session$isEvaluating)
 }
 
 
@@ -385,7 +370,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @export
 #' @return Boolean indicating whether R should stop on breakpoints
 .vsc.stopOnBreakpoint <- function() {
-  return(!.packageEnv$isEvaluating)
+  return(!session$isEvaluating)
 }
 
 #' Same as base::cat

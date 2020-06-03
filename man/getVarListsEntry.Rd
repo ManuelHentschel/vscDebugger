@@ -13,6 +13,6 @@ getVarListsEntry(varRef)
 A list of variables corresponding to the varRef
 }
 \description{
-Is basically is a wrapper for \code{.packageEnv$varLists[[varRef]]}.
+Is basically is a wrapper for \code{session$varLists[[varRef]]}.
 If necessary evaluates the call for a given varRef and returns the result.
 }

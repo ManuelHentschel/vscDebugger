@@ -62,7 +62,7 @@
     lastenv <- globalenv()
   }
 
-  if (forceDummyStack || .packageEnv$debugGlobal && calledFromGlobal()) {
+  if (forceDummyStack || session$debugGlobal && calledFromGlobal()) {
     stack <- .vsc.getDummyStack(dummyFile = dummyFile, lastenv = lastenv)
   } else {
     stack <- .vsc.buildStack(topFrame = topFrame, isError = isError, skipFromBottom = 0, lastenv = lastenv)
@@ -99,19 +99,19 @@
   )
   stack <- list(
     frames = frames,
-    varLists = .packageEnv$varLists
+    varLists = session$varLists
   )
-  .packageEnv$frameIdsR <- frameIdsR
-  .packageEnv$frameIdsVsc <- frameIdsVsc
+  session$frameIdsR <- frameIdsR
+  session$frameIdsVsc <- frameIdsVsc
   return(stack)
 }
 
 
 clearVarLists <- function(deleteAll = FALSE){
-  for(i in seq2(.packageEnv$varLists)){
-    if(deleteAll || !.packageEnv$varListPersistent[[i]]){
-      .packageEnv$varLists[[i]] <- list()
-      .packageEnv$varListArgs[[i]] <- list()
+  for(i in seq2(session$varLists)){
+    if(deleteAll || !session$varListPersistent[[i]]){
+      session$varLists[[i]] <- list()
+      session$varListArgs[[i]] <- list()
     }
   }
 }
@@ -142,10 +142,10 @@ clearVarLists <- function(deleteAll = FALSE){
   )
   stack <- list(
     frames = frames,
-    varLists = .packageEnv$varLists
+    varLists = session$varLists
   )
-  .packageEnv$frameIdsR <- frameIdsR
-  .packageEnv$frameIdsVsc <- frameIdsVsc
+  session$frameIdsR <- frameIdsR
+  session$frameIdsVsc <- frameIdsVsc
   return(stack)
 }
 
@@ -200,16 +200,16 @@ convertFrameId <- function(vsc = NULL, R = NULL) {
   if (is.null(vsc) && is.null(R)) {
     return(NULL)
   } else if (is.null(vsc)) {
-    ind <- which(R == .packageEnv$frameIdsR)
+    ind <- which(R == session$frameIdsR)
     if (length(ind) > 0) {
-      return(.packageEnv$frameIdsVsc[ind])
+      return(session$frameIdsVsc[ind])
     } else {
       return(NULL)
     }
   } else {
-    ind <- which(vsc == .packageEnv$frameIdsVsc)
+    ind <- which(vsc == session$frameIdsVsc)
     if (length(ind) > 0) {
-      return(.packageEnv$frameIdsR[ind])
+      return(session$frameIdsR[ind])
     } else {
       return(NULL)
     }
@@ -389,10 +389,10 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
 #' 
 getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef = NULL, persistent=FALSE) {
   if (is.null(varRef)) {
-    varRef <- length(.packageEnv$varListArgs) + 1
+    varRef <- length(session$varListArgs) + 1
   }
-  .packageEnv$varListArgs[[varRef]] <- varListArgs
-  .packageEnv$varListPersistent[[varRef]] <- persistent
+  session$varListArgs[[varRef]] <- varListArgs
+  session$varListPersistent[[varRef]] <- persistent
   if (evalCall) {
     # use arglist instead of call/eval/do.call to avoid evaluating the content of variables that contain expressions
     v <- varListArgs$v
@@ -406,9 +406,9 @@ getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef
       isReady = TRUE,
       variables = variables
     )
-    .packageEnv$varLists[[varRef]] <- varList
+    session$varLists[[varRef]] <- varList
   } else {
-    .packageEnv$varLists[[varRef]] <- list(
+    session$varLists[[varRef]] <- list(
       reference = 0,
       isReady = FALSE,
       variables = list()
@@ -419,7 +419,7 @@ getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef
 
 #' Get the variable corresponding to a variablesReference
 #' 
-#' Is basically is a wrapper for \code{.packageEnv$varLists[[varRef]]}.
+#' Is basically is a wrapper for \code{session$varLists[[varRef]]}.
 #' If necessary evaluates the call for a given varRef and returns the result.
 #' 
 #' @param varRef The variablesReference as returned by \code{getVarRefForVarListArgs} or \code{getVarRefForVar}
@@ -427,12 +427,12 @@ getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef
 getVarListsEntry <- function(varRef) {
   # 
   # to avoid excessive nested calls, the varList is only computed once requested
-  # before the varList is requested, only the arguments for getVarList() that will return it is stored in .packageEnv$varListArgs
+  # before the varList is requested, only the arguments for getVarList() that will return it is stored in session$varListArgs
 
 
   # retrieve varList (if exists)
-  if(varRef <= length(.packageEnv$varLists)){
-    varList <- .packageEnv$varLists[[varRef]]
+  if(varRef <= length(session$varLists)){
+    varList <- session$varLists[[varRef]]
     returnDummy <- is.null(varList$isReady)
   } else{
     returnDummy <- TRUE
@@ -449,7 +449,7 @@ getVarListsEntry <- function(varRef) {
 
   # compute varList if necessary
   if (!varList$isReady) {
-    varListArgs <- .packageEnv$varListArgs[[varRef]]
+    varListArgs <- session$varListArgs[[varRef]]
     v <- varListArgs$v
     depth <- varListArgs$depth
     maxVars <- varListArgs$maxVars
@@ -462,7 +462,7 @@ getVarListsEntry <- function(varRef) {
       isReady = TRUE,
       variables = variables
     )
-    .packageEnv$varLists[[varRef]] <- varList
+    session$varLists[[varRef]] <- varList
   }
 
   return(varList)
@@ -673,7 +673,7 @@ getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttribute
 
 
 getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
-  # checks the entries in .packageEnv$varInfo (specified in customVarinfo.R) for a matching entry
+  # checks the entries in session$varInfo (specified in customVarinfo.R) for a matching entry
   # returns the requested info if available
   # info can be a string from the list:
   #     childVars
@@ -687,7 +687,7 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
   ret <- default
   try({
     # loop through varInfos
-    for (varInfo in .packageEnv$varInfo) {
+    for (varInfo in session$varInfo) {
       # check if varInfo provides the required info
       if (!is.null(varInfo[[info]])) {
         # check if varInfo applies to v
