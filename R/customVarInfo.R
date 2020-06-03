@@ -24,17 +24,17 @@
 
 #' @export
 .vsc.resetVarInfo <- function() {
-  .packageEnv$varInfo <- defaultVarInfo
+  session$varInfo <- defaultVarInfo
 }
 
 #' @export
 .vsc.clearVarInfo <- function() {
-  .packageEnv$varInfo <- list()
+  session$varInfo <- list()
 }
 
 #' @export
 .vsc.addVarInfo <- function(
-  name = NULL,
+  name = '',
   doesApply = NULL,
   childVars = NULL,
   customAttributes = NULL,
@@ -48,7 +48,7 @@
 ) {
   if (position < 0) {
     # negative positions count from the end, -1 = last position
-    position <- length(.packageEnv$varInfo) + 1 + position
+    position <- length(session$varInfo) + 1 + position
   } else if (position > 0) {
     position <- position - 1
   }
@@ -67,23 +67,23 @@
   varInfo$longType <- longType
   varInfo$includeAttributes <- includeAttribute
 
-  .packageEnv$varInfo <- append(.packageEnv$varInfo, varInfo, position)
+  session$varInfo <- append(session$varInfo, varInfo, position)
 }
 
 #' @export
 .vsc.removeVarInfo <- function(position = 1) {
   if (position < 0) {
-    position <- length(.packageEnv$varInfo) + 1 + position
+    position <- length(session$varInfo) + 1 + position
   }
-  .packageEnv$varInfo[position] <- NULL
+  session$varInfo[position] <- NULL
 }
 
 #' @export
 .vsc.listVarInfo <- function(position = NULL) {
   if (is.null(position)) {
-    position <- seq2(.packageEnv$varInfo)
+    position <- seq2(session$varInfo)
   }
-  return(.packageEnv$varInfo[position])
+  return(session$varInfo[position])
 }
 
 .vsc.checkVarInfo <- function(varInfo, testCase = NULL) {
@@ -137,10 +137,18 @@ defaultVarInfo <- list(
     longType = 'promise',
     toString = function(v) v$promiseCode,
     customAttributes = function(v) {
-      list(
-        names = list('__promiseEnv', '__currentValue'),
-        values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
-      )
+      if(getOption('vsc.previewPromises', default = FALSE)){
+        ret <- list(
+          names = list('__promiseEnv', '__currentValue'),
+          values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
+        )
+      } else {
+        ret <- list(
+          names = list('__promiseEnv'),
+          values = list(v$promiseEnv)
+        )
+      }
+      return(ret)
     },
     hasChildren = TRUE,
     includeAttributes = FALSE
@@ -150,8 +158,8 @@ defaultVarInfo <- list(
     name = '.Random.seed',
     doesApply = function(v) tryCatch(identical(v, get('.Random.seed', envir = globalenv())), error = function(e) FALSE),
     childVars = list(),
-    hasChildren = FALSE,
-    toString = 'c(KW:$%&...)'
+    hasChildren = FALSE
+    # toString = 'c(KW:$%&...)'
   ),
   # environment
   list(
@@ -276,13 +284,6 @@ defaultVarInfo <- list(
       ret
     }
   ),
-  # string
-  list(
-    name = 'String',
-    doesApply = is.character,
-    longType = 'string',
-    hasChildren = FALSE
-  ),
   # non-standard class
   list(
     name = 'NonStandardClass',
@@ -311,8 +312,15 @@ defaultVarInfo <- list(
     shortType = '',
     longType = 'function',
     toString = function(v) {
-      paste(format(v), collapse = '\n')
+      paste0(format(v), collapse = '\n')
     }
+  ),
+  # scalar
+  list(
+    name = 'Scalar',
+    doesApply = function(v) is.atomic(v) && length(v) == 1,
+    hasChildren = FALSE,
+    toString = function(v) paste(deparse(v), collapse = '\n')
   ),
   # default case
   list(
@@ -322,7 +330,7 @@ defaultVarInfo <- list(
     shortType = '',
     longType = function(v) typeof(v),
     includeAttributes = TRUE,
-    hasChildren = FALSE
-    # toString = function(v) paste0(format(v), collapse = ',')
+    hasChildren = FALSE,
+    toString = function(v) utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE))
   )
 )

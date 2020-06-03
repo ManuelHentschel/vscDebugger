@@ -13,7 +13,7 @@
   file <- normalizePath(file)
   body <- parse(file, encoding = encoding, keep.source = TRUE)
 
-  # apply breakpoints stored in .packageEnv$breakpoints
+  # apply breakpoints stored in session$breakpoints
   if (applyInternalBreakpoints) {
     bps <- .vsc.getBreakpoints(file)
     lines <- .vsc.getBreakpointLines(file)
@@ -33,8 +33,8 @@
   body <- mySetBreakpoints(body, ats)
 
   # store debugState
-  tmpDebugGlobal <- .packageEnv$debugGlobal
-  .packageEnv$debugGlobal <- FALSE
+  tmpDebugGlobal <- session$debugGlobal
+  session$debugGlobal <- FALSE
 
   # actually run the code:
   enclos <- baseenv()
@@ -43,7 +43,7 @@
 
 
   # restore debugState
-  .packageEnv$debugGlobal <- tmpDebugGlobal
+  session$debugGlobal <- tmpDebugGlobal
 }
 
 

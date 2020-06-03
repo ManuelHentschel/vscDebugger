@@ -1,21 +1,6 @@
 ########################################################################
 # Prep
 
-
-.packageEnv$varLists <- list()
-.packageEnv$varListArgs <- list()
-.packageEnv$varListPersistent <- list()
-.packageEnv$isEvaluating <- FALSE
-.packageEnv$frameIdsR <- list()
-.packageEnv$frameIdsVsc <- list()
-.packageEnv$varInfo <- defaultVarInfo
-.packageEnv$debugGlobal <- FALSE
-
-
-.onLoad <- function(...) {
-  options(error = traceback)
-}
-
 #' Evaluate an expression and send result to vsc
 #'
 #' Evaluates an expression in a given frameId and sends the result to vsc
@@ -27,7 +12,7 @@
 #' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
 .vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE) {
   # evaluate calls that were made from top level cmd line in the .GlobalEnv
-  if (.packageEnv$debugGlobal && calledFromGlobal()) {
+  if (session$debugGlobal && calledFromGlobal()) {
     env <- .GlobalEnv
   } else {
     frameIdR <- convertFrameId(vsc = frameId)
@@ -39,57 +24,63 @@
   }
 
   # prepare settings
-  tmpDebugGlobal <- .packageEnv$debugGlobal
-  .packageEnv$debugGlobal <- FALSE
+  tmpDebugGlobal <- session$debugGlobal
+  session$debugGlobal <- FALSE
 
   if(silent){
     # prepare settings
     options(error=traceback)
-    .packageEnv$isEvaluating <- TRUE
+    session$isEvaluating <- TRUE
     ts <- tracingState(FALSE)
 
     # eval
-    value <- tryCatch(
+    valueAndVisible <- try(
       {
-        capture.output( value <- eval(parse(text=expr), envir=env))
-        value
+        b <- parse(text=expr)
+        for(exp in b){
+          cl <- call('withVisible', exp)
+          capture.output(valueAndVisible <- eval(cl, envir=env))
+        }
+        valueAndVisible
       },
-      silent = TRUE,
-      error = function(e) '<ERROR>'
+      silent = getOption('vsc.trySilent', default=TRUE)
     )
+    if(class(valueAndVisible) == 'try-error'){
+      valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
+    }
 
     # reset settings
     tracingState(ts)
-    .packageEnv$isEvaluating <- FALSE
+    session$isEvaluating <- FALSE
     options(error = .vsc.onError)
   } else{
     # eval
-    # value <- tryCatch(
+    valueAndVisible <- try(
       {
         b <- parse(text=expr)
-        valueAndVisible <- list(value=NULL, visible=FALSE)
         for(exp in b){
           cl <- call('withVisible', exp)
           valueAndVisible <- eval(cl, envir=env)
         }
-        if(valueAndVisible$visible){
-          value <- valueAndVisible$value
-        } else{
-          value <- ''
-        }
-        value
-      }#,
-      # error=function(e) toString(e)
-      # error=.vsc.onError
-    # )
+        valueAndVisible
+      },
+      silent = FALSE
+    )
+    if(class(valueAndVisible) == 'try-error'){
+      valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
+    }
   }
 
   # reset settings
-  .packageEnv$debugGlobal <- tmpDebugGlobal
+  session$debugGlobal <- tmpDebugGlobal
 
 
   # prepare and send result
-  ret <- getVariableForEval(value)
+  if(valueAndVisible$visible || silent){
+    ret <- getVariableForEval(valueAndVisible$value)
+  } else {
+    ret <- getEmptyVariableForEval()
+  }
 
   # value <- paste(value, sep = "", collapse = "\n")
   .vsc.sendToVsc('eval', ret, id = id)
@@ -98,7 +89,7 @@
   if(assignToAns && !silent){
     .GlobalEnv$.ans <- valueAndVisible$value
   }
-  invisible(value)
+  invisible(valueAndVisible$value)
 }
 
 calledFromGlobal <- function() {
@@ -136,7 +127,7 @@ isPackageFrame <- function(env = parent.frame()) {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (.packageEnv$isEvaluating || !identical(list(...)$file, "")) {
+  if (session$isEvaluating || !identical(list(...)$file, "")) {
     # return(base::cat(...))
     return(base::cat(...))
   }
@@ -163,7 +154,7 @@ isPackageFrame <- function(env = parent.frame()) {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (.packageEnv$isEvaluating) {
+  if (session$isEvaluating) {
     return(base::print(x, ...))
   }
   ret <- capture.output(base::print(x, ...))
@@ -216,7 +207,7 @@ isPackageFrame <- function(env = parent.frame()) {
       fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
       fullPath <- toString(fullPath)
     }
-  }, silent = TRUE)
+  }, silent = getOption('vsc.trySilent', default=TRUE))
   if (class(fullPath) == 'try-error') {
     fullPath <- ''
   }
@@ -240,7 +231,7 @@ getLineAndFile <- function(call){
       endColumn = srcref[4],
       srcbody = srcbody,
       isFile = isFile
-  )}, error=function(e) NULL, silent=TRUE)
+  )}, error=function(e) NULL, silent=getOption('vsc.trySilent', default=TRUE))
   return(ret)
 }
 
@@ -318,7 +309,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @param overWriteCat Whether to overwrite \code{base::cat} with a version that sends output to vsc
 .vsc.prepGlobalEnv <- function(overwritePrint = TRUE, overwriteCat = TRUE, overwriteSource = TRUE, findMain = TRUE, mainFunction = 'main', debugGlobal = FALSE) {
 
-  .packageEnv$debugGlobal <- debugGlobal
+  session$debugGlobal <- debugGlobal
 
   options(prompt = "<#v\\s\\c>\n")
   options(continue = "<##v\\s\\c>\n")
@@ -342,7 +333,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 
   attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
 
-  .packageEnv$isEvaluating <- FALSE
+  session$isEvaluating <- FALSE
 
   options(error = .vsc.onError)
   .vsc.sendToVsc('go')
@@ -386,7 +377,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @export
 #' @return Boolean indicating whether an expression is being evaluated
 .vsc.isEvaluating <- function() {
-  return(.packageEnv$isEvaluating)
+  return(session$isEvaluating)
 }
 
 
@@ -397,7 +388,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @export
 #' @return Boolean indicating whether R should stop on breakpoints
 .vsc.stopOnBreakpoint <- function() {
-  return(!.packageEnv$isEvaluating)
+  return(!session$isEvaluating)
 }
 
 #' Same as base::cat
