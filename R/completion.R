@@ -27,35 +27,35 @@ getInstalledPackages <- function() {
 }
 
 #' @export
-.vsc.getCompletion <- function(frameIdVsc, text, column=0, line=1, id=0, onlyGlobalEnv=FALSE){
-  if(column>1){
-    text <- substring(text, 1, column-1)
+.vsc.getCompletion <- function(frameIdVsc, text, column = 0, line = 1, id = 0, onlyGlobalEnv = FALSE) {
+  if (column > 1) {
+    text <- substring(text, 1, column - 1)
   }
-  if(onlyGlobalEnv){
+  if (onlyGlobalEnv) {
     firstenv <- globalenv()
-  } else{
+  } else {
     frameId <- convertFrameId(vsc = frameIdVsc)
     firstenv <- sys.frame(frameId)
   }
   lastenv <- globalenv()
-  envs <- getScopeEnvs(firstenv=firstenv, lastenv=lastenv)
+  envs <- getScopeEnvs(firstenv = firstenv, lastenv = lastenv)
 
   pattern0 <- "(\\$|\\[\\[|\\[|:::|::|:)$"
   ind <- regexpr(pattern0, text)
-  if(ind!=-1){
-    text1 <- substring(text = text, first = 1, last = ind-1)
+  if (ind != -1) {
+    text1 <- substring(text = text, first = 1, last = ind - 1)
     text2 <- substring(text = text, first = ind)
-  } else{
+  } else {
     text1 <- text
     text2 <- ""
   }
 
   var <- getLastVar(text1)
 
-  if(var=="" && text2!=""){
+  if (var == "" && text2 != "") {
     # only "$", "[", or "[[" --> no matches
     targets <- list()
-  } else if(text2==""){
+  } else if (text2 == "") {
     const_targets <- lapply(constants[startsWith(constants, var)], function(s) list(
       label = s,
       type = 'value'
@@ -76,7 +76,7 @@ getInstalledPackages <- function() {
       ))
     })
     env_targets <- unlist(env_targets, recursive = FALSE, use.names = FALSE)
-    
+
     att_pkgs <- getAttachedPackages()
     att_targets <- lapply(att_pkgs, function(pkg) {
       ns <- getNamespace(pkg)
@@ -96,7 +96,7 @@ getInstalledPackages <- function() {
     att_targets <- unlist(att_targets, recursive = FALSE, use.names = FALSE)
 
     targets <- c(const_targets, pkgs_targets, env_targets, att_targets)
-  } else{
+  } else {
     # find all children of the last variable
     targets <- getCompletionList(var, text2, envs)
   }
@@ -105,28 +105,28 @@ getInstalledPackages <- function() {
 }
 
 #' @export
-getLastVar <- function(text){
+getLastVar <- function(text) {
   pattern1 <- "((?:[a-zA-Z]|\\.[a-zA-Z_])[a-zA-Z\\._0-9]*|\\.)$" # matches the beggining of the last valid variable name
   ind <- regexpr(pattern1, text)
-  if(ind == -1){
+  if (ind == -1) {
     return("")
-  } else{
+  } else {
     return(substring(text, ind))
   }
 }
 
-getCompletionList <- function(var, accessor, envs){
+getCompletionList <- function(var, accessor, envs) {
   targets <- list()
-  if(accessor %in% c('[', '[[', '$')){
-    for(env in envs){
-      if(exists(var, env, inherits = FALSE)){
+  if (accessor %in% c('[', '[[', '$')) {
+    for (env in envs) {
+      if (exists(var, env, inherits = FALSE)) {
         if (isPromise(var, env)) {
           promise <- getPromiseVar(var, env)
           obj <- eval(promise$promiseExpr, promise$promiseEnv)
         } else {
           obj <- env[[var]]
         }
-        
+
         use_bracket <- accessor %in% c('[', '[[')
         use_dollar <- accessor == '$' && is.recursive(obj)
 
@@ -153,7 +153,7 @@ getCompletionList <- function(var, accessor, envs){
         break
       }
     }
-  } else if(accessor == '::'){
+  } else if (accessor == '::') {
     ns <- getNamespace(var)
     exports <- getNamespaceExports(ns)
     lazydata <- getLazyDataFromNamespace(ns)
@@ -167,7 +167,7 @@ getCompletionList <- function(var, accessor, envs){
         type = 'field'
       ))
     )
-  } else if(accessor == ':::'){
+  } else if (accessor == ':::') {
     ns <- getNamespace(var)
     names <- ls(ns)
     targets <- lapply(names, function(s) list(
