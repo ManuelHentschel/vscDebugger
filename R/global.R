@@ -11,3 +11,8 @@ session <- local({
   debugGlobal <- FALSE
   environment()
 })
+
+.onLoad <- function(...) {
+  options(error = traceback)
+  session$varInfo <- defaultVarInfo
+}

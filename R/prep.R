@@ -1,11 +1,6 @@
 ########################################################################
 # Prep
 
-.onLoad <- function(...) {
-  options(error = traceback)
-  session$varInfo <- defaultVarInfo
-}
-
 #' Evaluate an expression and send result to vsc
 #'
 #' Evaluates an expression in a given frameId and sends the result to vsc
