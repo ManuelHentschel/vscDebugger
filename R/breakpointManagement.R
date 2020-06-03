@@ -30,12 +30,9 @@
 # }
 
 
-.packageEnv$breakpoints <- list()
-
-
 #' @export
 .vsc.setStoredBreakpoints <- function() {
-  for (sbp in .packageEnv$breakpoints) {
+  for (sbp in session$breakpoints) {
     sbp$bps <- .vsc.setBreakpoints(sbp$file, sbp$breakpoints, includePackages = sbp$includePackages)
   }
 }
@@ -55,13 +52,13 @@
 
 #' @export
 .vsc.getAllBreakpoints <- function() {
-  return(.packageEnv$breakpoints)
+  return(session$breakpoints)
 }
 
 #' @export
 .vsc.getBreakpoints <- function(file) {
   file <- normalizePath(file)
-  allBps <- .packageEnv$breakpoints
+  allBps <- session$breakpoints
   matchingBps <- allBps[which(lapply(allBps, function(sbp) sbp$file) == file)]
   if (length(matchingBps) > 0) {
     sbp <- mergeSrcBreakpoints(matchingBps)
@@ -123,24 +120,24 @@
   sbp$breakpoints[[1]] <- bp
 
   addSrcBreakpoint(sbp)
-  .packageEnv$breakpoints <- mergeSrcBreakpoints(.packageEnv$breakpoints)
+  session$breakpoints <- mergeSrcBreakpoints(session$breakpoints)
 }
 
 
 #' @export
 .vsc.clearAllBreakpoints <- function() {
-  .packageEnv$breakpoints <- list()
+  session$breakpoints <- list()
 }
 
 #' @export
 .vsc.clearBreakpointsByFile <- function(file = '') {
   file <- normalizePath(file)
-  whichBreakpoints <- which(lapply(.packageEnv$breakpoints, function(bp) bp$file) == file)
-  .packageEnv$breakpoints[whichBreakpoints] <- NULL
+  whichBreakpoints <- which(lapply(session$breakpoints, function(bp) bp$file) == file)
+  session$breakpoints[whichBreakpoints] <- NULL
 }
 
 addSrcBreakpoints <- function(sbps = list()) {
-  .packageEnv$breakpoints <- c(.packageEnv$breakpoints, sbps)
+  session$breakpoints <- c(session$breakpoints, sbps)
 }
 
 addSrcBreakpoint <- function(sbp = NULL) {
