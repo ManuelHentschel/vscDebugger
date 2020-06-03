@@ -4,7 +4,14 @@
 \alias{.vsc.evalInFrame}
 \title{Evaluate an expression and send result to vsc}
 \usage{
-.vsc.evalInFrame(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE)
+.vsc.evalInFrame(
+  expr,
+  frameId,
+  silent = TRUE,
+  id = 0,
+  assignToAns = TRUE,
+  catchErrors = TRUE
+)
 }
 \arguments{
 \item{expr}{The espression to be evaluated}

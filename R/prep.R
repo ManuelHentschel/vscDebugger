@@ -10,7 +10,7 @@
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc
 #' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
-.vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE) {
+.vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE) {
   # evaluate calls that were made from top level cmd line in the .GlobalEnv
   if (session$debugGlobal && calledFromGlobal()) {
     env <- .GlobalEnv
@@ -55,17 +55,25 @@
     options(error = .vsc.onError)
   } else{
     # eval
-    valueAndVisible <- try(
-      {
-        b <- parse(text=expr)
-        for(exp in b){
-          cl <- call('withVisible', exp)
-          valueAndVisible <- eval(cl, envir=env)
-        }
-        valueAndVisible
-      },
-      silent = FALSE
-    )
+    if (catchErrors) {
+      valueAndVisible <- try(
+        {
+          b <- parse(text=expr)
+          for(exp in b){
+            cl <- call('withVisible', exp)
+            valueAndVisible <- eval(cl, envir=env)
+          }
+          valueAndVisible
+        },
+        silent = FALSE
+      )
+    } else {
+      b <- parse(text=expr)
+      for(exp in b){
+        cl <- call('withVisible', exp)
+        valueAndVisible <- eval(cl, envir=env)
+      }
+    }
     if(class(valueAndVisible) == 'try-error'){
       valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
     }
