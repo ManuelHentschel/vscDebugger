@@ -239,7 +239,7 @@ getLineAndFile <- function(call){
       endColumn = srcref[4],
       srcbody = srcbody,
       isFile = isFile
-  )}, error=function(e) NULL, silent=getOption('vsc.trySilent', default=TRUE))
+  )}, error=function(e) NULL)
   return(ret)
 }
 

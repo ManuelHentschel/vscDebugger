@@ -318,7 +318,7 @@ defaultVarInfo <- list(
   # scalar
   list(
     name = 'Scalar',
-    doesApply = function(v) is.atomic(v) && length(v) == 1,
+    doesApply = function(v) is.atomic(v) && length(v) == 1 && is.null(attributes(v)),
     hasChildren = FALSE,
     toString = function(v) paste(deparse(v), collapse = '\n')
   ),

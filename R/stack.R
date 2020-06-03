@@ -324,7 +324,7 @@ getSource <- function(frameId) {
       isFile = lineAndFile$isFile,
       srcbody = lineAndFile$srcbody
     )
-  }, error = function(e) NULL, silent = getOption('vsc.trySilent', default=TRUE))
+  }, error = function(e) NULL)
   
   return(ret)
 }
@@ -526,7 +526,7 @@ getVariableInEnv <- function(name, env) {
       getVariable(valueR, name)
     }, silent = getOption('vsc.trySilent', default=TRUE))
   }
-  if (class(variable) == 'try-error') {
+  if (inherits(variable, 'try-error')) {
     variable <- getDummyVariable(name)
   }
   return(variable)
@@ -601,7 +601,7 @@ varToString <- function(v) {
       ret <- toString2(v)
     }
   }, silent = getOption('vsc.trySilent', default=TRUE))
-  if(is.null(ret) || class(ret) == 'try-error'){
+  if(is.null(ret) || inherits(ret, 'try-error')){
     ret <- '???'
   }
   return(ret)
@@ -639,7 +639,7 @@ varToStringWithCaptureOutput <- function(v) {
   ret <- try({
     paste0(capture.output(v), collapse = '\n')
   }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (class(ret) == 'try-error') {
+  if (inherits(ret, 'try-error')) {
     ret <- '???'
   }
   return(ret)
@@ -710,7 +710,7 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
       }
     }
   }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (class(ret) == 'try-error') {
+  if (inherits(ret, 'try-error')) {
     return(onError)
   } else {
     return(ret)
