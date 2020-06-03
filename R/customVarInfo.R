@@ -150,8 +150,8 @@ defaultVarInfo <- list(
     name = '.Random.seed',
     doesApply = function(v) tryCatch(identical(v, get('.Random.seed', envir = globalenv())), error = function(e) FALSE),
     childVars = list(),
-    hasChildren = FALSE,
-    toString = 'c(KW:$%&...)'
+    hasChildren = FALSE
+    # toString = 'c(KW:$%&...)'
   ),
   # environment
   list(
@@ -276,13 +276,6 @@ defaultVarInfo <- list(
       ret
     }
   ),
-  # string
-  list(
-    name = 'String',
-    doesApply = is.character,
-    longType = 'string',
-    hasChildren = FALSE
-  ),
   # non-standard class
   list(
     name = 'NonStandardClass',
@@ -311,8 +304,15 @@ defaultVarInfo <- list(
     shortType = '',
     longType = 'function',
     toString = function(v) {
-      paste(format(v), collapse = '\n')
+      paste0(format(v), collapse = '\n')
     }
+  ),
+  # scalar
+  list(
+    name = 'Scalar',
+    doesApply = function(v) is.atomic(v) && length(v) == 1,
+    hasChildren = FALSE,
+    toString = deparse
   ),
   # default case
   list(
@@ -322,7 +322,7 @@ defaultVarInfo <- list(
     shortType = '',
     longType = function(v) typeof(v),
     includeAttributes = TRUE,
-    hasChildren = FALSE
-    # toString = function(v) paste0(format(v), collapse = ',')
+    hasChildren = FALSE,
+    toString = function(v) utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE))
   )
 )
