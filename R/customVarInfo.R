@@ -24,12 +24,12 @@
 
 #' @export
 .vsc.resetVarInfo <- function() {
-  .packageEnv$varInfo <- defaultVarInfo
+  session$varInfo <- defaultVarInfo
 }
 
 #' @export
 .vsc.clearVarInfo <- function() {
-  .packageEnv$varInfo <- list()
+  session$varInfo <- list()
 }
 
 #' @export
@@ -48,7 +48,7 @@
 ) {
   if (position < 0) {
     # negative positions count from the end, -1 = last position
-    position <- length(.packageEnv$varInfo) + 1 + position
+    position <- length(session$varInfo) + 1 + position
   } else if (position > 0) {
     position <- position - 1
   }
@@ -67,23 +67,23 @@
   varInfo$longType <- longType
   varInfo$includeAttributes <- includeAttribute
 
-  .packageEnv$varInfo <- append(.packageEnv$varInfo, varInfo, position)
+  session$varInfo <- append(session$varInfo, varInfo, position)
 }
 
 #' @export
 .vsc.removeVarInfo <- function(position = 1) {
   if (position < 0) {
-    position <- length(.packageEnv$varInfo) + 1 + position
+    position <- length(session$varInfo) + 1 + position
   }
-  .packageEnv$varInfo[position] <- NULL
+  session$varInfo[position] <- NULL
 }
 
 #' @export
 .vsc.listVarInfo <- function(position = NULL) {
   if (is.null(position)) {
-    position <- seq2(.packageEnv$varInfo)
+    position <- seq2(session$varInfo)
   }
-  return(.packageEnv$varInfo[position])
+  return(session$varInfo[position])
 }
 
 .vsc.checkVarInfo <- function(varInfo, testCase = NULL) {
