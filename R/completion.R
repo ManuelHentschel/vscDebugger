@@ -98,11 +98,7 @@ getInstalledPackages <- function() {
     targets <- c(const_targets, pkgs_targets, env_targets, att_targets)
   } else{
     # find all children of the last variable
-    matches <- getNameList(var, text2, envs)
-    targets <- lapply(matches, function(s) list(
-      label = s,
-      type = 'variable'
-    ))
+    targets <- getCompletionList(var, text2, envs)
   }
 
   .vsc.sendToVsc('completion', targets, id)
@@ -119,45 +115,65 @@ getLastVar <- function(text){
   }
 }
 
-
-#' @export
-getNameList <- function(var, delimiter, envs){
-  names <- list()
-  if(delimiter %in% c('[', '[[', '$')){
+getCompletionList <- function(var, accessor, envs){
+  targets <- list()
+  if(accessor %in% c('[', '[[', '$')){
     for(env in envs){
-      if(var %in% ls(env, sorted=FALSE)){
-        if(isPromise(var, env)){
-          names <- getNameListForPromise(var,env)
-        } else{
-          names <- names(get(var, envir=env))
+      if(exists(var, env, inherits = FALSE)){
+        if (isPromise(var, env)) {
+          promise <- getPromiseVar(var, env)
+          obj <- eval(promise$promiseExpr, promise$promiseEnv)
+        } else {
+          obj <- env[[var]]
+        }
+        
+        use_bracket <- accessor %in% c('[', '[[')
+        use_dollar <- accessor == '$' && is.recursive(obj)
+
+        if ((use_bracket || use_dollar)) {
+          names <- names(obj)
+          get_label <- if (use_bracket) function(s) paste0('"', s, '"') else identity
+          if (is.environment(obj)) {
+            targets <- lapply(names, function(s) list(
+              label = get_label(s),
+              type = if (isPromise(s, obj)) 'variable' else if (is.function(obj[[s]])) 'function' else 'variable'
+            ))
+          } else if (is.list(obj)) {
+            targets <- lapply(names, function(s) list(
+              label = get_label(s),
+              type = if (is.function(obj[[s]])) 'function' else 'variable'
+            ))
+          } else {
+            targets <- lapply(names, function(s) list(
+              label = get_label(s),
+              type = 'variable'
+            ))
+          }
         }
         break
       }
     }
-    if(delimiter %in% c('[', '[[')){
-      names <- lapply(names, function(s) paste0('"', s, '"'))
-    }
-  } else if(delimiter %in% c('::', ':')){
+  } else if(accessor == '::'){
     ns <- getNamespace(var)
     exports <- getNamespaceExports(ns)
     lazydata <- getLazyDataFromNamespace(ns)
-    names <- c(exports, lazydata)
-    if(delimiter == ':'){
-      names <- lapply(names, function(s) paste0(':', s))
-    }
-  } else if(delimiter == ':::'){
+    targets <- c(
+      lapply(exports, function(s) list(
+        label = s,
+        type = if (is.function(ns[[s]])) 'function' else 'field'
+      )),
+      lapply(lazydata, function(s) list(
+        label = s,
+        type = 'field'
+      ))
+    )
+  } else if(accessor == ':::'){
     ns <- getNamespace(var)
     names <- ls(ns)
+    targets <- lapply(names, function(s) list(
+      label = s,
+      type = if (is.function(ns[[s]])) 'function' else 'field'
+    ))
   }
-  names <- as.list(names)
-  return(names)
-}
-
-
-#' @export
-getNameListForPromise <- function(var, env){
-  promise <- getPromiseVar(var, env)
-  val <- eval(promise$promiseExpr, promise$promiseEnv)
-  names <- names(val)
-  return(names)
+  targets
 }
