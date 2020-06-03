@@ -67,7 +67,6 @@ zeroList <- function(list0) {
 
 
 
-#' @export
 summarizeLists <- function(lists) {
   names <- as.list(unique(unlist(lapply(lists, names))))
   ret <- list()
@@ -77,7 +76,6 @@ summarizeLists <- function(lists) {
   return(ret)
 }
 
-#' @export
 unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
   if (length(items) == 0) {
     return(list())
