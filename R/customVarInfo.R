@@ -128,6 +128,17 @@ defaultVarInfo <- list(
     longType = 'NULL',
     toString = 'NULL'
   ),
+  # promise custom attributes with eval (might have side effects!!!)
+  list(
+    name = 'PromisePreview',
+    doesApply = function(v) class(v) == ".vsc.promise",
+    customAttributes = function(v) {
+      list(
+        names = list('__promiseEnv', '__currentValue'),
+        values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
+      )
+    }
+  ),
   # promise (custom type)
   list(
     name = 'Promise',
@@ -138,8 +149,8 @@ defaultVarInfo <- list(
     toString = function(v) v$promiseCode,
     customAttributes = function(v) {
       list(
-        names = list('__promiseEnv', '__currentValue'),
-        values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
+        names = list('__promiseEnv'),
+        values = list(v$promiseEnv)
       )
     },
     hasChildren = TRUE,
