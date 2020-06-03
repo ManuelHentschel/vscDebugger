@@ -45,7 +45,7 @@
       },
       silent = getOption('vsc.trySilent', default=TRUE)
     )
-    if(class(valueAndVisible) == 'try-error'){
+    if(inherits(valueAndVisible, 'try-error')){
       valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
     }
 
@@ -74,7 +74,7 @@
         valueAndVisible <- eval(cl, envir=env)
       }
     }
-    if(class(valueAndVisible) == 'try-error'){
+    if(inherits(valueAndVisible, 'try-error')){
       valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
     }
   }
@@ -216,7 +216,7 @@ isPackageFrame <- function(env = parent.frame()) {
       fullPath <- toString(fullPath)
     }
   }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (class(fullPath) == 'try-error') {
+  if (inherits(fullPath, 'try-error')) {
     fullPath <- ''
   }
   return(fullPath)
@@ -239,7 +239,7 @@ getLineAndFile <- function(call){
       endColumn = srcref[4],
       srcbody = srcbody,
       isFile = isFile
-  )}, error=function(e) NULL, silent=getOption('vsc.trySilent', default=TRUE))
+  )}, error=function(e) NULL)
   return(ret)
 }
 
