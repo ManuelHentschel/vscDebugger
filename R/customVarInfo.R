@@ -34,7 +34,7 @@
 
 #' @export
 .vsc.addVarInfo <- function(
-  name = NULL,
+  name = '',
   doesApply = NULL,
   childVars = NULL,
   customAttributes = NULL,
@@ -137,10 +137,18 @@ defaultVarInfo <- list(
     longType = 'promise',
     toString = function(v) v$promiseCode,
     customAttributes = function(v) {
-      list(
-        names = list('__promiseEnv', '__currentValue'),
-        values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
-      )
+      if(getOption('vsc.previewPromises', default = FALSE)){
+        ret <- list(
+          names = list('__promiseEnv', '__currentValue'),
+          values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
+        )
+      } else {
+        ret <- list(
+          names = list('__promiseEnv'),
+          values = list(v$promiseEnv)
+        )
+      }
+      return(ret)
     },
     hasChildren = TRUE,
     includeAttributes = FALSE
@@ -312,7 +320,7 @@ defaultVarInfo <- list(
     name = 'Scalar',
     doesApply = function(v) is.atomic(v) && length(v) == 1,
     hasChildren = FALSE,
-    toString = deparse
+    toString = function(v) paste(deparse(v), collapse = '\n')
   ),
   # default case
   list(

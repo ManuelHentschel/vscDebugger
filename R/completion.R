@@ -120,8 +120,12 @@ getCompletionList <- function(var, accessor, envs) {
     for (env in envs) {
       if (exists(var, env, inherits = FALSE)) {
         if (isPromise(var, env)) {
-          promise <- getPromiseVar(var, env)
-          obj <- eval(promise$promiseExpr, promise$promiseEnv)
+          if (getOption('vsc.previewPromises')){
+            promise <- getPromiseVar(var, env)
+            obj <- eval(promise$promiseExpr, promise$promiseEnv)
+          } else {
+            obj <- NULL
+          }
         } else {
           obj <- env[[var]]
         }
