@@ -44,7 +44,8 @@
   longType = NULL,
   includeAttributes = NULL,
   varInfo = list(),
-  position = 1) {
+  position = 1
+) {
   if (position < 0) {
     # negative positions count from the end, -1 = last position
     position <- length(session$varInfo) + 1 + position
