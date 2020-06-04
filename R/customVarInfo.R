@@ -44,8 +44,7 @@
   longType = NULL,
   includeAttributes = NULL,
   varInfo = list(),
-  position = 1
-) {
+  position = 1) {
   if (position < 0) {
     # negative positions count from the end, -1 = last position
     position <- length(session$varInfo) + 1 + position
@@ -137,7 +136,7 @@ defaultVarInfo <- list(
     longType = 'promise',
     toString = function(v) v$promiseCode,
     customAttributes = function(v) {
-      if(getOption('vsc.previewPromises', default = FALSE)){
+      if (getOption('vsc.previewPromises', default = FALSE)) {
         ret <- list(
           names = list('__promiseEnv', '__currentValue'),
           values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
@@ -156,7 +155,7 @@ defaultVarInfo <- list(
   # .Random.seed (TEMPORARY FIX)
   list(
     name = '.Random.seed',
-    doesApply = function(v) tryCatch(identical(v, get('.Random.seed', envir = globalenv())), error = function(e) FALSE),
+    doesApply = function(v) !is.null(v) && identical(v, get0(".Random.seed", globalenv())),
     childVars = list(),
     hasChildren = FALSE
     # toString = 'c(KW:$%&...)'
@@ -199,18 +198,18 @@ defaultVarInfo <- list(
     name = 'Matrix',
     doesApply = is.matrix,
     childVars = function(v) {
-      getRow <- function(i){
-        row <- v[i,]
-        if(is.null(names(row))){
-          names(row) <- lapply(seq(1,ncol(v)), function(j) paste0('[', i, ',', j, ']'))
+      getRow <- function(i) {
+        row <- v[i, ]
+        if (is.null(names(row))) {
+          names(row) <- vapply(seq_len(ncol(v)), function(j) paste0('[', i, ',', j, ']'), character(1))
         }
         class(row) <- '.vsc.matrixRow'
         return(row)
       }
       vars <- lapply(seq2(nrow(v)), getRow)
       names <- rownames(v)
-      if(is.null(names)){
-        names <- lapply(seq(1,nrow(v)), function(i) paste0('[',i,',]'))
+      if (is.null(names)) {
+        names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',]'))
       }
       return(list(
         names = names,
@@ -218,7 +217,7 @@ defaultVarInfo <- list(
       ))
     },
     hasChildren = TRUE,
-    shortType = function(v){
+    shortType = function(v) {
       paste0('matrix[', nrow(v), ',', ncol(v), ']')
     },
     'matrix',
@@ -251,7 +250,7 @@ defaultVarInfo <- list(
     childVars = function(v) {
       values <- as.list(v)
       if (is.null(names(values))) {
-        names <- lapply(seq2(values), function(s) {paste0('[', s, ']')})
+        names <- lapply(seq2(values), function(s) paste0('[', s, ']'))
       } else {
         names <- NULL
       }
@@ -331,6 +330,8 @@ defaultVarInfo <- list(
     longType = function(v) typeof(v),
     includeAttributes = TRUE,
     hasChildren = FALSE,
-    toString = function(v) utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE))
+    toString = function(v) {
+      paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
+    }
   )
 )
