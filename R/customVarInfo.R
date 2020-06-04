@@ -130,7 +130,7 @@ defaultVarInfo <- list(
   # promise (custom type)
   list(
     name = 'Promise',
-    doesApply = function(v) class(v) == ".vsc.promise",
+    doesApply = function(v) inherits(v, '.vsc.promise'),
     childVars = list(),
     shortType = '',
     longType = 'promise',
@@ -189,7 +189,7 @@ defaultVarInfo <- list(
   # matrix row
   list(
     name = 'MatrixRow',
-    doesApply = function(v) '.vsc.matrixRow' %in% class(v),
+    doesApply = function(v) inherits(v, '.vsc.matrixRow'),
     includeAttributes = FALSE,
     customAttributes = list()
   ),
@@ -283,11 +283,25 @@ defaultVarInfo <- list(
       ret
     }
   ),
+  # S4
+  list(
+    name = 'S4',
+    doesApply = isS4,
+    childVars = function(v) {
+      names <- slotNames(v)
+      values <- lapply(names, function(s) slot(v, s))
+      list(values = values, names = names)
+    },
+    hasChildren = TRUE,
+    shortType = 'S4',
+    longType = 'S4',
+    includeAttributes = FALSE
+  ),
   # non-standard class
   list(
     name = 'NonStandardClass',
     doesApply = function(v) {
-      return('class' %in% names(attributes(v)) && !is.environment(v))
+      'class' %in% names(attributes(v)) && !is.environment(v) && !isS4(v)
     },
     customAttributes = function(v) {
       return(list(
