@@ -40,7 +40,7 @@ getInstalledPackages <- function() {
   lastenv <- globalenv()
   envs <- getScopeEnvs(firstenv = firstenv, lastenv = lastenv)
 
-  pattern0 <- "(\\$|\\[\\[|\\[|:::|::|:)$"
+  pattern0 <- "(\\$|\\[\\[|\\[|\\@|:::|::|:)$"
   ind <- regexpr(pattern0, text)
   if (ind != -1) {
     text1 <- substring(text = text, first = 1, last = ind - 1)
@@ -116,11 +116,11 @@ getLastVar <- function(text) {
 
 getCompletionList <- function(var, accessor, envs) {
   targets <- list()
-  if (accessor %in% c('[', '[[', '$')) {
+  if (accessor %in% c('[', '[[', '$', '@')) {
     for (env in envs) {
       if (exists(var, env, inherits = FALSE)) {
         if (isPromise(var, env)) {
-          if (getOption('vsc.previewPromises', FALSE)){
+          if (getOption('vsc.previewPromises', FALSE)) {
             promise <- getPromiseVar(var, env)
             obj <- eval(promise$promiseExpr, promise$promiseEnv)
           } else {
@@ -132,14 +132,24 @@ getCompletionList <- function(var, accessor, envs) {
 
         use_bracket <- accessor %in% c('[', '[[')
         use_dollar <- accessor == '$' && is.recursive(obj)
+        use_at <- accessor == '@' && isS4(obj)
 
-        if ((use_bracket || use_dollar)) {
-          names <- names(obj)
+        if (use_bracket || use_dollar || use_at) {
+          if (use_at) {
+            names <- slotNames(obj)
+          } else {
+            names <- names(obj)
+          }
           get_label <- if (use_bracket) function(s) paste0('"', s, '"') else identity
           if (is.environment(obj)) {
             targets <- lapply(names, function(s) list(
               label = get_label(s),
               type = if (isPromise(s, obj)) 'variable' else if (is.function(obj[[s]])) 'function' else 'variable'
+            ))
+          } else if (isS4(obj)) {
+            targets <- lapply(names, function(s) list(
+              label = get_label(s),
+              type = if (is.function(slot(obj, s))) 'function' else 'field'
             ))
           } else if (is.list(obj)) {
             targets <- lapply(names, function(s) list(

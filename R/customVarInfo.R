@@ -131,13 +131,13 @@ defaultVarInfo <- list(
   # promise (custom type)
   list(
     name = 'Promise',
-    doesApply = function(v) class(v) == ".vsc.promise",
+    doesApply = function(v) inherits(v, '.vsc.promise'),
     childVars = list(),
     shortType = '',
     longType = 'promise',
     toString = function(v) v$promiseCode,
     customAttributes = function(v) {
-      if(getOption('vsc.previewPromises', default = FALSE)){
+      if (getOption('vsc.previewPromises', default = FALSE)) {
         ret <- list(
           names = list('__promiseEnv', '__currentValue'),
           values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
@@ -156,7 +156,7 @@ defaultVarInfo <- list(
   # .Random.seed (TEMPORARY FIX)
   list(
     name = '.Random.seed',
-    doesApply = function(v) tryCatch(identical(v, get('.Random.seed', envir = globalenv())), error = function(e) FALSE),
+    doesApply = function(v) !is.null(v) && identical(v, get0(".Random.seed", globalenv())),
     childVars = list(),
     hasChildren = FALSE
     # toString = 'c(KW:$%&...)'
@@ -190,7 +190,7 @@ defaultVarInfo <- list(
   # matrix row
   list(
     name = 'MatrixRow',
-    doesApply = function(v) '.vsc.matrixRow' %in% class(v),
+    doesApply = function(v) inherits(v, '.vsc.matrixRow'),
     includeAttributes = FALSE,
     customAttributes = list()
   ),
@@ -199,18 +199,18 @@ defaultVarInfo <- list(
     name = 'Matrix',
     doesApply = is.matrix,
     childVars = function(v) {
-      getRow <- function(i){
-        row <- v[i,]
-        if(is.null(names(row))){
-          names(row) <- lapply(seq(1,ncol(v)), function(j) paste0('[', i, ',', j, ']'))
+      getRow <- function(i) {
+        row <- v[i, ]
+        if (is.null(names(row))) {
+          names(row) <- vapply(seq_len(ncol(v)), function(j) paste0('[', i, ',', j, ']'), character(1))
         }
         class(row) <- '.vsc.matrixRow'
         return(row)
       }
       vars <- lapply(seq2(nrow(v)), getRow)
       names <- rownames(v)
-      if(is.null(names)){
-        names <- lapply(seq(1,nrow(v)), function(i) paste0('[',i,',]'))
+      if (is.null(names)) {
+        names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',]'))
       }
       return(list(
         names = names,
@@ -218,7 +218,7 @@ defaultVarInfo <- list(
       ))
     },
     hasChildren = TRUE,
-    shortType = function(v){
+    shortType = function(v) {
       paste0('matrix[', nrow(v), ',', ncol(v), ']')
     },
     'matrix',
@@ -251,7 +251,7 @@ defaultVarInfo <- list(
     childVars = function(v) {
       values <- as.list(v)
       if (is.null(names(values))) {
-        names <- lapply(seq2(values), function(s) {paste0('[', s, ']')})
+        names <- lapply(seq2(values), function(s) paste0('[', s, ']'))
       } else {
         names <- NULL
       }
@@ -284,11 +284,34 @@ defaultVarInfo <- list(
       ret
     }
   ),
+  # S4
+  list(
+    name = 'S4',
+    doesApply = isS4,
+    childVars = function(v) {
+      names <- slotNames(v)
+      values <- lapply(names, function(s) slot(v, s))
+      list(values = values, names = names)
+    },
+    hasChildren = TRUE,
+    shortType = 'S4',
+    longType = 'S4',
+    includeAttributes = FALSE,
+    customAttributes = function(v) {
+      attrs <- attributes(v)
+      slots <- slotNames(v)
+      nonslots <- setdiff(names(attrs), slots)
+      list(
+        names = paste0("_", nonslots),
+        values = attrs[nonslots]
+      )
+    }
+  ),
   # non-standard class
   list(
     name = 'NonStandardClass',
     doesApply = function(v) {
-      return('class' %in% names(attributes(v)) && !is.environment(v))
+      'class' %in% names(attributes(v)) && !is.environment(v) && !isS4(v)
     },
     customAttributes = function(v) {
       return(list(
@@ -331,6 +354,8 @@ defaultVarInfo <- list(
     longType = function(v) typeof(v),
     includeAttributes = TRUE,
     hasChildren = FALSE,
-    toString = function(v) utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE))
+    toString = function(v) {
+      paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
+    }
   )
 )
