@@ -296,7 +296,16 @@ defaultVarInfo <- list(
     hasChildren = TRUE,
     shortType = 'S4',
     longType = 'S4',
-    includeAttributes = FALSE
+    includeAttributes = FALSE,
+    customAttributes = function(v) {
+      attrs <- attributes(v)
+      slots <- slotNames(v)
+      nonslots <- setdiff(names(attrs), slots)
+      list(
+        names = paste0("_", nonslots),
+        values = attrs[nonslots]
+      )
+    }
   ),
   # non-standard class
   list(
