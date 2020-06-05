@@ -46,16 +46,23 @@
   varInfo = list(),
   position = 1
 ) {
-  if (position < 0) {
-    # negative positions count from the end, -1 = last position
-    position <- length(session$varInfo) + 1 + position
-  } else if (position > 0) {
-    position <- position - 1
-  }
   # start with empty varInfo if none given
   if (is.null(varInfo)) {
     varInfo <- list()
   }
+
+  # check if there is a position given in varInfo
+  if (!is.null(varInfo$position)){
+    position <- varInfo$position
+  }
+
+  if (position < 0) {
+    # negative positions count from the end, -1 = last position
+    position <- length(session$varInfo) + 1 + position
+  } else if (position > 0) {
+    position <- position - 1 # position 1 == insert after 0
+  }
+
   # add entries to varInfo (entires already in varInfo will be overwritten)
   varInfo$name <- name
   varInfo$doesApply <- doesApply
@@ -83,29 +90,125 @@
   if (is.null(position)) {
     position <- seq2(session$varInfo)
   }
-  return(session$varInfo[position])
+  varInfos <- .vsc.getAllVarInfos()
+  varInfos <- lapply(position, function(pos) varInfos[pos])
+  varInfos <- unlist(varInfos, recursive = FALSE)
+  return(varInfos)
 }
 
-.vsc.checkVarInfo <- function(varInfo, testCase = NULL) {
-  warn <- list()
-  err <- list()
-  # doesApply:
-  if (is.null(varInfo$doesApply)) {
-    err <- c(err, 'doesApply must not be NULL')
-  } else if (!is.function(varInfo$doesApply)) {
-    warn <- c(warn, 'doesApply should be a function')
+#' @export
+.vsc.getVarInfo <- function(positionOrName = NULL){
+  if(is.null(positionOrName)){
+    return(NULL)
+  } else if(is.list(positionOrName)){
+    return(.vsc.listVarInfo(positionOrName))
+  } else if(is.vector(positionOrName) && length(positionOrName)>1){
+    return(.vsc.listVarInfo(as.list(positionOrName)))
   }
 
-  # customAttributes:
-  # hasChildren:
-  # toString:
-  # shortType:
-  # longType:
-  # includeAttributes:
-
-  # TODO: check everything else, apply testCase if supplied
-  return(TRUE)
+  varInfos <- .vsc.getAllVarInfos()
+  varInfo <- varInfos[[positionOrName]]
+  return(varInfo)
 }
+
+#' @export
+.vsc.getAllVarInfos <- function(){
+  varInfos <- session$varInfo
+  varInfos <- lapply(seq(1, length(varInfos)), function(i){
+    vI <- varInfos[[i]]
+    vI$position <- i
+    vI
+  })
+  names(varInfos) <- lapply(varInfos, function(vI){
+    if(is.null(vI$name)){
+      paste0('varInfo', vI$pos)
+    } else{
+      vI$name
+    }
+  })
+  return(varInfos)
+}
+
+applyTestVar <- function(varInfo, testVar){
+  for(i in seq(length(varInfo))){
+    if(is.function(varInfo[[i]])){
+      varInfo[i] <- list(try(varInfo[[i]](testVar), silent=TRUE))
+    }
+  }
+  return(varInfo)
+}
+
+
+.vsc.checkVarInfo <- function(varInfo, testCase, verbose=TRUE) {
+  err <- list()
+  warn <- list()
+  remark <- list()
+
+
+  mustNotBeNull <- list('doesApply', 'name')
+  shouldBeFunction <- list('doesApply', 'customAttributes', 'childVars', 'toString')
+
+  retMustBeString <- list('name', 'shortType', 'longType', 'toString')
+  retMustBeList <- list('childVars', 'customAttributes')
+  retMustBeBoolean <- list('hasChildren', 'doesApply')
+
+
+  for(name in mustNotBeNull){
+    if(is.null(varInfo[[name]])){
+      err <- c(err, paste0(name, ' must not be NULL'))
+    }
+  }
+
+  for(name in shouldBeFunction){
+    if(!is.null(varInfo[[name]]) && !is.function(varInfo[[name]])){
+      warn <- c(warn, paste0(name, ' should be a function'))
+    }
+  }
+
+  if (missing(testCase)){
+    warn <- c(warn, 'No test variable supplied. Could not check return values.')
+    results <- NULL
+  } else{
+    results <- applyTestVar(varInfo, testCase)
+      if(!identical(results$doesApply, TRUE)){
+        warn <- c(warn, 'doesApply should return TRUE for the test case.')
+      }
+    for(i in seq(length(varInfo))){
+      name <- names(varInfo)[i]
+      entry <- varInfo[[i]]
+      ret <- results[[i]]
+      if(inherits(ret, 'try-error')){
+        err <- c(err, paste0(name, ' causes an error.'))
+      } else if(name %in% retMustBeBoolean && !isAtomicBoolean(ret)){
+        err <- c(err, paste0(name, ' must return (or be) an atomic logical value.'))
+      } else if(name %in% retMustBeList && !is.list(ret)){
+        err <- c(err, paste0(name, ' must return (or be) a list. Do not use NULL instead of list().'))
+      } else if(name %in% retMustBeString && !isAtomicString(ret)){
+        err <- c(err, paste0(name, ' must return (or be) an atomic character vector.'))
+      }
+    }
+  }
+
+  if(verbose){
+    cat('ERRORS:\n')
+    for(er in err){
+      cat(' - ', er, '\n')
+    }
+    cat('\nWARNINGS:\n')
+    for(wa in warn){
+      cat(' - ', wa, '\n')
+    }
+    cat('\nREMARKS:\n')
+    for(rem in remark){
+      cat(' - ', rem, '\n')
+    }
+  }
+
+  return(list(err=err, warn=warn, remark=remark, results=results))
+}
+
+isAtomicBoolean <- function(v) is.logical(v) && is.atomic(v)
+isAtomicString <- function(v) is.character(v) && is.atomic(v)
 
 
 getVarsInEnv <- function(env, all.names = TRUE) {
@@ -192,7 +295,11 @@ defaultVarInfo <- list(
     name = 'MatrixRow',
     doesApply = function(v) inherits(v, '.vsc.matrixRow'),
     includeAttributes = FALSE,
-    customAttributes = list()
+    customAttributes = list(),
+    toString = function(v){
+      attributes(v) <- list()
+      paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
+    }
   ),
   # matrix
   list(
@@ -207,10 +314,18 @@ defaultVarInfo <- list(
         class(row) <- '.vsc.matrixRow'
         return(row)
       }
-      vars <- lapply(seq2(nrow(v)), getRow)
-      names <- rownames(v)
-      if (is.null(names)) {
-        names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',]'))
+      if (ncol(v)==1){
+        vars <- as.list(v)
+        names <- rownames(v)
+        if (is.null(names)) {
+          names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',1]'))
+        }
+      } else{
+        vars <- lapply(seq2(nrow(v)), getRow)
+        names <- rownames(v)
+        if (is.null(names)) {
+          names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',]'))
+        }
       }
       return(list(
         names = names,
@@ -302,7 +417,7 @@ defaultVarInfo <- list(
       slots <- slotNames(v)
       nonslots <- setdiff(names(attrs), slots)
       list(
-        names = paste0("_", nonslots),
+        names = as.list(paste0("_", nonslots)),
         values = attrs[nonslots]
       )
     }
@@ -353,7 +468,7 @@ defaultVarInfo <- list(
     shortType = '',
     longType = function(v) typeof(v),
     includeAttributes = TRUE,
-    hasChildren = FALSE,
+    hasChildren = function(v) !is.null(attributes(v)),
     toString = function(v) {
       paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
     }
