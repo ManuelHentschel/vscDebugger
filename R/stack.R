@@ -310,6 +310,11 @@ getSource <- function(frameId) {
     call <- sys.call(frameId + 1)
     lineAndFile <- getLineAndFile(call)
     filename <- lineAndFile$filename
+
+    if(is.null(lineAndFile$isFile)){
+      lineAndFile$isFile <- TRUE
+    }
+
     if(lineAndFile$isFile){
       sourceReference = 0
     } else{
