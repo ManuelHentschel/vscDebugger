@@ -166,18 +166,21 @@ applyTestVar <- function(varInfo, testVar){
   }
 
   if (missing(testCase)){
-    warn <- c(warn, 'No test variable supplied! Could not check return values!')
+    warn <- c(warn, 'No test variable supplied. Could not check return values.')
     results <- NULL
   } else{
     results <- applyTestVar(varInfo, testCase)
+      if(!identical(results$doesApply, TRUE)){
+        warn <- c(warn, 'doesApply should return TRUE for the test case.')
+      }
     for(i in seq(length(varInfo))){
       name <- names(varInfo)[i]
       entry <- varInfo[[i]]
       ret <- results[[i]]
       if(inherits(ret, 'try-error')){
-        err <- c(err, paste0(name, ' causes an error!'))
+        err <- c(err, paste0(name, ' causes an error.'))
       } else if(name %in% retMustBeBoolean && !isAtomicBoolean(ret)){
-        err <- c(err, paste0(name, ' must return (or be) an atomic logical value'))
+        err <- c(err, paste0(name, ' must return (or be) an atomic logical value.'))
       } else if(name %in% retMustBeList && !is.list(ret)){
         err <- c(err, paste0(name, ' must return (or be) a list. Do not use NULL instead of list().'))
       } else if(name %in% retMustBeString && !isAtomicString(ret)){
