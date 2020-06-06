@@ -288,14 +288,12 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @return A (json) string that can be interpreted by vsc
 
 .vsc.makeStringForVsc <- function(message, body = "", id = 0) {
-  .vsc.delimiter0 <- '<v\\s\\c>' # hardcoded to avoid triggering vsc when e.g. stack is sent
-  .vsc.delimiter1 <- '</v\\s\\c>' # should probably be solved more elegantly
   l <- list(message = message, body = body, id = id)
   s <- jsonlite::toJSON(l, auto_unbox = TRUE, force = TRUE)
   r <- paste0(
-    .vsc.delimiter0,
+    session$rStrings$delimiter0,
     s,
-    .vsc.delimiter1,
+    session$rStrings$delimiter1,
     '\n'
   )
   return(r)
@@ -315,12 +313,36 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @export
 #' @param overWritePrint Whether to overwrite \code{base::print} with a version that sends output to vsc
 #' @param overWriteCat Whether to overwrite \code{base::cat} with a version that sends output to vsc
-.vsc.prepGlobalEnv <- function(overwritePrint = TRUE, overwriteCat = TRUE, overwriteSource = TRUE, findMain = TRUE, mainFunction = 'main', debugGlobal = FALSE) {
+.vsc.prepGlobalEnv <- function(
+  overwritePrint = TRUE,
+  overwriteCat = TRUE,
+  overwriteSource = TRUE,
+  findMain = TRUE,
+  mainFunction = 'main',
+  allowGlobalDebugging = FALSE,
+  rStrings = NULL,
+  id = 0
+) {
 
-  session$debugGlobal <- debugGlobal
+  session$debugGlobal <- allowGlobalDebugging
 
-  options(prompt = "<#v\\s\\c>\n")
-  options(continue = "<##v\\s\\c>\n")
+  if(!is.null(rStrings)){
+    session$rStrings <- rStrings
+  } else{
+    session$rStrings <- list(
+      delimiter0 = '<v\\s\\c>',
+      delimiter1 = '</v\\s\\c>',
+      prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+      continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+      startup = '<v\\s\\c\\R\\STARTUP>',
+      libraryNotFound = '<v\\s\\c\\LIBRARY\\NOT\\FOUND>',
+      packageName = 'vscDebugger',
+      append = ' ### <v\\s\\c\\COMMAND>'
+    )
+  }
+
+  options(prompt = paste0(session$rStrings$prompt, '\n'))
+  options(continue = paste0(session$rStrings$continue, '\n'))
   options(browserNLdisabled = TRUE)
 
   suppressPackageStartupMessages(loadNamespace("pryr"))
@@ -344,7 +366,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
   session$isEvaluating <- FALSE
 
   options(error = .vsc.onError)
-  .vsc.sendToVsc('go')
+  .vsc.sendToVsc('go', id=id)
 }
 
 #' @export
