@@ -256,6 +256,17 @@ defaultVarInfo <- list(
     hasChildren = TRUE,
     includeAttributes = FALSE
   ),
+  # info variable (info by the debugger if there was an error etc.)
+  list(
+    name = 'InfoVar',
+    doesApply = function(v) inherits(v, '.vsc.infoVar'),
+    childVars = list(),
+    shortType = '',
+    longType = function(v) v$type,
+    hasChildren = FALSE,
+    toString = function(v) v$text,
+    includeAttributes = FALSE
+  ),
   # .Random.seed (TEMPORARY FIX)
   list(
     name = '.Random.seed',
