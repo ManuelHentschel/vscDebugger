@@ -488,17 +488,37 @@ getVarListsEntry <- function(varRef) {
 getVarInEnv <- function(name, env) {
   # get Info about a variable in an environment
   # separate from getVariable(), since environments might contain promises
-  var <- try({
-    if (isPromise(name, env)) {
-      var <- getPromiseVar(name, env)
+  var <- tryCatch({
+    if (name == '...') {
+      ret <- getInfoVar('<...>')
+    } else if (isPromise(name, env)) {
+      ret <- getPromiseVar(name, env)
     } else {
-      var <- get(name, envir = env)
+      ret <- get(name, envir = env)
     }
-    var
+    ret
+  }, error = function(e){
+    if(missingInEnv(name, env)){
+      ret <- getInfoVar('<MISSING>')
+    } else{
+      ret <- getInfoVar('<ERROR>')
+    }
+    ret
   })
-  if(inherits(var, 'try-error')){
-    var <- NULL
-  }
+  return(var)
+}
+
+missingInEnv <- function(name, env){
+  ret <- tryCatch(
+    do.call('missing', list(name), envir=env),
+    error = function(e) FALSE
+  )
+  return(ret)
+}
+
+getInfoVar <- function(text, type='Warning: the variable value is just an info from the debugger!'){
+  var <- list( text = text, type = type)
+  class(var) <- '.vsc.infoVar'
   return(var)
 }
 
