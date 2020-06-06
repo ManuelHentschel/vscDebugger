@@ -488,10 +488,16 @@ getVarListsEntry <- function(varRef) {
 getVarInEnv <- function(name, env) {
   # get Info about a variable in an environment
   # separate from getVariable(), since environments might contain promises
-  if (isPromise(name, env)) {
-    var <- getPromiseVar(name, env)
-  } else {
-    var <- get(name, envir = env)
+  var <- try({
+    if (isPromise(name, env)) {
+      var <- getPromiseVar(name, env)
+    } else {
+      var <- get(name, envir = env)
+    }
+    var
+  })
+  if(inherits(var, 'try-error')){
+    var <- NULL
   }
   return(var)
 }

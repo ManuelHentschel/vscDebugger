@@ -10,7 +10,9 @@
   overwriteSource = TRUE,
   findMain = TRUE,
   mainFunction = "main",
-  debugGlobal = FALSE
+  allowGlobalDebugging = FALSE,
+  rStrings = NULL,
+  id = 0
 )
 }
 \arguments{
