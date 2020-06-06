@@ -8,7 +8,22 @@
 # TODO: enable breakpoints in specific columns?
 
 #' @export
-.vsc.debugSource <- function(file, lines = list(), envir = parent.frame(), encoding = "unknown", applyInternalBreakpoints = TRUE, recursive = TRUE, ...) {
+.vsc.debugSource <- function(
+  file, lines = list(), local = FALSE, envir = NULL, chdir = FALSE,
+  encoding = "unknown", applyInternalBreakpoints = TRUE,
+  recursive = TRUE, ...
+) {
+  # determine envir
+  if(!is.null(envir)){
+    # do nothing
+  } else if(is.environment(local)){
+    envir <- local
+  } else if(local){
+    envir <- parent.frame()
+  } else{
+    envir <- globalenv()
+  }
+  
   # parse file:
   file <- normalizePath(file)
   body <- parse(file, encoding = encoding, keep.source = TRUE)
@@ -32,9 +47,12 @@
   # set breakpoints:
   body <- mySetBreakpoints(body, ats)
 
-  # store debugState
+  # store state
   tmpDebugGlobal <- session$debugGlobal
   session$debugGlobal <- FALSE
+  if(chdir){
+    tmpwd <- setwd(dirname(file))
+  }
 
   # actually run the code:
   enclos <- baseenv()
@@ -42,8 +60,11 @@
   # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
 
 
-  # restore debugState
+  # restore state
   session$debugGlobal <- tmpDebugGlobal
+  if(chdir){
+    setwd(tmpwd)
+  }
 }
 
 
