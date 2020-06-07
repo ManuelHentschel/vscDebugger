@@ -78,9 +78,9 @@
 #'
 #' @export
 #' @param topFrame The first stack frame to consider (= the current function call)
-#' @param skipFromTop Number of frames to skip from the top. Can be used to skip e.g. the frame of \code{browser()} itself.
-#' @param skipFromBottom Number of frames to skip from the bottom. Can be used to skip e.g. the frame of \code{.vsc.runMain()}
-#' @param isError Boolean indicating whether the function is called from an error state. Adds 1 to \code{skipFromTop}
+#' @param skipFromTop Number of frames to skip from the top. Can be used to skip e.g. the frame of `browser()` itself.
+#' @param skipFromBottom Number of frames to skip from the bottom. Can be used to skip e.g. the frame of `.vsc.runMain()`
+#' @param isError Boolean indicating whether the function is called from an error state. Adds 1 to `skipFromTop`
 #' @return The current stack, formatted as a nested named list
 #'
 .vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop = 0, skipFromBottom = 1, isError = FALSE, lastenv = .GlobalEnv) {
@@ -122,7 +122,7 @@ clearVarLists <- function(deleteAll = FALSE){
 #' Build a dummy stack that contains only one frame with the .GlobalEnv as only scope.
 #' 
 #' @param dummyFile The file that is returned as the source file
-#' @return A stack with the same structure as \code{.vsc.buildStack}
+#' @return A stack with the same structure as `.vsc.buildStack`
 #' 
 .vsc.getDummyStack <- function(dummyFile = NULL, lastenv = .GlobalEnv) {
   clearVarLists()
@@ -151,7 +151,7 @@ clearVarLists <- function(deleteAll = FALSE){
 
 #' Get a dummy frame
 #' 
-#' Returns a dummy frame used in \code{.vsc.getDummyStack}.
+#' Returns a dummy frame used in `.vsc.getDummyStack`.
 #' 
 #' @param frameIdR The internal id of the frame
 #' @param frameIdVsc The id of the frame that is reported to vsc
@@ -257,7 +257,7 @@ getStackFrame <- function(frameIdR, frameIdVsc, lastenv=.GlobalEnv) {
   name <- getFrameName(call)
   # source <- getSource(env, call)
   source <- getSource(frameIdR)
-  lineAndFile <- getCallingLineAndFile(frameId=frameIdR, skipCalls=-1)
+  lineAndFile <- .vsc.getCallingLineAndFile(frameId=frameIdR, skipCalls=-1)
   line <- lineAndFile$line
   endLine <- lineAndFile$endLine
   # column <- 0
@@ -308,7 +308,7 @@ getSource <- function(frameId) {
   }
   ret <- tryCatch({
     call <- sys.call(frameId + 1)
-    lineAndFile <- getLineAndFile(call)
+    lineAndFile <- .vsc.getLineAndFile(call)
     filename <- lineAndFile$filename
 
     if(is.null(lineAndFile$isFile)){
@@ -341,8 +341,8 @@ getSource <- function(frameId) {
 #' 
 #' Gathers and returns info about the scopes in a frame
 #' 
-#' @param frame A frame as constructed by \code{getStackFrame}
-#' @return A list of scopes as constructed by \code{getScope}
+#' @param frame A frame as constructed by `getStackFrame`
+#' @return A list of scopes as constructed by `getScope`
 getScopes <- function(frame, lastenv = .GlobalEnv) {
   envs <- getScopeEnvs(frame$env, lastenv)
   scopes <- lapply(envs, getScope)
@@ -384,12 +384,12 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
 #' Get VariablesReference for varListArgs
 #' 
 #' @description 
-#' Gets a variablesReference for a list of arguments meant for \code{getVarList}.
-#' Unless specified the actual call to \code{getVarList} is not evaluated.
+#' Gets a variablesReference for a list of arguments meant for `getVarList`.
+#' Unless specified the actual call to `getVarList` is not evaluated.
 #' Instead the arguments are stored and evaluated when the variablesReference is requested.
 #' 
-#' @param varListArgs A named list containing the arguments that are passed to \code{getVarList}
-#' @param evalCall A boolean indicating whether to evaluate the call already (defaults to \code{FALSE})
+#' @param varListArgs A named list containing the arguments that are passed to `getVarList`
+#' @param evalCall A boolean indicating whether to evaluate the call already (defaults to `FALSE`)
 #' @param varRef If specified, this varRef is used instead of incrementing the last varRef by 1
 #' 
 getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef = NULL, persistent=FALSE) {
@@ -424,10 +424,10 @@ getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef
 
 #' Get the variable corresponding to a variablesReference
 #' 
-#' Is basically is a wrapper for \code{session$varLists[[varRef]]}.
+#' Is basically is a wrapper for `session$varLists[[varRef]]`.
 #' If necessary evaluates the call for a given varRef and returns the result.
 #' 
-#' @param varRef The variablesReference as returned by \code{getVarRefForVarListArgs} or \code{getVarRefForVar}
+#' @param varRef The variablesReference as returned by `getVarRefForVarListArgs} or \code{getVarRefForVar`
 #' @return A list of variables corresponding to the varRef
 getVarListsEntry <- function(varRef) {
   # 
@@ -480,11 +480,11 @@ getVarListsEntry <- function(varRef) {
 
 #' Get variable from environment
 #' 
-#' Is basically a wrapper for \code{get(name, envir=env)}, but does not forces promises.
+#' Is basically a wrapper for `get(name, envir=env)`, but does not forces promises.
 #' 
 #' @param name The name of the variable
 #' @param env The environment in which to evaluate
-#' @return Returns the value of the variable or a representation of a promise as returned by \code{getPromiseVar}
+#' @return Returns the value of the variable or a representation of a promise as returned by `getPromiseVar`
 getVarInEnv <- function(name, env) {
   # get Info about a variable in an environment
   # separate from getVariable(), since environments might contain promises
@@ -506,6 +506,15 @@ getVarInEnv <- function(name, env) {
     ret
   })
   return(var)
+}
+
+getVarsInEnv <- function(env, all.names = TRUE) {
+  names <- ls(env, all.names = all.names)
+  vars <- lapply(names, getVarInEnv, env)
+  return(list(
+    values = vars,
+    names = names
+  ))
 }
 
 missingInEnv <- function(name, env){

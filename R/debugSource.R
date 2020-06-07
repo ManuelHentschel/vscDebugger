@@ -157,6 +157,7 @@ encloseBody <- function(body) {
 }
 
 prependDummySrcref <- function(srcref) {
+  # used to make a new srcref that contains a dummy for the call to '{'
   dummySrcref <- c(1, 1, 1, 1, 1, 1, 1, 1)
   attributes(dummySrcref) <- attributes(srcref[[1]])
   newSrcref <- append(list(dummySrcref), srcref)
@@ -165,6 +166,7 @@ prependDummySrcref <- function(srcref) {
 }
 
 findLine <- function(b, line, at = c()) {
+  # recursively find a given line in a body `b` 
   if (hasSrcref(b)) {
     at <- findLineWithSrcref(b, line, at)
   } else {

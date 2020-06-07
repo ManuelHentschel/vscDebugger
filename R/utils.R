@@ -26,21 +26,21 @@ lIdentical <- function(xList, xElement) {
 
 #' Modified version of base::seq
 #'
-#' Modified version of \code{base::seq}
+#' Modified version of `base::seq`
 #' @usage seq2(from, to, by=1)
 #' @usage seq2(from)
 #'
 #' @param from Can be the starting value of the sequence, or the end value of the sequence, or a vector of length>1, or a list
 #' @param to The ending value of the sequence
-#' @param by The step size (as in \code{base::seq})
+#' @param by The step size (as in `base::seq`)
 #' @return A vector containing a sequence of numbers
 #'
 #' @details
-#' If \code{from, to, by} are supplied, the function returns the same as \code{base::seq}.
-#' If \code{from, to} are supplied the function returns \code{NULL} if \code{from>to},
-#' else the same as \code{base::seq}.
-#' If \code{from} is a number, the same as \code{seq2(1,from)} is returned.
-#' If \code{from} is a vector of length>1 or a list, \code{seq2(length(from))} is returned.
+#' If `from, to, by} are supplied, the function returns the same as \code{base::seq`.
+#' If `from, to} are supplied the function returns \code{NULL} if \code{from>to`,
+#' else the same as `base::seq`.
+#' If `from} is a number, the same as \code{seq2(1,from)` is returned.
+#' If `from} is a vector of length>1 or a list, \code{seq2(length(from))` is returned.
 seq2 <- function(from, to = NULL, by = 1) {
   if (is.null(from) || is.list(from) || (is.vector(from) && length(from) > 1)) {
     return(seq2(1, length(from), by))

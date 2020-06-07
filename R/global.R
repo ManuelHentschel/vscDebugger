@@ -20,5 +20,5 @@ session <- local({
   if(is.null(getOption('vsc.trySilent'))){
     options(vsc.trySilent = TRUE)
   }
-  session$varInfo <- defaultVarInfo
+  session$varInfo <- getDefaultVarInfo()
 }

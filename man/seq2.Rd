@@ -22,9 +22,9 @@ A vector containing a sequence of numbers
 Modified version of \code{base::seq}
 }
 \details{
-If \code{from, to, by} are supplied, the function returns the same as \code{base::seq}.
-If \code{from, to} are supplied the function returns \code{NULL} if \code{from>to},
-else the same as \code{base::seq}.
-If \code{from} is a number, the same as \code{seq2(1,from)} is returned.
-If \code{from} is a vector of length>1 or a list, \code{seq2(length(from))} is returned.
+If \verb{from, to, by\} are supplied, the function returns the same as \code{base::seq`.
+If `from, to} are supplied the function returns \code{NULL} if \code{from>to`,
+else the same as `base::seq`.
+If `from} is a number, the same as \code{seq2(1,from)` is returned.
+If `from} is a vector of length>1 or a list, \code\{seq2(length(from))} is returned.
 }

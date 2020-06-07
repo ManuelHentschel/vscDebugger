@@ -10,6 +10,7 @@
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc
 #' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
+#' @param catchErrors Whether to catch errors or let them be handled by `options(error = ...)`
 .vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE) {
   # evaluate calls that were made from top level cmd line in the .GlobalEnv
   if (session$debugGlobal && calledFromGlobal()) {
@@ -101,6 +102,7 @@
 }
 
 calledFromGlobal <- function() {
+  # determine if a call was made from the command line (=global) or not
   # can be used inside other functions from this package
 
   # Make sure not to nest this line: (!!!)
@@ -124,9 +126,9 @@ isPackageFrame <- function(env = parent.frame()) {
 }
 
 
-#' Modified version of \code{cat()} for vsc
+#' Modified version of `cat()` for vsc
 #'
-#' Captures the output of \code{cat(...)} and sends it to vsc together with information about the sourcefile and line
+#' Captures the output of `cat(...)` and sends it to vsc together with information about the sourcefile and line
 #' @export
 #' @param ... Arguments passed to base::cat()
 #' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
@@ -143,22 +145,21 @@ isPackageFrame <- function(env = parent.frame()) {
   ret <- capture.output(base::cat(...))
   output <- paste(ret, sep = "", collapse = "\n")
 
-  line <- .vsc.getLineNumber(sys.call(-skipCalls))
-  frame <- parent.frame()
-  call <- sys.call(-1 - skipCalls)
-  file <- .vsc.getFileName(call, frame)
-  # output <- capture.output(base::print(...))
+  lineAndFile <- .vsc.getCallingLineAndFile(skipCalls = skipCalls+1, default = list(line=0, file=''))
+  line <- lineAndFile$line
+  file <- lineAndFile$file
+
   .vsc.sendToVsc('print', list(output = output, file = file, line = line))
   invisible(NULL)
 }
 
-#' Modified version of \code{print()} for vsc
+#' Modified version of `print()` for vsc
 #'
-#' Captures the output of \code{print(...)} and sends it to vsc together with information about the sourcefile and line
+#' Captures the output of `print(...)` and sends it to vsc together with information about the sourcefile and line
 #' @export
-#' @param ... Arguments passed to \code{base::cat()}
+#' @param ... Arguments passed to `base::cat()`
 #' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
-#' @return \code{NULL} (invisible)
+#' @return `NULL` (invisible)
 .vsc.print <- function(x, ..., skipCalls=0) {
   # TODO: consider correct environment for print(...)?
   # env <- sys.frame(-1)
@@ -170,16 +171,13 @@ isPackageFrame <- function(env = parent.frame()) {
   ret <- capture.output(base::print(x, ...))
   output <- paste(ret, sep = "", collapse = "\n")
 
-  line <- .vsc.getLineNumber(sys.call(-skipCalls))
-  frame <- parent.frame()
-  call <- sys.call(-1 - skipCalls)
-  file <- .vsc.getFileName(call, frame)
-  # output <- capture.output(base::print(...))
+  lineAndFile <- .vsc.getCallingLineAndFile(skipCalls = skipCalls+1, default = list(line=0, file=''))
+  line <- lineAndFile$line
+  file <- lineAndFile$file
+
   .vsc.sendToVsc('print', list(output = output, file = file, line = line))
   invisible(x)
 }
-
-
 
 
 #' Send info about some vars to vsc
@@ -197,35 +195,16 @@ isPackageFrame <- function(env = parent.frame()) {
 }
 
 
-#' Get Filename corresponding to a call in a given frame
-#'
-#' Get Filename corresponding to a call in a given frame
-#'
-#' @param call A function call (usually from the stack)
-#' @param frame The corresponding frame
-#' @return The filename
-.vsc.getFileName <- function(call, frame) {
-  fullPath <- try({
-    if (identical(call[[1]], call('::', quote(vscDebugger), quote(.vsc.debugSource)))) {
-      fileName <- call[[2]]
-      fullPath <- normalizePath(fileName)
-    } else {
-      fileName <- getSrcFilename(eval(call[[1]], envir = frame))
-      dirName <- getSrcDirectory(eval(call[[1]], envir = frame))
-      dirName <- suppressWarnings(normalizePath(dirName, winslash = '/'))
-      fullPath <- file.path(dirName, fileName)
-      fullPath <- suppressWarnings(normalizePath(fullPath, winslash = '\\'))
-      fullPath <- toString(fullPath)
-    }
-  }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (inherits(fullPath, 'try-error')) {
-    fullPath <- ''
-  }
-  return(fullPath)
-}
 
 
-getLineAndFile <- function(call){
+#' Get Line and File info for a call
+#' 
+#' Get Line and File info for a call
+#' 
+#' @export
+#' @param call The call for which to find line and file info
+#' @param default The results defaults to this if an error is encountered
+.vsc.getLineAndFile <- function(call, default=NULL){
   ret <- tryCatch({
     srcref <- attr(call, 'srcref')
     srcfile <- attr(srcref, 'srcfile')
@@ -241,28 +220,24 @@ getLineAndFile <- function(call){
       endColumn = srcref[4],
       srcbody = srcbody,
       isFile = isFile
-  )}, error=function(e) NULL)
+  )}, error=function(e) default)
   return(ret)
 }
 
-getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
-  call <- sys.call(frameId - skipCalls)
-  return(getLineAndFile(call))
-}
-
-
-#' Get Line-number corresponding to a call in a given frame
-#'
-#' Get Line-number corresponding to a call in a given frame
-#'
-#' @param call A function call (usually from the stack)
-#' @param frame The corresponding frame
-#' @return The line-numer
-.vsc.getLineNumber <- function(call) {
-  lineAndFile <- getLineAndFile(call)
-  ret <- lineAndFile$line
+#' Get Line and File info for a frameId
+#' 
+#' Get Line and File info for a frameId
+#' 
+#' @export
+#' @param frameId The id of the frame as used by `sys.call()`
+#' @param skipCalls Skip this number of frames (is substracted from `frameId`)
+#' @param default The results defaults to this if an error is encountered
+#' @return See `.vsc.getLineAndFile`
+.vsc.getCallingLineAndFile <- function(frameId = 0, skipCalls = 0, default=NULL) {
+  ret <- .vsc.getLineAndFile(sys.call(frameId - skipCalls), default)
   return(ret)
 }
+
 
 #' Send a message to vsc
 #'
@@ -274,10 +249,8 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @export
 .vsc.sendToVsc <- function(message, body = "", id = 0) {
   s <- .vsc.makeStringForVsc(message, body, id)
-  # base::cat(s)
   base::cat(s)
 }
-
 
 
 #' Prepare a message as string for vsc
@@ -288,7 +261,6 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
 #' @param id The message id. Is usually provided in the function call from vsc.
 #' @return A (json) string that can be interpreted by vsc
-
 .vsc.makeStringForVsc <- function(message, body = "", id = 0) {
   l <- list(message = message, body = body, id = id)
   s <- jsonlite::toJSON(l, auto_unbox = TRUE, force = TRUE)
@@ -305,16 +277,20 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 
 
 
-#' Runs the \code{main()} function
+#' Prep the r session for vsc
 #'
 #' @description
-#' HAS CHANGED! Following info not up to date!
-#' Looks for a function \code{main()} in the global environment and runs it
-#' Runs main() inside this function, hence \code{parent.frame()} and \code{parent.env()} etc. will behave differently
+#' Preps the r session for runing the r debugger in vscode and reports back to vsc
 #'
 #' @export
-#' @param overWritePrint Whether to overwrite \code{base::print} with a version that sends output to vsc
-#' @param overWriteCat Whether to overwrite \code{base::cat} with a version that sends output to vsc
+#' @param overWritePrint Whether to overwrite `base::print` with a version that sends output to vsc
+#' @param overWriteCat Whether to overwrite `base::cat` with a version that sends output to vsc
+#' @param overwriteSource Whether to overwrite `base::source` with a version that supports breakpoints
+#' @param findMain Whether to look for a main function
+#' @param mainFunction Name of the main function
+#' @param allowGlobalDebugging Whether to allow debugging after finishing a main function/script
+#' @param rStrings List of unique strings used to communicate with vsc
+#' @param id id of the response sent to vsc
 .vsc.prepGlobalEnv <- function(
   overwritePrint = TRUE,
   overwriteCat = TRUE,
@@ -371,7 +347,12 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
   .vsc.sendToVsc('go', id=id)
 }
 
-#' @export
+#' Look for a main function
+#' 
+#' Looks for main function and reports back to vsc
+#' 
+#' @exprot
+#' @param mainFunction Name of the main function, usually "`main`"
 .vsc.lookForMain <- function(mainFunction='main'){
   foundMain <- FALSE
   # look for main():
@@ -389,6 +370,12 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
   return(invisible(foundMain))
 }
 
+#' Error handler
+#' 
+#' Error handler used by vsc. Set with `options(error = .vsc.onError)`
+#' 
+#' @export
+#' @param err The message to be sent to vsc. Defaults to `geterrmessage()`
 .vsc.onError <- function(err=NULL) {
   if(is.null(err)){
     message <- geterrmessage()
@@ -404,7 +391,7 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
 
 #' Check if debugger is evaluating
 #'
-#' Returns \code{TRUE} iff an expression is being evaluated by the debugger during a breakpoint
+#' Returns `TRUE` iff an expression is being evaluated by the debugger during a breakpoint
 #'
 #' @export
 #' @return Boolean indicating whether an expression is being evaluated
@@ -412,25 +399,3 @@ getCallingLineAndFile <- function(frameId = 0, skipCalls = 0) {
   return(session$isEvaluating)
 }
 
-
-#' Check if R should stop on breakpoint
-#'
-#' Returns \code{FALSE} iff an expression is being evaluated by the debugger during a (different) breakpoint, else TRUE
-#'
-#' @export
-#' @return Boolean indicating whether R should stop on breakpoints
-.vsc.stopOnBreakpoint <- function() {
-  return(!session$isEvaluating)
-}
-
-#' Same as base::cat
-#'
-#' Same as base::cat
-#' @export
-.vsc.baseCat <- base::cat
-
-#' Same as base::print
-#'
-#' Same as base::print
-#' @export
-.vsc.basePrint <- base::print

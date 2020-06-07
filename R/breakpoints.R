@@ -6,7 +6,7 @@
 #' @export
 #' @param srcfile The file in which to set breakpoints
 #' @param lines A list of lines in which to set breakpoints
-#' @param ids A list of numbers, specifying the id of each breakpoint. Same length as \code{lines}
+#' @param ids A list of numbers, specifying the id of each breakpoint. Same length as `lines`
 #' @param includePackages Whether to set breakpoints in packages
 #' @param id The id of the answer sent to vsc
 #'
