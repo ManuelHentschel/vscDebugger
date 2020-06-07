@@ -21,6 +21,8 @@
 \item{id}{The Id of the message sent to vsc}
 
 \item{assignToAns}{Whether to assign the result of the evaluation to .GlobalEnv$.ans}
+
+\item{catchErrors}{Whether to catch errors or let them be handled by \code{options(error = ...)}}
 }
 \description{
 Evaluates an expression in a given frameId and sends the result to vsc

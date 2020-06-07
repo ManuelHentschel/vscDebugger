@@ -2,7 +2,7 @@
 % Please edit documentation in R/prep.R
 \name{.vsc.prepGlobalEnv}
 \alias{.vsc.prepGlobalEnv}
-\title{Runs the \code{main()} function}
+\title{Prep the r session for vsc}
 \usage{
 .vsc.prepGlobalEnv(
   overwritePrint = TRUE,
@@ -16,12 +16,22 @@
 )
 }
 \arguments{
+\item{overwriteSource}{Whether to overwrite \code{base::source} with a version that supports breakpoints}
+
+\item{findMain}{Whether to look for a main function}
+
+\item{mainFunction}{Name of the main function}
+
+\item{allowGlobalDebugging}{Whether to allow debugging after finishing a main function/script}
+
+\item{rStrings}{List of unique strings used to communicate with vsc}
+
+\item{id}{id of the response sent to vsc}
+
 \item{overWritePrint}{Whether to overwrite \code{base::print} with a version that sends output to vsc}
 
 \item{overWriteCat}{Whether to overwrite \code{base::cat} with a version that sends output to vsc}
 }
 \description{
-HAS CHANGED! Following info not up to date!
-Looks for a function \code{main()} in the global environment and runs it
-Runs main() inside this function, hence \code{parent.frame()} and \code{parent.env()} etc. will behave differently
+Preps the r session for runing the r debugger in vscode and reports back to vsc
 }

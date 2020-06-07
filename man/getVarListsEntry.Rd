@@ -7,7 +7,7 @@
 getVarListsEntry(varRef)
 }
 \arguments{
-\item{varRef}{The variablesReference as returned by \code{getVarRefForVarListArgs} or \code{getVarRefForVar}}
+\item{varRef}{The variablesReference as returned by \verb{getVarRefForVarListArgs\} or \code\{getVarRefForVar}}
 }
 \value{
 A list of variables corresponding to the varRef
