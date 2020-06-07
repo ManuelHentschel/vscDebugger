@@ -36,14 +36,14 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
   ret <- default
   try({
     # loop through varInfos
-    for (varInfo in session$varInfo) {
+    for (varInfo in session$varInfos) {
       # check if varInfo provides the required info
       if (!is.null(varInfo[[info]])) {
         # check if varInfo applies to v
-        applies <- tryCatch(
-          varInfo$doesApply(v)[[1]],
-          error = function(e) FALSE
-        )
+        # applies <- tryCatch(
+          applies <- varInfo$doesApply(v)[[1]]#,
+          # error = function(e) FALSE
+        # )
         if (applies){
           if (is.function(varInfo[[info]])) {
             # apply function to v

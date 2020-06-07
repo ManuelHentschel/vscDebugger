@@ -1,4 +1,40 @@
 
+# helper functions for the default varInfos:
+
+getRow <- function(v, i) {
+    row <- v[i, ]
+    names(row) <- colnames(v)
+    if (is.null(names(row))) {
+        # names(row) <- vapply(seq_len(ncol(v)), function(j) paste0('[', i, ',', j, ']'), character(1))
+        names(row) <- getIndices(v, row=i)
+    }
+    class(row) <- '.vsc.matrixRow'
+    return(row)
+}
+getCol <- function(v, j) {
+    col <- v[, j]
+    names(col) <- rownames(v)
+    if (is.null(names(col))) {
+        # names(col) <- vapply(seq_len(ncol(v)), function(j) paste0('[', j, ',', i, ']'), character(1))
+        names(col) <- getIndices(v, col=j)
+    }
+    # matrixRow can be used here as well!
+    class(col) <- '.vsc.matrixRow'
+    return(col)
+}
+getIndices <- function(v, row=NULL, col=NULL) {
+    if(is.null(row) && is.null(col)){
+        m <- expand.grid(nrow(v), ncol(v))
+        names <- mapply(function(i,j) paste0('[', i, ',', j, ']'), m[[1]], m[[2]])
+    } else if(is.null(row)){
+        names <- lapply(seq_len(nrow(v)), function(i) paste0('[' ,i, ',', col, ']'))
+    } else if(is.null(col)){
+        names <- lapply(seq_len(ncol(v)), function(j) paste0('[', row, ',', j, ']'))
+    } else{
+        names <- list(paste0('[', row, ',', col, ']'))
+    }
+}
+
 
 # Get default list of varInfos to handle most cases
 
@@ -70,10 +106,9 @@ getDefaultVarInfos <- function(){
     list(
         name = 'Data.frame',
         doesApply = is.data.frame,
-        childVars = function(v) list(values = as.list(v)),
-        hasChildren = TRUE,
         shortType = 'data.frame',
         longType = 'data.frame'
+        # rest is handled by 'Matrix'
     ),
     # factor
     list(
@@ -91,44 +126,52 @@ getDefaultVarInfos <- function(){
         includeAttributes = FALSE,
         customAttributes = list(),
         toString = function(v){
-        attributes(v) <- list()
-        paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
+            attributes(v) <- list()
+            paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
         }
     ),
     # matrix
     list(
         name = 'Matrix',
-        doesApply = is.matrix,
+        doesApply = function(v) is.matrix(v) || is.data.frame(v), # data.frame specific info is handled above
         childVars = function(v) {
-        getRow <- function(i) {
-            row <- v[i, ]
-            if (is.null(names(row))) {
-            names(row) <- vapply(seq_len(ncol(v)), function(j) paste0('[', i, ',', j, ']'), character(1))
+            if(getOption('vsc.matricesByRow', TRUE)){
+                if (ncol(v)==1){
+                    vars <- as.list(v)
+                    names <- rownames(v)
+                    if (is.null(names)) {
+                        names <- getIndices(v, col=1)
+                    }
+                } else{
+                    vars <- lapply(seq2(nrow(v)), getRow, v=v)
+                    names <- rownames(v)
+                    if (is.null(names)) {
+                        names <- getIndices(v, col='')
+                    }
+                }
+            } else{ # by column
+                if (nrow(v)==1){
+                    vars <- as.list(v)
+                    names <- colnames(v)
+                    if (is.null(names)) {
+                        names <- getIndices(v, row=1)
+                    }
+                } else{
+                    vars <- lapply(seq2(ncol(v)), getCol, v=v)
+                    names <- colnames(v)
+                    if (is.null(names)) {
+                        names <- getIndices(v, row='')
+                    }
+                }
             }
-            class(row) <- '.vsc.matrixRow'
-            return(row)
-        }
-        if (ncol(v)==1){
-            vars <- as.list(v)
-            names <- rownames(v)
-            if (is.null(names)) {
-            names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',1]'))
-            }
-        } else{
-            vars <- lapply(seq2(nrow(v)), getRow)
-            names <- rownames(v)
-            if (is.null(names)) {
-            names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',]'))
-            }
-        }
-        return(list(
-            names = names,
-            values = vars
-        ))
+            return(list(
+                names = names,
+                values = vars
+            ))
         },
         hasChildren = TRUE,
         shortType = function(v) {
-        paste0('matrix[', nrow(v), ',', ncol(v), ']')
+            paste0('matrix[', nrow(v), ',', ncol(v), ']')
         },
         'matrix',
         longType = 'matrix'

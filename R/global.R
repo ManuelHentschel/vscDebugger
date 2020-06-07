@@ -22,5 +22,8 @@ session <- local({
   if(is.null(getOption('vsc.trySilent'))){
     options(vsc.trySilent = TRUE)
   }
+  if(is.null(getOption('vsc.matricesByRow'))){
+    options(vsc.matricesByRow = TRUE)
+  }
   session$varInfos <- getDefaultVarInfos()
 }
