@@ -351,7 +351,7 @@ isPackageFrame <- function(env = parent.frame()) {
 #' 
 #' Looks for main function and reports back to vsc
 #' 
-#' @exprot
+#' @export
 #' @param mainFunction Name of the main function, usually "`main`"
 .vsc.lookForMain <- function(mainFunction='main'){
   foundMain <- FALSE
