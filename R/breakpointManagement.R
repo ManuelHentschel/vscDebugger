@@ -32,7 +32,7 @@
 
 #' @export
 .vsc.setStoredBreakpoints <- function() {
-  for (sbp in session$breakpoints) {
+  for (sbp in session$srcBreakpoints) {
     sbp$bps <- .vsc.setBreakpoints(sbp$file, sbp$breakpoints, includePackages = sbp$includePackages)
   }
 }
@@ -52,13 +52,13 @@
 
 #' @export
 .vsc.getAllBreakpoints <- function() {
-  return(session$breakpoints)
+  return(session$srcBreakpoints)
 }
 
 #' @export
 .vsc.getBreakpoints <- function(file) {
   file <- normalizePath(file)
-  allBps <- session$breakpoints
+  allBps <- session$srcBreakpoints
   matchingBps <- allBps[which(lapply(allBps, function(sbp) sbp$file) == file)]
   if (length(matchingBps) > 0) {
     sbp <- mergeSrcBreakpoints(matchingBps)
@@ -120,24 +120,24 @@
   sbp$breakpoints[[1]] <- bp
 
   addSrcBreakpoint(sbp)
-  session$breakpoints <- mergeSrcBreakpoints(session$breakpoints)
+  session$srcBreakpoints <- mergeSrcBreakpoints(session$srcBreakpoints)
 }
 
 
 #' @export
 .vsc.clearAllBreakpoints <- function() {
-  session$breakpoints <- list()
+  session$srcBreakpoints <- list()
 }
 
 #' @export
 .vsc.clearBreakpointsByFile <- function(file = '') {
   file <- normalizePath(file)
-  whichBreakpoints <- which(lapply(session$breakpoints, function(bp) bp$file) == file)
-  session$breakpoints[whichBreakpoints] <- NULL
+  whichBreakpoints <- which(lapply(session$srcBreakpoints, function(bp) bp$file) == file)
+  session$srcBreakpoints[whichBreakpoints] <- NULL
 }
 
 addSrcBreakpoints <- function(sbps = list()) {
-  session$breakpoints <- c(session$breakpoints, sbps)
+  session$srcBreakpoints <- c(session$srcBreakpoints, sbps)
 }
 
 addSrcBreakpoint <- function(sbp = NULL) {

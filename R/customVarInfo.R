@@ -20,17 +20,59 @@
 
 
 
-# TODO: clean up and create sensible varInfos!!!!!
+
+#' @export
+getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
+  # checks the entries in session$varInfo (specified in customVarinfo.R) for a matching entry
+  # returns the requested info if available
+  # info can be a string from the list:
+  #     childVars
+  #     customAttributes
+  #     hasChildren
+  #     toString
+  #     shortType
+  #     longType
+  #     includeAttributes
+  ret <- default
+  try({
+    # loop through varInfos
+    for (varInfo in session$varInfo) {
+      # check if varInfo provides the required info
+      if (!is.null(varInfo[[info]])) {
+        # check if varInfo applies to v
+        applies <- tryCatch(
+          varInfo$doesApply(v)[[1]],
+          error = function(e) FALSE
+        )
+        if (applies){
+          if (is.function(varInfo[[info]])) {
+            # apply function to v
+            ret <- varInfo[[info]](v)
+          } else {
+            # ...or return (constant) value
+            ret <- varInfo[[info]]
+          }
+          break
+        }
+      }
+    }
+  }, silent = getOption('vsc.trySilent', default=TRUE))
+  if (inherits(ret, 'try-error')) {
+    return(onError)
+  } else {
+    return(ret)
+  }
+}
 
 
 #' @export
 .vsc.resetVarInfo <- function() {
-  session$varInfo <- defaultVarInfo
+  session$varInfos <- getDefaultVarInfos()
 }
 
 #' @export
 .vsc.clearVarInfo <- function() {
-  session$varInfo <- list()
+  session$varInfos <- list()
 }
 
 #' @export
@@ -59,7 +101,7 @@
 
   if (position < 0) {
     # negative positions count from the end, -1 = last position
-    position <- length(session$varInfo) + 1 + position
+    position <- length(session$varInfos) + 1 + position
   } else if (position > 0) {
     position <- position - 1 # position 1 == insert after 0
   }
@@ -75,21 +117,21 @@
   varInfo$longType <- longType
   varInfo$includeAttributes <- includeAttribute
 
-  session$varInfo <- append(session$varInfo, varInfo, position)
+  session$varInfos <- append(session$varInfos, varInfo, position)
 }
 
 #' @export
 .vsc.removeVarInfo <- function(position = 1) {
   if (position < 0) {
-    position <- length(session$varInfo) + 1 + position
+    position <- length(session$varInfos) + 1 + position
   }
-  session$varInfo[position] <- NULL
+  session$varInfos[position] <- NULL
 }
 
 #' @export
 .vsc.listVarInfo <- function(position = NULL) {
   if (is.null(position)) {
-    position <- seq2(session$varInfo)
+    position <- seq2(session$varInfos)
   }
   varInfos <- .vsc.getAllVarInfos()
   varInfos <- lapply(position, function(pos) varInfos[pos])
@@ -114,7 +156,7 @@
 
 #' @export
 .vsc.getAllVarInfos <- function(){
-  varInfos <- session$varInfo
+  varInfos <- session$varInfos
   varInfos <- lapply(seq(1, length(varInfos)), function(i){
     vI <- varInfos[[i]]
     vI$position <- i

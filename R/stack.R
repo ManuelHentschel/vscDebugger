@@ -312,7 +312,7 @@ getSource <- function(frameId) {
     filename <- lineAndFile$filename
 
     if(is.null(lineAndFile$isFile)){
-      lineAndFile$isFile <- TRUE
+      lineAndFile$isFile <- is.character(filename) && !identical(filename, '')
     }
 
     if(lineAndFile$isFile){
@@ -626,6 +626,7 @@ getVariableForEval <- function(valueR, name, depth = 20){
     variablesReference = variablesReference
   )
 }
+
 getEmptyVariableForEval <- function(){
   variable <- list(
     result = '',
@@ -714,47 +715,6 @@ getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttribute
     varRef <- 0
   }
   return(varRef)
-}
-
-
-
-getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
-  # checks the entries in session$varInfo (specified in customVarinfo.R) for a matching entry
-  # returns the requested info if available
-  # info can be a string from the list:
-  #     childVars
-  #     customAttributes
-  #     hasChildren
-  #     toString
-  #     shortType
-  #     longType
-  #     includeAttributes
-
-  ret <- default
-  try({
-    # loop through varInfos
-    for (varInfo in session$varInfo) {
-      # check if varInfo provides the required info
-      if (!is.null(varInfo[[info]])) {
-        # check if varInfo applies to v
-        if (varInfo$doesApply(v)[[1]]) {
-          if (is.function(varInfo[[info]])) {
-            # apply function to v
-            ret <- varInfo[[info]](v)
-          } else {
-            # ...or return (constant) value
-            ret <- varInfo[[info]]
-          }
-          break
-        }
-      }
-    }
-  }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (inherits(ret, 'try-error')) {
-    return(onError)
-  } else {
-    return(ret)
-  }
 }
 
 

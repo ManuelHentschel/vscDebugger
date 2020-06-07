@@ -28,7 +28,7 @@
   file <- normalizePath(file)
   body <- parse(file, encoding = encoding, keep.source = TRUE)
 
-  # apply breakpoints stored in session$breakpoints
+  # apply breakpoints stored in session$srcBreakpoints
   if (applyInternalBreakpoints) {
     bps <- .vsc.getBreakpoints(file)
     lines <- .vsc.getBreakpointLines(file)

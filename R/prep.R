@@ -345,6 +345,9 @@ isPackageFrame <- function(env = parent.frame()) {
 
   options(error = .vsc.onError)
   .vsc.sendToVsc('go', id=id)
+  if(!findMain){
+    session$isRunningDebugSession <- TRUE
+  }
 }
 
 #' Look for a main function
@@ -364,6 +367,7 @@ isPackageFrame <- function(env = parent.frame()) {
   # report back to vsc:
   if(foundMain){
     .vsc.sendToVsc('callMain')
+    session$isRunningDebugSession <- TRUE
   } else{
     .vsc.sendToVsc('noMain')
   }

@@ -2,7 +2,7 @@
 
 # Get default list of varInfos to handle most cases
 
-getDefaultVarInfo <- function(){
+getDefaultVarInfos <- function(){
     defaultVarInfo <- list(
     # NULL
     list(
