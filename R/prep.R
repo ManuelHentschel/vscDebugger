@@ -129,8 +129,9 @@ isPackageFrame <- function(env = parent.frame()) {
 #' Captures the output of \code{cat(...)} and sends it to vsc together with information about the sourcefile and line
 #' @export
 #' @param ... Arguments passed to base::cat()
+#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
 #' @return NULL (invisible)
-.vsc.cat <- function(...) {
+.vsc.cat <- function(..., skipCalls=0) {
   # TODO: consider correct environment for print(...)?
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
@@ -142,9 +143,9 @@ isPackageFrame <- function(env = parent.frame()) {
   ret <- capture.output(base::cat(...))
   output <- paste(ret, sep = "", collapse = "\n")
 
-  line <- .vsc.getLineNumber(sys.call())
+  line <- .vsc.getLineNumber(sys.call(-skipCalls))
   frame <- parent.frame()
-  call <- sys.call(-1)
+  call <- sys.call(-1 - skipCalls)
   file <- .vsc.getFileName(call, frame)
   # output <- capture.output(base::print(...))
   .vsc.sendToVsc('print', list(output = output, file = file, line = line))
@@ -156,8 +157,9 @@ isPackageFrame <- function(env = parent.frame()) {
 #' Captures the output of \code{print(...)} and sends it to vsc together with information about the sourcefile and line
 #' @export
 #' @param ... Arguments passed to \code{base::cat()}
+#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
 #' @return \code{NULL} (invisible)
-.vsc.print <- function(x, ...) {
+.vsc.print <- function(x, ..., skipCalls=0) {
   # TODO: consider correct environment for print(...)?
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
@@ -168,9 +170,9 @@ isPackageFrame <- function(env = parent.frame()) {
   ret <- capture.output(base::print(x, ...))
   output <- paste(ret, sep = "", collapse = "\n")
 
-  line <- .vsc.getLineNumber(sys.call())
+  line <- .vsc.getLineNumber(sys.call(-skipCalls))
   frame <- parent.frame()
-  call <- sys.call(-1)
+  call <- sys.call(-1 - skipCalls)
   file <- .vsc.getFileName(call, frame)
   # output <- capture.output(base::print(...))
   .vsc.sendToVsc('print', list(output = output, file = file, line = line))

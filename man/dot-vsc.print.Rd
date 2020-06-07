@@ -4,10 +4,12 @@
 \alias{.vsc.print}
 \title{Modified version of \code{print()} for vsc}
 \usage{
-.vsc.print(x, ...)
+.vsc.print(x, ..., skipCalls = 0)
 }
 \arguments{
 \item{...}{Arguments passed to \code{base::cat()}}
+
+\item{skipCalls}{The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.}
 }
 \value{
 \code{NULL} (invisible)
