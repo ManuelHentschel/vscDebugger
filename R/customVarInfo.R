@@ -157,7 +157,7 @@
 #' @export
 .vsc.getAllVarInfos <- function(){
   varInfos <- session$varInfos
-  varInfos <- lapply(seq_len(length(varInfos)), function(i){
+  varInfos <- lapply(seq_along(varInfos), function(i){
     vI <- varInfos[[i]]
     vI$position <- i
     vI
@@ -173,7 +173,7 @@
 }
 
 applyTestVar <- function(varInfo, testVar){
-  for(i in seq_len(length(varInfo))){
+  for(i in seq_along(varInfo)){
     if(is.function(varInfo[[i]])){
       varInfo[i] <- list(try(varInfo[[i]](testVar), silent=TRUE))
     }
@@ -216,7 +216,7 @@ applyTestVar <- function(varInfo, testVar){
       if(!identical(results$doesApply, TRUE)){
         warn <- c(warn, 'doesApply should return TRUE for the test case.')
       }
-    for(i in seq_len(length(varInfo))){
+    for(i in seq_along(varInfo)){
       name <- names(varInfo)[i]
       entry <- varInfo[[i]]
       ret <- results[[i]]
