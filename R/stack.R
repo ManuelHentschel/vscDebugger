@@ -493,6 +493,8 @@ getVarInEnv <- function(name, env) {
       getDotVars(env)
     } else if (isPromise(name, env)) {
       getPromiseVar(name, env)
+    } else if (bindingIsActive(name, env) && !getOption('vsc.evaluateActiveBindings', FALSE)) {
+      getActiveBinding(name, env)
     } else {
       get(name, envir = env)
     }
@@ -505,6 +507,14 @@ getVarInEnv <- function(name, env) {
       }
     getInfoVar(.text)
   })
+}
+
+getActiveBinding <- function(name, env){
+  ret <- list(
+    bindingFunction = activeBindingFunction(name, env)
+  )
+  class(ret) <- '.vsc.activeBinding'
+  ret
 }
 
 getVarsInEnv <- function(env, all.names = TRUE) {

@@ -25,5 +25,8 @@ session <- local({
   if(is.null(getOption('vsc.matricesByRow'))){
     options(vsc.matricesByRow = TRUE)
   }
+  if(is.null(getOption('vsc.evaluateActiveBindings'))){
+    options(vsc.evaluateActiveBindings = FALSE)
+  }
   session$varInfos <- getDefaultVarInfos()
 }

@@ -75,6 +75,22 @@ getDefaultVarInfos <- function(){
         hasChildren = TRUE,
         includeAttributes = FALSE
     ),
+    # Active binding
+    list(
+        name = 'ActiveBinding',
+        doesApply = function(v) inherits(v, '.vsc.activeBinding'),
+        longType = 'active binding',
+        hasChildren = TRUE,
+        toString = 'Active binding',
+        includeAttributes = FALSE, # TODO: Can active bindings have non-active attributes?
+        childVars = list(),
+        customAttributes = function(v){
+            list(
+                names = list('bindingFunction'),
+                values = list(v$bindingFunction)
+            )
+        }
+    ),
     # Ellipses entry (custom type)
     list(
         name = 'EllipsesEntry',
