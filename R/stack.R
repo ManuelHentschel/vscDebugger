@@ -488,24 +488,23 @@ getVarListsEntry <- function(varRef) {
 getVarInEnv <- function(name, env) {
   # get Info about a variable in an environment
   # separate from getVariable(), since environments might contain promises
-  var <- tryCatch({
+  tryCatch({
     if (name == '...') {
-      ret <- getInfoVar('<...>')
+      getDotVars(env)
     } else if (isPromise(name, env)) {
-      ret <- getPromiseVar(name, env)
+      getPromiseVar(name, env)
     } else {
-      ret <- get(name, envir = env)
+      get(name, envir = env)
     }
-    ret
-  }, error = function(e){
-    if(missingInEnv(name, env)){
-      ret <- getInfoVar('<MISSING>')
-    } else{
-      ret <- getInfoVar('<ERROR>')
-    }
-    ret
+  }, error = function(e) {
+    .text <- 
+      if (missingInEnv(name, env)) {
+        '<MISSING>'
+      } else{
+        '<ERROR>'
+      }
+    getInfoVar(.text)
   })
-  return(var)
 }
 
 getVarsInEnv <- function(env, all.names = TRUE) {
@@ -530,6 +529,42 @@ getInfoVar <- function(text, type='Warning: the variable value is just an info f
   class(var) <- '.vsc.infoVar'
   return(var)
 }
+
+#' Get unevaluated variables passed as ellipses
+#' 
+#' Get variables which are passed as ellipses without evaluating them.
+#' @param env The environment where the "..." variable is present
+#' @return A named list for each element of "..." containing the 
+#'   expression that will be evaluated, 
+#'   the environment where it will be evaluated, and the string 
+#'   representation of the expression.
+getDotVars <- function(env) {
+  ## Note: substitute(...()) is officially not supported, but it 
+  ## works as intended for all relevant R versions (at least from R 3.0.0)
+  dots <- substitute(...(), env = env)
+  ret <- lapply(
+    dots, 
+    function(x) {
+      list(
+        dotExpr = x,
+        dotCode = tryCatch(
+          ##TODO: use proper formatting function
+          paste0(toString(x), collapse = ";"), 
+          error = function(e) {
+            if (isTRUE(getOption('vsc.trySilent', default=TRUE))) {
+              "???"
+            } else {
+              stop(e, call. = FALSE)
+            }
+          }
+        ),
+        ##TODO: which environment do we want to display here?
+        dotEnv = env
+      )
+    }
+  )
+  structure(ret, class = ".vsc.ellipses")
+} 
 
 #' Get a representation of a promise
 #' 
