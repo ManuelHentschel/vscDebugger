@@ -3,12 +3,14 @@ session <- local({
   varLists <- list()
   varListArgs <- list()
   varListPersistent <- list()
+  isRunningDebugSession <- FALSE
   isEvaluating <- FALSE
   frameIdsR <- list()
   frameIdsVsc <- list()
   breakpoints <- list()
-  varInfo <- NULL
+  varInfos <- list()
   debugGlobal <- FALSE
+  srcBreakpoints <- list()
   environment()
 })
 
@@ -20,5 +22,11 @@ session <- local({
   if(is.null(getOption('vsc.trySilent'))){
     options(vsc.trySilent = TRUE)
   }
-  session$varInfo <- getDefaultVarInfo()
+  if(is.null(getOption('vsc.matricesByRow'))){
+    options(vsc.matricesByRow = TRUE)
+  }
+  if(is.null(getOption('vsc.evaluateActiveBindings'))){
+    options(vsc.evaluateActiveBindings = FALSE)
+  }
+  session$varInfos <- getDefaultVarInfos()
 }

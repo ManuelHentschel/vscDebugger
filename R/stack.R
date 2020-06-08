@@ -312,7 +312,7 @@ getSource <- function(frameId) {
     filename <- lineAndFile$filename
 
     if(is.null(lineAndFile$isFile)){
-      lineAndFile$isFile <- TRUE
+      lineAndFile$isFile <- is.character(filename) && !identical(filename, '')
     }
 
     if(lineAndFile$isFile){
@@ -493,6 +493,8 @@ getVarInEnv <- function(name, env) {
       getDotVars(env)
     } else if (isPromise(name, env)) {
       getPromiseVar(name, env)
+    } else if (bindingIsActive(name, env) && !getOption('vsc.evaluateActiveBindings', FALSE)) {
+      getActiveBinding(name, env)
     } else {
       get(name, envir = env)
     }
@@ -505,6 +507,16 @@ getVarInEnv <- function(name, env) {
       }
     getInfoVar(.text)
   })
+}
+
+getActiveBinding <- function(name, env){
+  ret <- if (getRversion() >= "4.0.0") {
+    activeBindingFunction(name, env)
+  } else {
+    as.list.environment(env)[[name]]
+    # getInfoVar("R version >= 4.0.0 required to show active binding function!")
+  }
+  structure(list(bindingFunction = ret), class = '.vsc.activeBinding')
 }
 
 getVarsInEnv <- function(env, all.names = TRUE) {
@@ -589,41 +601,11 @@ getPromiseVar <- function(name, env) {
 }
 
 
-
-getVariableInEnv <- function(name, env) {
-  # get Info about a variable in an environment
-  # separate from getVariable(), since environments might contain promises
-  if (isPromise(name, env)) {
-    variable <- getPromiseVariable(name, env)
-  } else {
-    variable <- try({
-      valueR <- get(name, envir = env)
-      getVariable(valueR, name)
-    }, silent = getOption('vsc.trySilent', default=TRUE))
-  }
-  if (inherits(variable, 'try-error')) {
-    variable <- getDummyVariable(name)
-  }
-  return(variable)
-}
-
 isPromise <- function(name, env) {
   if (pryr:::is_promise2(name, env)) {
     return(!pryr:::promise_evaled(name, env))
   }
   return(FALSE)
-}
-
-getPromiseVariable <- function(name, env) {
-  promiseCode <- varToStringWithCaptureOutput(
-    pryr:::promise_code(name, env)
-  )
-  variable <- list(
-    name = name,
-    value = promiseCode,
-    type = 'Promise',
-    variablesReference = 0
-  )
 }
 
 getDummyVariable <- function(name) {
@@ -661,6 +643,7 @@ getVariableForEval <- function(valueR, name, depth = 20){
     variablesReference = variablesReference
   )
 }
+
 getEmptyVariableForEval <- function(){
   variable <- list(
     result = '',
@@ -670,7 +653,7 @@ getEmptyVariableForEval <- function(){
 
 
 varToString <- function(v) {
-  ret <- getCustomInfo(v, 'toString', NULL, NULL)
+  ret <- .vsc.getCustomInfo(v, 'toString', NULL, NULL)
   try({
     if (is.null(ret)) {
       ret <- toString2(v)
@@ -732,9 +715,9 @@ getType <- function(valueR, short = FALSE) {
   # default case:
 
   if (short) {
-    ret <- getCustomInfo(valueR, 'shortType', '???', '???')
+    ret <- .vsc.getCustomInfo(valueR, 'shortType', '???', '???')
   } else {
-    ret <- getCustomInfo(valueR, 'longType', '???', '???')
+    ret <- .vsc.getCustomInfo(valueR, 'longType', '???', '???')
   }
   return(ret)
 }
@@ -742,7 +725,7 @@ getType <- function(valueR, short = FALSE) {
 
 
 getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttributes = TRUE, persistent=FALSE) {
-  if (depth > 0 && getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)) {
+  if (depth > 0 && .vsc.getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)) {
     varListArgs <- list(v = valueR, depth = depth, maxVars = maxVars, includeAttributes = includeAttributes)
     varRef <- getVarRefForVarListArgs(varListArgs, persistent=persistent)
   } else {
@@ -752,50 +735,9 @@ getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttribute
 }
 
 
-
-getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
-  # checks the entries in session$varInfo (specified in customVarinfo.R) for a matching entry
-  # returns the requested info if available
-  # info can be a string from the list:
-  #     childVars
-  #     customAttributes
-  #     hasChildren
-  #     toString
-  #     shortType
-  #     longType
-  #     includeAttributes
-
-  ret <- default
-  try({
-    # loop through varInfos
-    for (varInfo in session$varInfo) {
-      # check if varInfo provides the required info
-      if (!is.null(varInfo[[info]])) {
-        # check if varInfo applies to v
-        if (varInfo$doesApply(v)[[1]]) {
-          if (is.function(varInfo[[info]])) {
-            # apply function to v
-            ret <- varInfo[[info]](v)
-          } else {
-            # ...or return (constant) value
-            ret <- varInfo[[info]]
-          }
-          break
-        }
-      }
-    }
-  }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (inherits(ret, 'try-error')) {
-    return(onError)
-  } else {
-    return(ret)
-  }
-}
-
-
 getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) {
   # TODO: accept argList containing all args
-  childVars <- getCustomInfo(v, 'childVars')
+  childVars <- .vsc.getCustomInfo(v, 'childVars')
 
   vars <- childVars$values
   varNames <- childVars$names
@@ -812,7 +754,7 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
   # separate, since environments might have attributes as well
 
   if (includeAttributes) {
-    if (getCustomInfo(v, 'includeAttributes', TRUE, TRUE)) {
+    if (.vsc.getCustomInfo(v, 'includeAttributes', TRUE, TRUE)) {
       atr <- attributes(v)
       atrNames <- lapply(names(atr), function(s) {paste0('_', s)})
     } else {
@@ -820,7 +762,7 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
       atrNames <- list()
     }
 
-    customAttributes <- getCustomInfo(v, 'customAttributes')
+    customAttributes <- .vsc.getCustomInfo(v, 'customAttributes')
     cAtr <- customAttributes$values
     cAtrNames <- customAttributes$names
 

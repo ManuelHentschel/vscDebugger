@@ -60,15 +60,15 @@
   summarizedRefs <- summarizeRefs(refList)
 
   # set breakpoints
-  # ISSUE: trace does not preserve src-info for the line that is modified
-  # --> replace with custom trace()? Handle complex cases (see source code of trace)?
   for (sRef in summarizedRefs) {
+    # use generic trace function -> does not preserve source info
     trace(
       what = sRef$name,
       tracer = browser,
       at = sRef$at,
       where = sRef$env
     )
+    # add source info to lines overwritten by trace():
     fixSrcrefOnTracedFunction(
       what = sRef$name,
       at = sRef$at,
@@ -113,12 +113,14 @@ fixSrcrefOnTracedFunction <- function(what, at, where){
   methods:::.assignOverBinding(what, f, where, FALSE)
 }
 
-sendBreakpoints <- function(bps, id = 0) {
+sendBreakpoints <- function(bps = list(), acknowledge = TRUE, id = 0) {
   for (bp in bps) {
     .vsc.sendToVsc(message = 'breakpointVerification', body = bp, id = 0)
   }
   # send separate acknowledge message to make sure that all breakpoints are received first
-  .vsc.sendToVsc(message = 'acknowledge', id = id)
+  if(acknowledge){
+    .vsc.sendToVsc(message = 'acknowledge', id = id)
+  }
 }
 
 
