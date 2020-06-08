@@ -599,41 +599,11 @@ getPromiseVar <- function(name, env) {
 }
 
 
-
-getVariableInEnv <- function(name, env) {
-  # get Info about a variable in an environment
-  # separate from getVariable(), since environments might contain promises
-  if (isPromise(name, env)) {
-    variable <- getPromiseVariable(name, env)
-  } else {
-    variable <- try({
-      valueR <- get(name, envir = env)
-      getVariable(valueR, name)
-    }, silent = getOption('vsc.trySilent', default=TRUE))
-  }
-  if (inherits(variable, 'try-error')) {
-    variable <- getDummyVariable(name)
-  }
-  return(variable)
-}
-
 isPromise <- function(name, env) {
   if (pryr:::is_promise2(name, env)) {
     return(!pryr:::promise_evaled(name, env))
   }
   return(FALSE)
-}
-
-getPromiseVariable <- function(name, env) {
-  promiseCode <- varToStringWithCaptureOutput(
-    pryr:::promise_code(name, env)
-  )
-  variable <- list(
-    name = name,
-    value = promiseCode,
-    type = 'Promise',
-    variablesReference = 0
-  )
 }
 
 getDummyVariable <- function(name) {
