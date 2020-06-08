@@ -117,9 +117,9 @@
   varInfo$toString <- toString
   varInfo$shortType <- shortType
   varInfo$longType <- longType
-  varInfo$includeAttributes <- includeAttribute
+  varInfo$includeAttributes <- includeAttributes
 
-  session$varInfos <- append(session$varInfos, varInfo, position)
+  session$varInfos <- append(session$varInfos, list(varInfo), position)
 }
 
 #' @export
