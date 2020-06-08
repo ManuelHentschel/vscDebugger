@@ -13,6 +13,7 @@
 #     shortType: ((v:rValue) => string)|string|NULL;
 #     longType: ((v:rValue) => string)|string|NULL;
 #     includeAttributes: ((v:rValue) => boolean)|boolean|NULL;
+#     evaluateName: ((v:rValue) => string)|string|NULL;
 # }
 # type varInfos = varInfo[];
 
@@ -33,6 +34,7 @@
   #     shortType
   #     longType
   #     includeAttributes
+  #     evaluateName
   ret <- default
   try({
     # loop through varInfos
