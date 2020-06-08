@@ -510,11 +510,13 @@ getVarInEnv <- function(name, env) {
 }
 
 getActiveBinding <- function(name, env){
-  ret <- list(
-    bindingFunction = activeBindingFunction(name, env)
-  )
-  class(ret) <- '.vsc.activeBinding'
-  ret
+  ret <- if (getRversion() >= "4.0.0") {
+    activeBindingFunction(name, env)
+  } else {
+    as.list.environment(env)[[name]]
+    # getInfoVar("R version >= 4.0.0 required to show active binding function!")
+  }
+  structure(list(bindingFunction = ret), class = '.vsc.activeBinding')
 }
 
 getVarsInEnv <- function(env, all.names = TRUE) {
@@ -651,7 +653,7 @@ getEmptyVariableForEval <- function(){
 
 
 varToString <- function(v) {
-  ret <- getCustomInfo(v, 'toString', NULL, NULL)
+  ret <- .vsc.getCustomInfo(v, 'toString', NULL, NULL)
   try({
     if (is.null(ret)) {
       ret <- toString2(v)
@@ -713,9 +715,9 @@ getType <- function(valueR, short = FALSE) {
   # default case:
 
   if (short) {
-    ret <- getCustomInfo(valueR, 'shortType', '???', '???')
+    ret <- .vsc.getCustomInfo(valueR, 'shortType', '???', '???')
   } else {
-    ret <- getCustomInfo(valueR, 'longType', '???', '???')
+    ret <- .vsc.getCustomInfo(valueR, 'longType', '???', '???')
   }
   return(ret)
 }
@@ -723,7 +725,7 @@ getType <- function(valueR, short = FALSE) {
 
 
 getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttributes = TRUE, persistent=FALSE) {
-  if (depth > 0 && getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)) {
+  if (depth > 0 && .vsc.getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)) {
     varListArgs <- list(v = valueR, depth = depth, maxVars = maxVars, includeAttributes = includeAttributes)
     varRef <- getVarRefForVarListArgs(varListArgs, persistent=persistent)
   } else {
@@ -735,7 +737,7 @@ getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttribute
 
 getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) {
   # TODO: accept argList containing all args
-  childVars <- getCustomInfo(v, 'childVars')
+  childVars <- .vsc.getCustomInfo(v, 'childVars')
 
   vars <- childVars$values
   varNames <- childVars$names
@@ -752,7 +754,7 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
   # separate, since environments might have attributes as well
 
   if (includeAttributes) {
-    if (getCustomInfo(v, 'includeAttributes', TRUE, TRUE)) {
+    if (.vsc.getCustomInfo(v, 'includeAttributes', TRUE, TRUE)) {
       atr <- attributes(v)
       atrNames <- lapply(names(atr), function(s) {paste0('_', s)})
     } else {
@@ -760,7 +762,7 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
       atrNames <- list()
     }
 
-    customAttributes <- getCustomInfo(v, 'customAttributes')
+    customAttributes <- .vsc.getCustomInfo(v, 'customAttributes')
     cAtr <- customAttributes$values
     cAtrNames <- customAttributes$names
 

@@ -22,7 +22,7 @@
 
 
 #' @export
-getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
+.vsc.getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
   # checks the entries in session$varInfos for a matching entry
   # returns the requested info if available
   # info can be a string from the list:
@@ -157,7 +157,7 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
 #' @export
 .vsc.getAllVarInfos <- function(){
   varInfos <- session$varInfos
-  varInfos <- lapply(seq(1, length(varInfos)), function(i){
+  varInfos <- lapply(seq_len(length(varInfos)), function(i){
     vI <- varInfos[[i]]
     vI$position <- i
     vI
@@ -173,7 +173,7 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
 }
 
 applyTestVar <- function(varInfo, testVar){
-  for(i in seq(length(varInfo))){
+  for(i in seq_len(length(varInfo))){
     if(is.function(varInfo[[i]])){
       varInfo[i] <- list(try(varInfo[[i]](testVar), silent=TRUE))
     }
@@ -216,7 +216,7 @@ applyTestVar <- function(varInfo, testVar){
       if(!identical(results$doesApply, TRUE)){
         warn <- c(warn, 'doesApply should return TRUE for the test case.')
       }
-    for(i in seq(length(varInfo))){
+    for(i in seq_len(length(varInfo))){
       name <- names(varInfo)[i]
       entry <- varInfo[[i]]
       ret <- results[[i]]

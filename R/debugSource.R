@@ -182,7 +182,7 @@ lineFind <- function(line, b, at = c()) {
 findLineWithoutSrcref <- function(b, line, at) {
   try({
     # fails if b is a symbol -> try()
-    for (i in seq(length(b))) {
+    for (i in seq_len(length(b))) {
       # try all sub-steps of b
       bb <- b[[i]]
       if (length(bb) > 1) {
