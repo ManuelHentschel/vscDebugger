@@ -353,7 +353,8 @@ getDefaultVarInfos <- function() {
       hasChildren = function(v) !is.null(attributes(v)),
       toString = function(v) {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
-      }
+      },
+      evaluateName = function(v) paste0(deparse(v), collapse = '\n')
     )
   )
 

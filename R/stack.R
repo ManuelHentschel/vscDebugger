@@ -621,13 +621,15 @@ getVariable <- function(valueR, name, depth = 20) {
   value <- varToString(valueR)
   type <- getType(valueR)
   variablesReference <- getVarRefForVar(valueR, depth)
+  evaluateName <- .vsc.getCustomInfo(valueR, 'evaluateName', '', '')
 
   variable <- list(
     name = name,
     value = value,
     type = type,
     variablesReference = variablesReference,
-    depth = depth
+    depth = depth,
+    evaluateName = evaluateName
   )
   return(variable)
 }
