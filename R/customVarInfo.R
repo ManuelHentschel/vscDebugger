@@ -40,10 +40,10 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
       # check if varInfo provides the required info
       if (!is.null(varInfo[[info]])) {
         # check if varInfo applies to v
-        # applies <- tryCatch(
-          applies <- varInfo$doesApply(v)[[1]]#,
-          # error = function(e) FALSE
-        # )
+        applies <- tryCatch(
+          applies <- varInfo$doesApply(v)[[1]],
+          error = function(e) FALSE
+        )
         if (applies){
           if (is.function(varInfo[[info]])) {
             # apply function to v
