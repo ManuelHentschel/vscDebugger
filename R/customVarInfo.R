@@ -23,7 +23,7 @@
 
 #' @export
 getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
-  # checks the entries in session$varInfo (specified in customVarinfo.R) for a matching entry
+  # checks the entries in session$varInfos for a matching entry
   # returns the requested info if available
   # info can be a string from the list:
   #     childVars
