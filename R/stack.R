@@ -513,8 +513,8 @@ getActiveBinding <- function(name, env){
   ret <- if (getRversion() >= "4.0.0") {
     activeBindingFunction(name, env)
   } else {
-    as.list.environment(env)[[name]]
-    # getInfoVar("R version >= 4.0.0 required to show active binding function!")
+    # as.list.environment(env)[[name]]
+    getInfoVar("R version >= 4.0.0 required to show active binding function!")
   }
   structure(list(bindingFunction = ret), class = '.vsc.activeBinding')
 }
