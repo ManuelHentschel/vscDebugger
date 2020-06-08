@@ -75,6 +75,35 @@ getDefaultVarInfos <- function(){
         hasChildren = TRUE,
         includeAttributes = FALSE
     ),
+    # Ellipses entry (custom type)
+    list(
+        name = 'EllipsesEntry',
+        doesApply = function(v) inherits(v, '.vsc.ellipsesEntry'),
+        includeAttributes = FALSE,
+        customAttributes = function(v) list(
+            names = list('__dotEnvironment'),
+            values = list(v$dotEnv)
+        ),
+        childVars = list(),
+        longType = 'ellipses entry',
+        shortType = '',
+        toString = function(v) paste0(format(v$dotExpr), collapse='\n')
+    ),
+    # Ellipses (custom type)
+    list(
+        name = 'Ellipses',
+        doesApply = function(v) inherits(v, '.vsc.ellipses'),
+        childVars = function(v){
+            values <- lapply(v, function(vv) {
+                class(vv) <- '.vsc.ellipsesEntry'
+                vv
+            })
+            list(values=values)
+        },
+        longType = 'ellipses',
+        includeAttributes = FALSE,
+        customAttributes = list()
+    ),
     # info variable (info by the debugger if there was an error etc.)
     list(
         name = 'InfoVar',
@@ -181,13 +210,13 @@ getDefaultVarInfos <- function(){
         name = 'List',
         doesApply = is.list,
         childVars = function(v) {
-        values <- as.list(v)
-        if (is.null(names(v))) {
-            names <- lapply(seq2(values), function(s) paste0('[[', s, ']]'))
-        } else {
-            names <- NULL
-        }
-        list(values = values, names = names)
+            values <- as.list(v)
+            if (is.null(names(v))) {
+                names <- lapply(seq2(values), function(s) paste0('[[', s, ']]'))
+            } else {
+                names <- NULL
+            }
+            list(values = values, names = names)
         },
         hasChildren = TRUE,
         shortType = 'list',
@@ -197,17 +226,17 @@ getDefaultVarInfos <- function(){
     list(
         name = 'Vector',
         doesApply = function(v) {
-        attributes(v) <- NULL
-        is.vector(v) && length(v) > 1
+            attributes(v) <- NULL
+            is.vector(v) && length(v) > 1
         },
         childVars = function(v) {
-        values <- as.list(v)
-        if (is.null(names(values))) {
-            names <- lapply(seq2(values), function(s) paste0('[', s, ']'))
-        } else {
-            names <- NULL
-        }
-        list(values = as.list(v), names = names)
+            values <- as.list(v)
+            if (is.null(names(values))) {
+                names <- lapply(seq2(values), function(s) paste0('[', s, ']'))
+            } else {
+                names <- NULL
+            }
+            list(values = as.list(v), names = names)
         },
         hasChildren = TRUE,
         shortType = 'c',
