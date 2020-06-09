@@ -1,2 +1,3 @@
 devtools::document()
-devtools::install(args = c('--no-lock'), reload = FALSE, build = FALSE)
+# devtools::install()
+devtools::install(args = c('--no-lock'), reload = FALSE)
