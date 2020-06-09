@@ -516,7 +516,7 @@ getActiveBinding <- function(name, env){
     # as.list.environment(env)[[name]]
     getInfoVar("R version >= 4.0.0 required to show active binding function!")
   }
-  structure(list(bindingFunction = ret), class = '.vsc.activeBinding')
+  structure(list(bindingFunction = ret), class = c('.vsc.activeBinding', '.vsc.internalClass'))
 }
 
 getVarsInEnv <- function(env, all.names = TRUE) {
@@ -538,7 +538,7 @@ missingInEnv <- function(name, env){
 
 getInfoVar <- function(text, type='Warning: the variable value is just an info from the debugger!'){
   var <- list( text = text, type = type)
-  class(var) <- '.vsc.infoVar'
+  class(var) <- c('.vsc.infoVar', '.vsc.internalClass')
   return(var)
 }
 
@@ -596,7 +596,7 @@ getPromiseVar <- function(name, env) {
     promiseEnv = promiseEnv,
     promiseExpr = promiseExpr
   )
-  class(var) <- '.vsc.promise'
+  class(var) <- c('.vsc.promise', '.vsc.InternalClass')
   return(var)
 }
 

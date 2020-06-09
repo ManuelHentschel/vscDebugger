@@ -8,7 +8,7 @@ getRow <- function(v, i) {
     # names(row) <- vapply(seq_len(ncol(v)), function(j) paste0('[', i, ',', j, ']'), character(1))
     names(row) <- getIndices(v, row = i)
   }
-  class(row) <- '.vsc.matrixRow'
+  class(row) <- c('.vsc.matrixRow', '.vsc.internalClass')
   return(row)
 }
 getCol <- function(v, j) {
@@ -19,7 +19,7 @@ getCol <- function(v, j) {
     names(col) <- getIndices(v, col = j)
   }
   # matrixRow can be used here as well!
-  class(col) <- '.vsc.matrixRow'
+  class(col) <- c('.vsc.matrixRow', '.vsc.internalClass')
   return(col)
 }
 getIndices <- function(v, row = NULL, col = NULL) {
@@ -111,7 +111,7 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) inherits(v, '.vsc.ellipses'),
       childVars = function(v) {
         values <- lapply(v, function(vv) {
-          class(vv) <- '.vsc.ellipsesEntry'
+          class(vv) <- c('.vsc.ellipsesEntry', '.vsc.internalClass')
           vv
         })
         list(values = values)
@@ -308,7 +308,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'NonStandardClass',
       doesApply = function(v) {
-        'class' %in% names(attributes(v)) && !is.environment(v) && !isS4(v)
+        'class' %in% names(attributes(v)) && !is.environment(v) && !isS4(v) && !inherits(v, '.vsc.internalClass')
       },
       customAttributes = function(v) {
         return(list(
