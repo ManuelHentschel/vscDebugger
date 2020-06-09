@@ -57,20 +57,19 @@ getDefaultVarInfos <- function() {
       childVars = list(),
       shortType = '',
       longType = 'promise',
-      toString = function(v) v$promiseCode,
+      toString = function(v) paste0(format(v$code), collapse = "\n"),
       customAttributes = function(v) {
         if (getOption('vsc.previewPromises', default = FALSE)) {
-          ret <- list(
+          list(
             names = list('__promiseEnv', '__currentValue'),
-            values = list(v$promiseEnv, eval(v$promiseExpr, envir = v$promiseEnv))
+            values = list(v$environment, eval(v$code, envir = v$environment))
           )
         } else {
-          ret <- list(
+          list(
             names = list('__promiseEnv'),
-            values = list(v$promiseEnv)
+            values = list(v$environment)
           )
         }
-        return(ret)
       },
       hasChildren = TRUE,
       includeAttributes = FALSE
