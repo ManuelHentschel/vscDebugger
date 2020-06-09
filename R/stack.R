@@ -606,7 +606,7 @@ getDotVars <- function(env) {
 getPromiseVar <- function(name, env) {
   structure(
     getPromiseInfo(name, env),
-    class = c(".vsc.promise", ".vsc.InternalClass"
+    class = c(".vsc.promise", ".vsc.InternalClass")
   )
 }
 
