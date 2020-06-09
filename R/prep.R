@@ -323,8 +323,6 @@ isPackageFrame <- function(env = parent.frame()) {
   options(continue = paste0(session$rStrings$continue, '\n'))
   options(browserNLdisabled = TRUE)
 
-  suppressPackageStartupMessages(loadNamespace("pryr"))
-
   attachList <- list()
 
   if (overwritePrint) {
