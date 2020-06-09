@@ -108,12 +108,11 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Ellipses',
       doesApply = function(v) inherits(v, '.vsc.ellipses'),
-      childVars = function(v) {
-        values <- lapply(v, function(vv) {
+      childVars = function(v, parentExpr=NULL) {
+        lapply(v, function(vv) {
           class(vv) <- c('.vsc.ellipsesEntry', '.vsc.internalClass')
-          vv
+          list(value = vv)
         })
-        list(values = values)
       },
       longType = 'ellipses',
       includeAttributes = FALSE,
@@ -142,7 +141,10 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Environment',
       doesApply = is.environment,
-      childVars = getVarsInEnv,
+      childVars = function(v, parentExpr=NULL) {
+        vars <- getVarsInEnv(v, parentExpr=v)
+        unsummarizeLists(vars)
+      },
       toString = format,
       hasChildren = function(v) length(ls(v, all.names = TRUE)) > 0
     ),
@@ -158,7 +160,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Factor',
       doesApply = is.factor,
-      childVars = function(v) list(values = format(v)),
+      childVars = function(v, parentExpr=NULL) unsummarizeLists(list(value = format(v))),
       hasChildren = function(v) length(v) > 0,
       shortType = 'factor',
       longType = 'factor'
@@ -178,7 +180,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Matrix',
       doesApply = function(v) is.matrix(v) || is.data.frame(v), # data.frame specific info is handled above
-      childVars = function(v) {
+      childVars = function(v, parentExpr=NULL) {
         if (getOption('vsc.matricesByRow', TRUE)) {
           if (ncol(v) == 1) {
             vars <- as.list(v)
@@ -208,9 +210,9 @@ getDefaultVarInfos <- function() {
             }
           }
         }
-        return(list(
-          names = names,
-          values = vars
+        unsummarizeLists(list(
+          name = names,
+          value = vars
         ))
       },
       hasChildren = TRUE,
@@ -224,14 +226,14 @@ getDefaultVarInfos <- function() {
     list(
       name = 'List',
       doesApply = is.list,
-      childVars = function(v) {
-        values <- as.list(v)
+      childVars = function(v, parentExpr=NULL) {
+        ret <- list(value = as.list(v))
         if (is.null(names(v))) {
-          names <- lapply(seq2(values), function(s) paste0('[[', s, ']]'))
-        } else {
-          names <- NULL
+          ret$name <- lapply(seq_along(ret$value), function(s) paste0('[[', s, ']]'))
+        } else{
+          ret$name <- as.list(names(v))
         }
-        list(values = values, names = names)
+        unsummarizeLists(ret)
       },
       hasChildren = TRUE,
       shortType = 'list',
@@ -244,14 +246,12 @@ getDefaultVarInfos <- function() {
         attributes(v) <- NULL
         is.vector(v) && length(v) > 1
       },
-      childVars = function(v) {
-        values <- as.list(v)
-        if (is.null(names(values))) {
-          names <- lapply(seq2(values), function(s) paste0('[', s, ']'))
-        } else {
-          names <- NULL
+      childVars = function(v, parentExpr=NULL) {
+        ret <- list(value = as.list(v))
+        if (is.null(names(ret$value))) {
+          ret$name <- lapply(seq_along(ret$value), function(s) paste0('[', s, ']'))
         }
-        list(values = as.list(v), names = names)
+        unsummarizeLists(ret)
       },
       hasChildren = TRUE,
       shortType = 'c',
@@ -261,11 +261,11 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Language',
       doesApply = function(v) is.language(v),
-      childVars = function(v) {
+      childVars = function(v, parentExpr=NULL) {
         if (is.name(v) || is.symbol(v)) {
           return(list())
         } else {
-          return(list(values = as.list(v)))
+          return(unsummarizeLists(list(value = as.list(v))))
         }
       },
       hasChildren = function(v) !(is.name(v) || is.symbol(v)),
@@ -284,10 +284,10 @@ getDefaultVarInfos <- function() {
     list(
       name = 'S4',
       doesApply = isS4,
-      childVars = function(v) {
+      childVars = function(v, parentExpr=NULL) {
         names <- slotNames(v)
         values <- lapply(names, function(s) slot(v, s))
-        list(values = values, names = names)
+        unsummarizeLists(list(value = values, name = names))
       },
       hasChildren = TRUE,
       shortType = 'S4',
@@ -297,10 +297,10 @@ getDefaultVarInfos <- function() {
         attrs <- attributes(v)
         slots <- slotNames(v)
         nonslots <- setdiff(names(attrs), slots)
-        list(
-          names = as.list(paste0("_", nonslots)),
-          values = attrs[nonslots]
-        )
+        unsummarizeLists(list(
+          name = as.list(paste0("_", nonslots)),
+          value = attrs[nonslots]
+        ))
       }
     ),
     # non-standard class

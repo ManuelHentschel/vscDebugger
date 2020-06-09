@@ -520,13 +520,18 @@ getActiveBinding <- function(name, env){
   structure(list(bindingFunction = ret), class = c('.vsc.activeBinding', '.vsc.internalClass'))
 }
 
-getVarsInEnv <- function(env, all.names = TRUE) {
+getVarsInEnv <- function(env, all.names = TRUE, parentExpr = NULL) {
   names <- ls(env, all.names = all.names)
   vars <- lapply(names, getVarInEnv, env)
-  return(list(
-    values = vars,
-    names = names
-  ))
+  ret <- list(
+    value = vars,
+    name = names
+  )
+  if (TRUE){
+    ret$setExpression <- lapply(names, function(name) as.symbol(name))
+    ret$setEnvironment <- lapply(names, function(name) env)
+  }
+  return(ret)
 }
 
 missingInEnv <- function(name, env){
@@ -652,7 +657,7 @@ getDummyVariable <- function(name) {
   )
 }
 
-getVariable <- function(valueR, name, depth = 20) {
+getVariable <- function(valueR, name, setExpression=NULL, setEnvironment=NULL, depth = 20) {
   value <- varToString(valueR)
   type <- getType(valueR)
   variablesReference <- getVarRefForVar(valueR, depth)
@@ -664,7 +669,9 @@ getVariable <- function(valueR, name, depth = 20) {
     type = type,
     variablesReference = variablesReference,
     depth = depth,
-    evaluateName = evaluateName
+    evaluateName = evaluateName,
+    setExpression = setExpression,
+    setEnvironment = setEnvironment
   )
   return(variable)
 }
@@ -775,9 +782,10 @@ getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttribute
 getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) {
   # TODO: accept argList containing all args
   childVars <- .vsc.getCustomInfo(v, 'childVars')
+  sChildVars <- summarizeLists(childVars)
 
-  vars <- childVars$values
-  varNames <- childVars$names
+  vars <- sChildVars$value
+  varNames <- sChildVars$name
   if (is.null(varNames) || length(varNames) == 0) {
     varNames <- names(vars)
   }
@@ -785,7 +793,14 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
     varNames <- lapply(seq2(vars), toString, '0')
   }
 
-  varList <- mapply(getVariable, vars, varNames, MoreArgs = list(depth = depth - 1), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  setExpressions <- sChildVars$setExpression
+  setEnvironments <- sChildVars$setEnvironment
+  if (is.null(setExpressions)){
+    setExpressions <- lapply(vars, function(v) NULL)
+    setEnvironments <- lapply(vars, function(v) NULL)
+  }
+
+  varList <- mapply(getVariable, vars, varNames, setExpressions, setEnvironments, MoreArgs = list(depth = depth - 1), SIMPLIFY = FALSE, USE.NAMES = FALSE)
 
   # get variable info about attributes
   # separate, since environments might have attributes as well

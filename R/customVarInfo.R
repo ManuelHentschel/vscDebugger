@@ -2,12 +2,13 @@
 
 # type rValue = any;
 # type NULL = undefined;
+# interface childVar {name: string, value: rValue, setExpression: rValue, setEnvironment: rValue}
 # interface namedList {names: string[], values: rValue[]}; // names, value must be same length
 # interface maybeNamedList {names: string[]|NULL, values: rValue[]}; // names, value must be same length
 # interface varInfo {
 #     name: string;
 #     doesApply: ((v: rValue) => boolean);
-#     childVars: ((v:rValue) => maybeNamedList)|maybeNamedList|NULL;
+#     childVars: ((v:rValue) => childVar[])|childVar[]|NULL;
 #     customAttributes: ((v:rValue) => namedList)|namedList|NULL;
 #     internalAttributes: ((v:rValue) => namedList)|namedList|NULL;
 #     hasChildren: ((v:rValue) => boolean)|boolean|NULL;
@@ -37,7 +38,11 @@
 
 
 #' @export
-.vsc.getCustomInfo <- function(v, info, default = NULL, onError = NULL, append = FALSE, appendNested = FALSE) {
+.vsc.getCustomInfo <- function(
+  v, info, default = NULL,
+  onError = NULL, append = FALSE,
+  appendNested = FALSE, withParentExpr = FALSE
+) {
   # checks the entries in session$varInfos for a matching entry
   # returns the requested info if available
   # info can be a string from the list:
