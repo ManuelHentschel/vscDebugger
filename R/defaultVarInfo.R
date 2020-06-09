@@ -8,7 +8,7 @@ getRow <- function(v, i) {
     # names(row) <- vapply(seq_len(ncol(v)), function(j) paste0('[', i, ',', j, ']'), character(1))
     names(row) <- getIndices(v, row = i)
   }
-  class(row) <- '.vsc.matrixRow'
+  class(row) <- c('.vsc.matrixRow', '.vsc.internalClass')
   return(row)
 }
 getCol <- function(v, j) {
@@ -19,7 +19,7 @@ getCol <- function(v, j) {
     names(col) <- getIndices(v, col = j)
   }
   # matrixRow can be used here as well!
-  class(col) <- '.vsc.matrixRow'
+  class(col) <- c('.vsc.matrixRow', '.vsc.internalClass')
   return(col)
 }
 getIndices <- function(v, row = NULL, col = NULL) {
@@ -58,7 +58,7 @@ getDefaultVarInfos <- function() {
       shortType = '',
       longType = 'promise',
       toString = function(v) v$promiseCode,
-      customAttributes = function(v) {
+      internalAttributes = function(v) {
         if (getOption('vsc.previewPromises', default = FALSE)) {
           ret <- list(
             names = list('__promiseEnv', '__currentValue'),
@@ -84,7 +84,7 @@ getDefaultVarInfos <- function() {
       toString = 'Active binding',
       includeAttributes = FALSE, # TODO: Can active bindings have non-active attributes?
       childVars = list(),
-      customAttributes = function(v) {
+      internalAttributes = function(v) {
         list(
           names = list('bindingFunction'),
           values = list(v$bindingFunction)
@@ -96,7 +96,7 @@ getDefaultVarInfos <- function() {
       name = 'EllipsesEntry',
       doesApply = function(v) inherits(v, '.vsc.ellipsesEntry'),
       includeAttributes = FALSE,
-      customAttributes = function(v) list(
+      internalAttributes = function(v) list(
         names = list('__dotEnvironment'),
         values = list(v$dotEnv)
       ),
@@ -111,14 +111,14 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) inherits(v, '.vsc.ellipses'),
       childVars = function(v) {
         values <- lapply(v, function(vv) {
-          class(vv) <- '.vsc.ellipsesEntry'
+          class(vv) <- c('.vsc.ellipsesEntry', '.vsc.internalClass')
           vv
         })
         list(values = values)
       },
       longType = 'ellipses',
       includeAttributes = FALSE,
-      customAttributes = list()
+      internalAttributes = list()
     ),
     # info variable (info by the debugger if there was an error etc.)
     list(
@@ -169,7 +169,7 @@ getDefaultVarInfos <- function() {
       name = 'MatrixRow',
       doesApply = function(v) inherits(v, '.vsc.matrixRow'),
       includeAttributes = FALSE,
-      customAttributes = list(),
+      internalAttributes = list(),
       toString = function(v) {
         attributes(v) <- list()
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
@@ -294,7 +294,7 @@ getDefaultVarInfos <- function() {
       shortType = 'S4',
       longType = 'S4',
       includeAttributes = FALSE,
-      customAttributes = function(v) {
+      internalAttributes = function(v) {
         attrs <- attributes(v)
         slots <- slotNames(v)
         nonslots <- setdiff(names(attrs), slots)
@@ -308,7 +308,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'NonStandardClass',
       doesApply = function(v) {
-        'class' %in% names(attributes(v)) && !is.environment(v) && !isS4(v)
+        'class' %in% names(attributes(v)) && !is.environment(v) && !isS4(v) && !inherits(v, '.vsc.internalClass')
       },
       customAttributes = function(v) {
         return(list(
@@ -350,6 +350,8 @@ getDefaultVarInfos <- function() {
       shortType = '',
       longType = function(v) typeof(v),
       includeAttributes = TRUE,
+      customAttributes = list(),
+      internalAttributes = list(),
       hasChildren = function(v) !is.null(attributes(v)),
       toString = function(v) {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
