@@ -612,7 +612,13 @@ getPromiseVar <- function(name, env) {
 #' 
 #' @param name The name of the variable
 #' @param env The environment in which to evaluate
-#' @return A named list containing the expression that will be evaluated, the status whether the promise has already been evaluated, the value if it has already been evaluated, and the environment in which the unevaluated promise will be evaluated. 
+#' @return A named list: 
+#' \itemize{
+#'   \item{\code{code}: }{the expression that will be evaluated}
+#'   \item{\code{environment}: }{the environment where the promise is evaluated}
+#'   \item{\code{evaluated}: }{logical flag if the promise has been already evaluated}
+#'   \item{\code{value}: }{optional node; the value of the evaluated promise}
+#' }
 #' @keywords internal
 #' @useDynLib vscDebugger c_promise_info 
 getPromiseInfo <- function(name, env) {

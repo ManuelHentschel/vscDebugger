@@ -12,7 +12,13 @@ getPromiseInfo(name, env)
 \item{env}{The environment in which to evaluate}
 }
 \value{
-A named list containing the expression that will be evaluated, the status whether the promise has already been evaluated, the value if it has already been evaluated, and the environment in which the unevaluated promise will be evaluated.
+A named list:
+\itemize{
+\item{\code{code}: }{the expression that will be evaluated}
+\item{\code{environment}: }{the environment where the promise is evaluated}
+\item{\code{evaluated}: }{logical flag if the promise has been already evaluated}
+\item{\code{value}: }{optional node; the value of the evaluated promise}
+}
 }
 \description{
 Get information about a promise
