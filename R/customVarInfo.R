@@ -8,6 +8,7 @@
 #     doesApply: ((v: rValue) => boolean);
 #     childVars: ((v:rValue) => namedList)|namedList|NULL;
 #     customAttributes: ((v:rValue) => namedList)|namedList|NULL;
+#     internalAttributes: ((v:rValue) => namedList)|namedList|NULL;
 #     hasChildren: ((v:rValue) => boolean)|boolean|NULL;
 #     toString: ((v:rValue) => string)|string|NULL;
 #     shortType: ((v:rValue) => string)|string|NULL;
@@ -23,19 +24,28 @@
 
 
 #' @export
-.vsc.getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
+.vsc.getCustomInfo <- function(v, info, default = NULL, onError = NULL, append = FALSE, appendNested = FALSE) {
   # checks the entries in session$varInfos for a matching entry
   # returns the requested info if available
   # info can be a string from the list:
   #     childVars
   #     customAttributes
+  #     internalAttributes
   #     hasChildren
   #     toString
   #     shortType
   #     longType
   #     includeAttributes
   #     evaluateName
-  ret <- default
+
+  # make sure default is a list, if append==TRUE
+  if(append && !is.list(default)){
+    ret <- list()
+    ret[[1]] <- default # does nothing if default==NULL
+  } else{
+    ret <- default
+  }
+
   try({
     # loop through varInfos
     for (varInfo in session$varInfos) {
@@ -49,12 +59,25 @@
         if (applies){
           if (is.function(varInfo[[info]])) {
             # apply function to v
-            ret <- varInfo[[info]](v)
+            ret2 <- varInfo[[info]](v)
           } else {
             # ...or return (constant) value
-            ret <- varInfo[[info]]
+            ret2 <- varInfo[[info]]
           }
-          break
+
+          if (appendNested) {
+            # append nested. Used if e.g.:
+            # ret = list(values=list(1,2,3), names=list('a', 'b', 'c'))
+            # ret2 = list(values=list(4), names=list('d'))
+            ret <- appendNested(ret, ret2)
+          } else if (append){
+            # append to results and continue looking
+            ret <- append(ret, ret2)
+          } else{
+            # return only this result
+            ret <- ret2
+            break
+          }
         }
       }
     }

@@ -66,6 +66,15 @@ zeroList <- function(list0) {
 }
 
 
+appendNested <- function(l0, l1){
+  names <- as.list(unique(c(names(l0), names(l1))))
+  ret <- list()
+  for (name in names) {
+    ret[[name]] <- append(l0[[name]], l1[[name]])
+  }
+  return(ret)
+}
+
 
 summarizeLists <- function(lists) {
   names <- as.list(unique(unlist(lapply(lists, names))))

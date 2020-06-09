@@ -764,9 +764,11 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
       atrNames <- list()
     }
 
-    customAttributes <- .vsc.getCustomInfo(v, 'customAttributes')
-    cAtr <- customAttributes$values
-    cAtrNames <- customAttributes$names
+    customAttributes <- .vsc.getCustomInfo(v, 'customAttributes', list(), list(), appendNested = TRUE)
+    internalAttributes <- .vsc.getCustomInfo(v, 'internalAttributes', list(), list())
+
+    cAtr <- c(internalAttributes$values, customAttributes$values)
+    cAtrNames <- c(internalAttributes$names, customAttributes$names)
 
     atr <- append(atr, cAtr)
     atrNames <- append(atrNames, cAtrNames)
