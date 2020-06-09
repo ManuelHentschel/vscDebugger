@@ -208,19 +208,25 @@ isPackageFrame <- function(env = parent.frame()) {
   ret <- tryCatch({
     srcref <- attr(call, 'srcref')
     srcfile <- attr(srcref, 'srcfile')
-    srcbody <- paste0(srcfile$lines, collapse='\n')
-    isFile <- srcfile$isFile
 
-    ret <- list(
-      wd = srcfile$wd,
-      filename = srcfile$filename,
-      line = srcref[1],
-      endLine = srcref[3],
-      column = srcref[2],
-      endColumn = srcref[4],
-      srcbody = srcbody,
-      isFile = isFile
-  )}, error=function(e) default)
+    if(is.null(srcfile)){
+      ret <- default
+    } else{
+      srcbody <- paste0(srcfile$lines, collapse='\n')
+      isFile <- srcfile$isFile
+
+      ret <- list(
+        wd = srcfile$wd,
+        filename = srcfile$filename,
+        line = srcref[1],
+        endLine = srcref[3],
+        column = srcref[2],
+        endColumn = srcref[4],
+        srcbody = srcbody,
+        isFile = isFile
+      )
+    }
+  }, error=function(e) default)
   return(ret)
 }
 
