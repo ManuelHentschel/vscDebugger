@@ -491,8 +491,9 @@ getVarInEnv <- function(name, env) {
   tryCatch({
     if (name == '...') {
       getDotVars(env)
-    } else if (isPromise(name, env)) {
-      getPromiseVar(name, env)
+    } else if (isPromise(name, env, strict = FALSE)) {
+      prom <- getPromiseVar(name, env)
+      if (isTRUE(prom$evaluated)) prom$value else prom
     } else if (bindingIsActive(name, env) && !getOption('vsc.evaluateActiveBindings', FALSE)) {
       getActiveBinding(name, env)
     } else {
@@ -582,30 +583,64 @@ getDotVars <- function(env) {
 #' 
 #' Gets a representation of a promise without forcing the promise
 #' 
+#' @aliases .vsc.promise
 #' @param name The name of the variable
 #' @param env The environment in which to evaluate
-#' @return A named list containing the expression that will be evaluated, the environment in which it will be evaluated and a string representation of the expression
+#' @return An object of class \code{".vsc.promise"}; a named list containing the expression that will be evaluated, the status whether the promise has already been evaluated, the value if it has already been evaluated, and the environment in which the unevaluated promise will be evaluated. 
+#' @examples 
+#' ## create a promise
+#' e <- new.env()
+#' delayedAssign("x", {message("evaluating promise..."); 1L}, assign.env = e)
+#' vscDebugger:::getPromiseVar("x", e)
+#' 
+#' ## evaluate it...
+#' print(e$x)
+#' 
+#' ## is it still a promise? (It depends...)
+#' stopifnot(vscDebugger:::isPromise("x", e, strict = FALSE))
+#' stopifnot(!vscDebugger:::isPromise("x", e, strict = TRUE))
+#' 
+#' ## get info again
+#' vscDebugger:::getPromiseVar("x", e)
 #' 
 getPromiseVar <- function(name, env) {
-  promiseExpr <- pryr:::promise_code(name, env)
-  promiseCode <- try(paste0(toString(promiseExpr), collapse = ';'), silent=getOption('vsc.trySilent', default=TRUE))
-  if (class(promiseCode) == 'try-error') promiseCode <- '???'
-  promiseEnv <- pryr:::promise_env(name, env)
-  var <- list(
-    promiseCode = promiseCode,
-    promiseEnv = promiseEnv,
-    promiseExpr = promiseExpr
+  structure(
+    getPromiseInfo(name, env),
+    class = c(".vsc.promise", ".vsc.InternalClass")
   )
-  class(var) <- c('.vsc.promise', '.vsc.InternalClass')
-  return(var)
 }
 
+#' Get information about a promise
+#' 
+#' @param name The name of the variable
+#' @param env The environment in which to evaluate
+#' @return A named list: 
+#' \itemize{
+#'   \item{\code{code}: }{the expression that will be evaluated}
+#'   \item{\code{environment}: }{the environment where the promise is evaluated}
+#'   \item{\code{evaluated}: }{logical flag if the promise has been already evaluated}
+#'   \item{\code{value}: }{optional node; the value of the evaluated promise}
+#' }
+#' @keywords internal
+#' @useDynLib vscDebugger c_promise_info 
+getPromiseInfo <- function(name, env) {
+  sym <- as.name(name)
+  .Call(c_promise_info, sym, env)
+}
 
-isPromise <- function(name, env) {
-  if (pryr:::is_promise2(name, env)) {
-    return(!pryr:::promise_evaled(name, env))
-  }
-  return(FALSE)
+#' Test if in object is a promise
+#' 
+#' @param name [character(1L)] the name of the object
+#' @param env [environment] the environment of the object 
+#' @param strict [logical(1L)] if \code{strict} is \code{TRUE} 
+#'   (the default), evaluated promises return with \code{FALSE}
+#' @useDynLib vscDebugger c_is_promise
+#' @keywords internal
+#' @seealso \code{\link{getPromiseVar}}
+#' @return \code{TRUE} or \code{FALSE}
+isPromise <- function(name, env, strict = TRUE) {
+  sym <- as.name(name)
+  .Call(c_is_promise, sym, env, strict)
 }
 
 getDummyVariable <- function(name) {

@@ -2,6 +2,7 @@
 % Please edit documentation in R/stack.R
 \name{getPromiseVar}
 \alias{getPromiseVar}
+\alias{.vsc.promise}
 \title{Get a representation of a promise}
 \usage{
 getPromiseVar(name, env)
@@ -12,8 +13,25 @@ getPromiseVar(name, env)
 \item{env}{The environment in which to evaluate}
 }
 \value{
-A named list containing the expression that will be evaluated, the environment in which it will be evaluated and a string representation of the expression
+An object of class \code{".vsc.promise"}; a named list containing the expression that will be evaluated, the status whether the promise has already been evaluated, the value if it has already been evaluated, and the environment in which the unevaluated promise will be evaluated.
 }
 \description{
 Gets a representation of a promise without forcing the promise
+}
+\examples{
+## create a promise
+e <- new.env()
+delayedAssign("x", {message("evaluating promise..."); 1L}, assign.env = e)
+vscDebugger:::getPromiseVar("x", e)
+
+## evaluate it...
+print(e$x)
+
+## is it still a promise? (It depends...)
+stopifnot(vscDebugger:::isPromise("x", e, strict = FALSE))
+stopifnot(!vscDebugger:::isPromise("x", e, strict = TRUE))
+
+## get info again
+vscDebugger:::getPromiseVar("x", e)
+
 }
