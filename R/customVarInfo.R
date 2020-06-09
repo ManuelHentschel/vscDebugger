@@ -2,38 +2,63 @@
 
 # type rValue = any;
 # type NULL = undefined;
-# interface namedList {names: string[], values: rValue[]};
+# interface namedList {names: string[], values: rValue[]}; // names, value must be same length
+# interface maybeNamedList {names: string[]|NULL, values: rValue[]}; // names, value must be same length
 # interface varInfo {
 #     name: string;
 #     doesApply: ((v: rValue) => boolean);
-#     childVars: ((v:rValue) => namedList)|namedList|NULL;
+#     childVars: ((v:rValue) => maybeNamedList)|maybeNamedList|NULL;
 #     customAttributes: ((v:rValue) => namedList)|namedList|NULL;
+#     internalAttributes: ((v:rValue) => namedList)|namedList|NULL;
 #     hasChildren: ((v:rValue) => boolean)|boolean|NULL;
 #     toString: ((v:rValue) => string)|string|NULL;
 #     shortType: ((v:rValue) => string)|string|NULL;
 #     longType: ((v:rValue) => string)|string|NULL;
 #     includeAttributes: ((v:rValue) => boolean)|boolean|NULL;
+#     evaluateName: ((v:rValue) => string)|string|NULL;
 # }
 # type varInfos = varInfo[];
 
 # if childVars(v)$names==NULL, use names(childVars(v)$value) if given
 
 
+# Explanation of the entries:
+# name: Human friendly name of the entry, informative purpose only
+# doesApply: Function that determines if the entry is to be used for a given variable
+# childVars: The child variables (typically entries of a list etc.)
+# customAttributes: Informative attributes. Meant to be added by the user. Names should be preceded by '__'
+# internalAttributes: Attributes used internally to handle custom variable info (e.g. promises)
+# hasChildren: Can be used to check for children (attributes or childVars), without actually evaluating them, to improve performance
+# toString: String representation of the variable. Must be a single atomic string!
+# shortType: Short type, e.g. "c" for vectors. Currently not used --> remove?
+# longType: Type of the variable shown in the debugger
+# includeAttributes: Whether to include the normal attributes. Can be used to properly show custom variable info (e.g. promises)
+# evaluateName: Expression that can be evaluated to get the variable value. Used to copy variable as expression
 
 
 #' @export
-getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
+.vsc.getCustomInfo <- function(v, info, default = NULL, onError = NULL, append = FALSE, appendNested = FALSE) {
   # checks the entries in session$varInfos for a matching entry
   # returns the requested info if available
   # info can be a string from the list:
   #     childVars
   #     customAttributes
+  #     internalAttributes
   #     hasChildren
   #     toString
   #     shortType
   #     longType
   #     includeAttributes
-  ret <- default
+  #     evaluateName
+
+  # make sure default is a list, if append==TRUE
+  if(append && !is.list(default)){
+    ret <- list()
+    ret[[1]] <- default # does nothing if default==NULL
+  } else{
+    ret <- default
+  }
+
   try({
     # loop through varInfos
     for (varInfo in session$varInfos) {
@@ -47,12 +72,25 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
         if (applies){
           if (is.function(varInfo[[info]])) {
             # apply function to v
-            ret <- varInfo[[info]](v)
+            ret2 <- varInfo[[info]](v)
           } else {
             # ...or return (constant) value
-            ret <- varInfo[[info]]
+            ret2 <- varInfo[[info]]
           }
-          break
+
+          if (appendNested) {
+            # append nested. Used if e.g.:
+            # ret = list(values=list(1,2,3), names=list('a', 'b', 'c'))
+            # ret2 = list(values=list(4), names=list('d'))
+            ret <- appendNested(ret, ret2)
+          } else if (append){
+            # append to results and continue looking
+            ret <- append(ret, ret2)
+          } else{
+            # return only this result
+            ret <- ret2
+            break
+          }
         }
       }
     }
@@ -115,9 +153,9 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
   varInfo$toString <- toString
   varInfo$shortType <- shortType
   varInfo$longType <- longType
-  varInfo$includeAttributes <- includeAttribute
+  varInfo$includeAttributes <- includeAttributes
 
-  session$varInfos <- append(session$varInfos, varInfo, position)
+  session$varInfos <- append(session$varInfos, list(varInfo), position)
 }
 
 #' @export
@@ -157,7 +195,7 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
 #' @export
 .vsc.getAllVarInfos <- function(){
   varInfos <- session$varInfos
-  varInfos <- lapply(seq(1, length(varInfos)), function(i){
+  varInfos <- lapply(seq_along(varInfos), function(i){
     vI <- varInfos[[i]]
     vI$position <- i
     vI
@@ -173,7 +211,7 @@ getCustomInfo <- function(v, info, default = NULL, onError = NULL) {
 }
 
 applyTestVar <- function(varInfo, testVar){
-  for(i in seq(length(varInfo))){
+  for(i in seq_along(varInfo)){
     if(is.function(varInfo[[i]])){
       varInfo[i] <- list(try(varInfo[[i]](testVar), silent=TRUE))
     }
@@ -216,7 +254,7 @@ applyTestVar <- function(varInfo, testVar){
       if(!identical(results$doesApply, TRUE)){
         warn <- c(warn, 'doesApply should return TRUE for the test case.')
       }
-    for(i in seq(length(varInfo))){
+    for(i in seq_along(varInfo)){
       name <- names(varInfo)[i]
       entry <- varInfo[[i]]
       ret <- results[[i]]

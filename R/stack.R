@@ -511,11 +511,13 @@ getVarInEnv <- function(name, env) {
 }
 
 getActiveBinding <- function(name, env){
-  ret <- list(
-    bindingFunction = activeBindingFunction(name, env)
-  )
-  class(ret) <- '.vsc.activeBinding'
-  ret
+  ret <- if (getRversion() >= "4.0.0") {
+    activeBindingFunction(name, env)
+  } else {
+    # as.list.environment(env)[[name]]
+    getInfoVar("R version >= 4.0.0 required to show active binding function!")
+  }
+  structure(list(bindingFunction = ret), class = c('.vsc.activeBinding', '.vsc.internalClass'))
 }
 
 getVarsInEnv <- function(env, all.names = TRUE) {
@@ -537,7 +539,7 @@ missingInEnv <- function(name, env){
 
 getInfoVar <- function(text, type='Warning: the variable value is just an info from the debugger!'){
   var <- list( text = text, type = type)
-  class(var) <- '.vsc.infoVar'
+  class(var) <- c('.vsc.infoVar', '.vsc.internalClass')
   return(var)
 }
 
@@ -604,7 +606,7 @@ getDotVars <- function(env) {
 getPromiseVar <- function(name, env) {
   structure(
     getPromiseInfo(name, env),
-    class = ".vsc.promise"
+    class = c(".vsc.promise", ".vsc.InternalClass"
   )
 }
 
@@ -654,13 +656,15 @@ getVariable <- function(valueR, name, depth = 20) {
   value <- varToString(valueR)
   type <- getType(valueR)
   variablesReference <- getVarRefForVar(valueR, depth)
+  evaluateName <- .vsc.getCustomInfo(valueR, 'evaluateName', '', '')
 
   variable <- list(
     name = name,
     value = value,
     type = type,
     variablesReference = variablesReference,
-    depth = depth
+    depth = depth,
+    evaluateName = evaluateName
   )
   return(variable)
 }
@@ -686,7 +690,7 @@ getEmptyVariableForEval <- function(){
 
 
 varToString <- function(v) {
-  ret <- getCustomInfo(v, 'toString', NULL, NULL)
+  ret <- .vsc.getCustomInfo(v, 'toString', NULL, NULL)
   try({
     if (is.null(ret)) {
       ret <- toString2(v)
@@ -748,9 +752,9 @@ getType <- function(valueR, short = FALSE) {
   # default case:
 
   if (short) {
-    ret <- getCustomInfo(valueR, 'shortType', '???', '???')
+    ret <- .vsc.getCustomInfo(valueR, 'shortType', '???', '???')
   } else {
-    ret <- getCustomInfo(valueR, 'longType', '???', '???')
+    ret <- .vsc.getCustomInfo(valueR, 'longType', '???', '???')
   }
   return(ret)
 }
@@ -758,7 +762,7 @@ getType <- function(valueR, short = FALSE) {
 
 
 getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttributes = TRUE, persistent=FALSE) {
-  if (depth > 0 && getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)) {
+  if (depth > 0 && .vsc.getCustomInfo(valueR, 'hasChildren', TRUE, TRUE)) {
     varListArgs <- list(v = valueR, depth = depth, maxVars = maxVars, includeAttributes = includeAttributes)
     varRef <- getVarRefForVarListArgs(varListArgs, persistent=persistent)
   } else {
@@ -770,7 +774,7 @@ getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttribute
 
 getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) {
   # TODO: accept argList containing all args
-  childVars <- getCustomInfo(v, 'childVars')
+  childVars <- .vsc.getCustomInfo(v, 'childVars')
 
   vars <- childVars$values
   varNames <- childVars$names
@@ -787,7 +791,7 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
   # separate, since environments might have attributes as well
 
   if (includeAttributes) {
-    if (getCustomInfo(v, 'includeAttributes', TRUE, TRUE)) {
+    if (.vsc.getCustomInfo(v, 'includeAttributes', TRUE, TRUE)) {
       atr <- attributes(v)
       atrNames <- lapply(names(atr), function(s) {paste0('_', s)})
     } else {
@@ -795,9 +799,11 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
       atrNames <- list()
     }
 
-    customAttributes <- getCustomInfo(v, 'customAttributes')
-    cAtr <- customAttributes$values
-    cAtrNames <- customAttributes$names
+    customAttributes <- .vsc.getCustomInfo(v, 'customAttributes', list(), list(), appendNested = TRUE)
+    internalAttributes <- .vsc.getCustomInfo(v, 'internalAttributes', list(), list())
+
+    cAtr <- c(internalAttributes$values, customAttributes$values)
+    cAtrNames <- c(internalAttributes$names, customAttributes$names)
 
     atr <- append(atr, cAtr)
     atrNames <- append(atrNames, cAtrNames)
