@@ -57,7 +57,7 @@ getDefaultVarInfos <- function() {
       childVars = list(),
       shortType = '',
       longType = 'promise',
-      toString = function(v) paste0(format(v$code), collapse = "\n"),
+      toString = function(v) paste0(format(v$code), collapse = "; "),
       customAttributes = function(v) {
         if (getOption('vsc.previewPromises', default = FALSE)) {
           list(
