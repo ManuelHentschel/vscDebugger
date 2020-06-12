@@ -1,5 +1,17 @@
 # create environment for global data used by package functions
 session <- local({
+  stackNode <- 0
+  frameIds <- list(
+    vsc = list(),
+    R = list(),
+    node = list()
+  )
+  varRefs <- list(
+    varRef = list(),
+    node = list()
+  )
+  varRef <- 1
+
   varLists <- list()
   varListArgs <- list()
   varListPersistent <- list()

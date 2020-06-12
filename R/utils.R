@@ -102,3 +102,11 @@ unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
 
   return(ret)
 }
+
+# lget <- function(list, entry, default=NULL){
+#   ret <- list[[entry]]
+#   if(is.null(ret)){
+#     ret <- default
+#   }
+#   ret
+# }

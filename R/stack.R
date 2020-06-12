@@ -6,7 +6,7 @@
 #     frames: Stackframe[];
 #     varLists: Variable2[];
 # }
-#
+
 # interface StackFrame{
 #     env: R-environment;
 #     id: number;
@@ -15,30 +15,32 @@
 #     line: number;
 #     scopes: Scope[];
 # }
-#
+
 # interface Source{
 #     name: string;
 #     path: string;
 # }
-#
+
 # interface Scope{
 #     name: string;
 #     variablesReference: number;
 # }
-#
+
 # interface Variable{
 #     name: string;
 #     value: string;
 #     type: string;
 #     variablesReference: number;
 # }
-#
+
 # # VarLists are internally stored as:
 # interface Variable2{
 #     reference: number;
 #     isReady: boolean;
 #     variables: Variable[];
 # }
+
+
 
 
 
@@ -84,7 +86,7 @@
 #' @return The current stack, formatted as a nested named list
 #'
 .vsc.buildStack <- function(topFrame = parent.frame(), skipFromTop = 0, skipFromBottom = 1, isError = FALSE, lastenv = .GlobalEnv) {
-  clearVarLists()
+  # clearVarLists()
   if (isError) {
     skipFromTop = skipFromTop + 1
   }
@@ -107,7 +109,7 @@
 }
 
 
-clearVarLists <- function(deleteAll = FALSE){
+NO_clearVarLists <- function(deleteAll = FALSE){
   for(i in seq2(session$varLists)){
     if(deleteAll || !session$varListPersistent[[i]]){
       session$varLists[[i]] <- list()
@@ -125,7 +127,7 @@ clearVarLists <- function(deleteAll = FALSE){
 #' @return A stack with the same structure as `.vsc.buildStack`
 #' 
 .vsc.getDummyStack <- function(dummyFile = NULL, lastenv = .GlobalEnv) {
-  clearVarLists()
+  # clearVarLists()
   nFrames <- 1
   frameIdsR <- seq(nFrames, 1, -1)
   frameIdsVsc <- seq2(length(frameIdsR)) - 1
@@ -157,7 +159,7 @@ clearVarLists <- function(deleteAll = FALSE){
 #' @param frameIdVsc The id of the frame that is reported to vsc
 #' @param dummyFile The name of the file used as source file
 #' 
-getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile = NULL, lastenv = .GlobalEnv) {
+NO_getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile = NULL, lastenv = .GlobalEnv) {
   env <- .GlobalEnv
   id <- frameIdVsc
   name <- 'Global Workspace (click here to see variables)'
@@ -196,7 +198,7 @@ getDummyFrame <- function(frameIdR, frameIdVsc, dummyFile = NULL, lastenv = .Glo
 #' @param vsc The frame id as used by vsc
 #' @param R The frame id as used by R
 #' @return The frame id as used by the other program
-convertFrameId <- function(vsc = NULL, R = NULL) {
+NO_convertFrameId <- function(vsc = NULL, R = NULL) {
   if (is.null(vsc) && is.null(R)) {
     return(NULL)
   } else if (is.null(vsc)) {
@@ -221,22 +223,9 @@ convertFrameId <- function(vsc = NULL, R = NULL) {
 #' Get varLists for a list of given varRefs
 #'
 #' @param refs List of varRefs
-makeVarLists <- function(refs) {
+NO_makeVarLists <- function(refs) {
   varLists <- lapply(refs, getVarListsEntry)
   return(varLists)
-}
-
-#' Get the number of frames
-#'
-#' Get the number of frames
-#'
-#' @param topFrame Consider only frames below this frame
-getNFrames <- function(topFrame) {
-  nFrames <- sys.nframe()
-  while (!identical(sys.frame(nFrames), topFrame) && !identical(sys.frame(nFrames), .GlobalEnv)) {
-    nFrames <- nFrames - 1
-  }
-  return(nFrames)
 }
 
 
@@ -249,7 +238,7 @@ getNFrames <- function(topFrame) {
 #'
 #' @param frameIdR Frame Id as used by R. Used to identify the frame
 #' @param frameIdVsc Frame Id as used by vsc. Is only added as info
-getStackFrame <- function(frameIdR, frameIdVsc, lastenv=.GlobalEnv) {
+NO_getStackFrame <- function(frameIdR, frameIdVsc, lastenv=.GlobalEnv) {
   env <- sys.frame(frameIdR)
   # id <- nFrames + 1 - frameIdR # vsc considers frames in the opposite order!
   id <- frameIdVsc
@@ -282,57 +271,6 @@ getStackFrame <- function(frameIdR, frameIdVsc, lastenv=.GlobalEnv) {
   return(frame)
 }
 
-#' Get the frame name of a given call
-#'
-#' Get the frame name of a given call
-getFrameName <- function(call) {
-  name <- varToStringWithCaptureOutput(call)
-  # name <- substr(name, 1, 16)
-  maxChars <- 300
-  if (nchar(name) > maxChars) {
-    name <- paste0(substr(name, 1, maxChars - 3), '...')
-  }
-  return(name)
-}
-
-
-#' Gather info about a frame's source code
-#' 
-#' Gathers and returns a named list containing info about the name, path, and content of the source file of a frame
-#' 
-#' @param frameId A frame id (as used by R) that can be passed to sys.call
-#' @return A named list containing info about the source file
-getSource <- function(frameId) {
-  if (frameId >= sys.nframe()) {
-    return(NULL)
-  }
-  ret <- tryCatch({
-    call <- sys.call(frameId + 1)
-    lineAndFile <- .vsc.getLineAndFile(call)
-    filename <- lineAndFile$filename
-
-    if(is.null(lineAndFile$isFile)){
-      lineAndFile$isFile <- is.character(filename) && !identical(filename, '')
-    }
-
-    if(lineAndFile$isFile){
-      sourceReference = 0
-    } else{
-      sourceReference = frameId + 1
-    }
-
-
-    ret <- list(
-      name = basename(filename),
-      path = filename,
-      sourceReference = sourceReference,
-      isFile = lineAndFile$isFile,
-      srcbody = lineAndFile$srcbody
-    )
-  }, error = function(e) NULL)
-  
-  return(ret)
-}
 
 ########################################################################
 # Scopes
@@ -343,7 +281,7 @@ getSource <- function(frameId) {
 #' 
 #' @param frame A frame as constructed by `getStackFrame`
 #' @return A list of scopes as constructed by `getScope`
-getScopes <- function(frame, lastenv = .GlobalEnv) {
+NO_getScopes <- function(frame, lastenv = .GlobalEnv) {
   envs <- getScopeEnvs(frame$env, lastenv)
   scopes <- lapply(envs, getScope)
   return(scopes)
@@ -355,7 +293,7 @@ getScopes <- function(frame, lastenv = .GlobalEnv) {
 #' 
 #' @param env The environment (=scope) that is to be analyzed
 #' @return A named list containing the name of the scope an a variablesReference
-getScope <- function(env) {
+NO_getScope <- function(env) {
   name <- capture.output(str(env))[1]
   varRef <- getVarRefForVar(env)
   scope <- list(
@@ -392,7 +330,7 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
 #' @param evalCall A boolean indicating whether to evaluate the call already (defaults to `FALSE`)
 #' @param varRef If specified, this varRef is used instead of incrementing the last varRef by 1
 #' 
-getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef = NULL, persistent=FALSE) {
+NO_getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef = NULL, persistent=FALSE) {
   if (is.null(varRef)) {
     varRef <- length(session$varListArgs) + 1
   }
@@ -429,7 +367,7 @@ getVarRefForVarListArgs <- function(varListArgs = NULL, evalCall = FALSE, varRef
 #' 
 #' @param varRef The variablesReference as returned by `getVarRefForVarListArgs} or \code{getVarRefForVar`
 #' @return A list of variables corresponding to the varRef
-getVarListsEntry <- function(varRef) {
+NO_getVarListsEntry <- function(varRef) {
   # 
   # to avoid excessive nested calls, the varList is only computed once requested
   # before the varList is requested, only the arguments for getVarList() that will return it is stored in session$varListArgs
@@ -520,18 +458,14 @@ getActiveBinding <- function(name, env){
   structure(list(bindingFunction = ret), class = c('.vsc.activeBinding', '.vsc.internalClass'))
 }
 
-getVarsInEnv <- function(env, all.names = TRUE, parentExpr = NULL) {
+getVarsInEnv <- function(env, all.names = TRUE) {
   names <- ls(env, all.names = all.names)
-  vars <- lapply(names, getVarInEnv, env)
-  ret <- list(
-    value = vars,
-    name = names
-  )
-  if (TRUE){
-    ret$setExpression <- lapply(names, function(name) as.symbol(name))
-    ret$setEnvironment <- lapply(names, function(name) env)
-  }
-  return(ret)
+  lapply(names, function(name) {
+    list(
+      value = getVarInEnv(name, env),
+      name = name
+    )
+  })
 }
 
 missingInEnv <- function(name, env){
@@ -657,7 +591,7 @@ getDummyVariable <- function(name) {
   )
 }
 
-getVariable <- function(valueR, name, setExpression=NULL, setEnvironment=NULL, depth = 20) {
+NO_getVariable <- function(valueR, name, setInfo=NULL, depth = 20) {
   value <- varToString(valueR)
   type <- getType(valueR)
   variablesReference <- getVarRefForVar(valueR, depth)
@@ -670,8 +604,7 @@ getVariable <- function(valueR, name, setExpression=NULL, setEnvironment=NULL, d
     variablesReference = variablesReference,
     depth = depth,
     evaluateName = evaluateName,
-    setExpression = setExpression,
-    setEnvironment = setEnvironment
+    setInfo = setInfo
   )
   return(variable)
 }
@@ -779,9 +712,9 @@ getVarRefForVar <- function(valueR, depth = 10, maxVars = 1000, includeAttribute
 }
 
 
-getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) {
+getVarList <- function(v, setInfo = NULL, depth = 10, maxVars = 1000, includeAttributes = TRUE) {
   # TODO: accept argList containing all args
-  childVars <- .vsc.getCustomInfo(v, 'childVars')
+  childVars <- .vsc.getCustomInfo(v, 'childVars', setInfo = setInfo)
   sChildVars <- summarizeLists(childVars)
 
   vars <- sChildVars$value
@@ -793,14 +726,12 @@ getVarList <- function(v, depth = 10, maxVars = 1000, includeAttributes = TRUE) 
     varNames <- lapply(seq2(vars), toString, '0')
   }
 
-  setExpressions <- sChildVars$setExpression
-  setEnvironments <- sChildVars$setEnvironment
-  if (is.null(setExpressions)){
-    setExpressions <- lapply(vars, function(v) NULL)
-    setEnvironments <- lapply(vars, function(v) NULL)
+  setInfo <- sChildVars$setInfo
+  if (is.null(setInfo)){
+    setInfo <- lapply(vars, function(v) NULL)
   }
 
-  varList <- mapply(getVariable, vars, varNames, setExpressions, setEnvironments, MoreArgs = list(depth = depth - 1), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  varList <- mapply(getVariable, vars, varNames, setInfo, MoreArgs = list(depth = depth - 1), SIMPLIFY = FALSE, USE.NAMES = FALSE)
 
   # get variable info about attributes
   # separate, since environments might have attributes as well

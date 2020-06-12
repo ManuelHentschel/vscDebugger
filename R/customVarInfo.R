@@ -41,7 +41,7 @@
 .vsc.getCustomInfo <- function(
   v, info, default = NULL,
   onError = NULL, append = FALSE,
-  appendNested = FALSE, withParentExpr = FALSE
+  appendNested = FALSE, setInfo = NULL
 ) {
   # checks the entries in session$varInfos for a matching entry
   # returns the requested info if available
@@ -77,7 +77,11 @@
         if (applies){
           if (is.function(varInfo[[info]])) {
             # apply function to v
-            ret2 <- varInfo[[info]](v)
+            if(is.null(setInfo)){
+              ret2 <- varInfo[[info]](v)
+            } else{
+              ret2 <- varInfo[[info]](v, setInfo)
+            }
           } else {
             # ...or return (constant) value
             ret2 <- varInfo[[info]]
@@ -106,6 +110,97 @@
     return(ret)
   }
 }
+
+.vsc.applyVarInfos <- function(
+  v,
+  infos = character(0),
+  stackingInfos = character(0)
+) {
+  # check args
+  if(is.null(stackingInfos)) {
+    stackingInfos <- c()
+  } else if(is.list(stackingInfos)) {
+    stackingInfos <- unlist(stackingInfos)
+  }
+  if(is.null(infos)) {
+    infos <- c()
+  } else if(is.list(infos)) {
+    infos <- unlist(infos)
+  }
+
+  missingInfos <- c(infos, stackingInfos)
+  names(missingInfos) <- missingInfos
+  isStacking <- c(logical(length(infos)), !logical(length(stackingInfos)))
+  names(isStacking) <- missingInfos
+  ret <- list()
+
+  for (varInfo in session$varInfos) {
+    # find missing infos that are supplied by this varInfo:
+    matching <- intersect(missingInfos, names(varInfo))
+    applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
+    if(applies){
+      for(info in matching){
+        # print(info)
+        # get and (if function) apply info:
+        tmp <- varInfo[[info]]
+        if(is.function(tmp)){
+          valueAndError <- tryCatch(
+            list(
+              value = tmp(v),
+              isError = FALSE
+            ),
+            error = function(e) list(
+              value = NULL,
+              isError = TRUE
+            )
+          )
+          if(valueAndError$isError){
+            continue
+          } else{
+            tmp <- valueAndError$value
+          }
+        }
+        # append or store result:
+        if(isStacking[info]){
+          # cat('stacking: ', info, '\n')
+          ret[[info]] <- append(ret[[info]], list(tmp))
+          # keep looking
+        } else{
+          # cat('non-stacking: ', info, '\n')
+          ret[[info]] <- tmp
+          # remove from missing infos:
+          ind <- which(missingInfos == info)
+          missingInfos <- missingInfos[-ind]
+          isStacking <- isStacking[-ind]
+        }
+      }
+      if(length(missingInfos) == 0){
+        break
+      }
+    }
+  }
+  ret
+}
+
+toAtomicBoolean <- function(v, ...){
+  # outputs TRUE or FALSE
+  # for nice input equivalent to `as.logical(v)[[1]]`
+  # catches all errors, suppresses all warnings
+  # able to handle any number of inputs, only considers 1st, returns FALSE if no arguments
+  # able to handle e.g. NULL, c(), integer(0), list(), NA, NaN (all of these return FALSE)
+  # if input throws an error and is lazy -> evaluated withing tryCatch -> returns FALSE
+  suppressWarnings(
+    tryCatch(
+      if(as.logical(v)[[1]]){
+        TRUE
+      } else{
+        FALSE
+      },
+      error = function(e) FALSE
+    )
+  )
+}
+
 
 
 #' @export

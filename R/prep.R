@@ -259,6 +259,7 @@ isPackageFrame <- function(env = parent.frame()) {
 }
 
 
+
 #' Prepare a message as string for vsc
 #'
 #' Prepare a message as string for vsc
@@ -268,6 +269,7 @@ isPackageFrame <- function(env = parent.frame()) {
 #' @param id The message id. Is usually provided in the function call from vsc.
 #' @return A (json) string that can be interpreted by vsc
 .vsc.makeStringForVsc <- function(message, body = "", id = 0) {
+  body <- removeNonJsonElements(body)
   l <- list(message = message, body = body, id = id)
   s <- jsonlite::toJSON(l, auto_unbox = TRUE, force = TRUE)
   r <- paste0(
@@ -277,6 +279,18 @@ isPackageFrame <- function(env = parent.frame()) {
     '\n'
   )
   return(r)
+}
+
+removeNonJsonElements <- function(v){
+  if(is.list(v)){
+    lapply(v, removeNonJsonElements)
+  } else{
+    if(is.vector(v)){
+      v
+    } else{
+      ''
+    }
+  }
 }
 
 
