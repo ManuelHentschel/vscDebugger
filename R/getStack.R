@@ -17,46 +17,6 @@
 # )
 
 
-sendResponse <- function(response){
-  .vsc.sendToVsc(message = 'response', body = response)
-}
-
-prepareResponse <- function(request){
-  response <- list(
-    seq = 0,
-    type = 'response',
-    request_seq = request$seq,
-    command = request$command,
-    success = TRUE
-  )
-  return(response)
-}
-
-#' @export
-.vsc.dispatchRequest <- function(request){
-  response <- prepareResponse(request)
-  command <- lget(request, 'command', '')
-  args <- lget(request, 'arguments', list())
-  if(command == 'stackTrace'){
-    stackTraceRequest(response, args, request)
-  } else if(command == 'stackTrace'){
-    stackTraceRequest(response, args, request)
-  } else if(command == 'scopes'){
-    scopesRequest(response, args, request)
-  } else if(command == 'variables'){
-    variablesRequest(response, args, request)
-  } else if(command == 'setVariable'){
-    setVariableRequest(response, args, request)
-  } else if(command == 'setExpression'){
-    setExpressionRequest(response, args, request)
-  } else if(command == 'evaluate'){
-    evaluateRequest(response, args, request)
-  } else {
-    # ignore
-  }
-}
-
-
 sourceRequest <- function(response, args, request){
 
 }
@@ -65,10 +25,17 @@ stackTraceRequest <- function(response, args, request){
   # args: none relevant
 
   # do stuff:
+  tree <- session$tree
+
+  oldStackNode <- lget(session, 'stackNode', 0)
+  if(oldStackNode>0){
+    tree$deleteNode(oldStackNode)
+  }
+
   stackNode <- .vsc.buildNewStack(topFrame = parent.frame(2))
   session$stackNode <- stackNode
-  frameNodes <- getChildrenIds(stackNode)
-  stackFrames <- getContents(frameNodes)
+  frameNodes <- tree$getChildrenIds(stackNode)
+  stackFrames <- tree$getContents(frameNodes)
 
   # make sure the frameIds are linked to the corresponding nodeIds
   storeFrameIds(stackFrames, frameNodes)
@@ -87,9 +54,10 @@ scopesRequest <- function(response, args, request){
   frameIdVsc <- args$frameId
 
   # do stuff:
+  tree <- session$tree
   frameNode <- getNodeId(vsc = frameIdVsc)
-  scopeNodes <- getChildrenIds(frameNode)
-  scopes <- getContents(scopeNodes)
+  scopeNodes <- tree$getChildrenIds(frameNode)
+  scopes <- tree$getContents(scopeNodes)
 
   # make sure the variableReferences are linked to the corresponding nodeIds
   storeVarRefs(scopes, scopeNodes)
@@ -107,10 +75,11 @@ variablesRequest <- function(response, args, request){
   varRef <- args$variablesReference
 
   # do stuff:
+  tree <- session$tree
   nodeId <- getNodeId(varRef = varRef)
 
-  variableNodes <- getChildrenIds(nodeId)
-  variables <- getContents(variableNodes)
+  variableNodes <- tree$getChildrenIds(nodeId)
+  variables <- tree$getContents(variableNodes)
 
   # make sure the variableReferences are linked to the corresponding nodeIds
   storeVarRefs(variables, variableNodes)
@@ -127,10 +96,6 @@ setVariableRequest <- function(response, args, request){
 }
 
 setExpressionRequest <- function(response, args, request){
-    
-}
-
-evaluateRequest <- function(response, args, request){
     
 }
 

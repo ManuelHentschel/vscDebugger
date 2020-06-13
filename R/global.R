@@ -41,4 +41,11 @@ session <- local({
     options(vsc.evaluateActiveBindings = FALSE)
   }
   session$varInfos <- getDefaultVarInfos()
+
+  session$tree <- LazyTree(
+    childrenFunction = childrenFunction,
+    contentFunction = contentFunction,
+    defaultContentProducesChildren = TRUE
+  )
+  session$rootNode <- session$tree$getNewNodeId()
 }

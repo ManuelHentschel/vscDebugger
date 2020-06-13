@@ -1,6 +1,64 @@
 ########################################################################
 # Prep
 
+
+
+evaluateRequest <- function(response, args, request){
+  # args
+  expr <- lget(args, 'expression', '')
+  frameId <- lget(args, 'frameId', 0)
+  context <- lget(args, 'context', '')
+
+  if(context == 'clipboard'){
+    response.success <- FALSE
+    sendResponse(response)
+    return(invisible(NULL))
+  }
+
+  silent <- (context == 'watch')
+  assignToAns <- TRUE
+  catchErrors <- FALSE # TODO: get form options()
+
+  valueAndVisible <- .vsc.evalInFrame(
+    expr,
+    frameId,
+    silent = silent,
+    id = 0,
+    assignToAns = assignToAns,
+    catchErrors = catchErrors
+  )
+
+  if(valueAndVisible$visible || context == 'watch'){
+    variableArgs <- list(
+      nodeType = 'Variable',
+      minVar = list(
+        name = 'evalResult',
+        rValue = valueAndVisible$value
+      )
+    )
+    nodeId <- session$tree$storeToNewNode(list(contentArgs = variableArgs), session$rootNode)
+    variable <- session$tree$getContent(nodeId)
+    storeVarRef(node = nodeId, varRef = variable$variablesReference)
+
+    body <- list(
+      result = variable$value,
+      type = variable$type,
+      variablesReference = variable$variablesReference
+    )
+  } else{
+    body <- list(
+      result = "",
+      type = "",
+      varaiblesReference = 0
+    )
+  }
+
+  response$body <- body
+
+  sendResponse(response)
+}
+
+
 #' Evaluate an expression and send result to vsc
 #'
 #' Evaluates an expression in a given frameId and sends the result to vsc
@@ -83,22 +141,12 @@
   # reset settings
   session$debugGlobal <- tmpDebugGlobal
 
-
-  # prepare and send result
-  if(valueAndVisible$visible || silent){
-    ret <- getVariableForEval(valueAndVisible$value)
-  } else {
-    ret <- getEmptyVariableForEval()
-  }
-
-  # value <- paste(value, sep = "", collapse = "\n")
-  .vsc.sendToVsc('eval', ret, id = id)
-
-  # return value for further handling
+  # assign to .ans
   if(assignToAns && !silent){
     .GlobalEnv$.ans <- valueAndVisible$value
   }
-  invisible(valueAndVisible$value)
+  
+  return(valueAndVisible)
 }
 
 calledFromGlobal <- function() {

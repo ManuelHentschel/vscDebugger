@@ -314,7 +314,7 @@ getDefaultVarInfos <- function() {
         } else {
           return(unsummarizeLists(list(
             rValue = as.list(v),
-            name = seq_along(as.list(v))
+            name = format(seq_along(as.list(v)))
           )))
         }
       },

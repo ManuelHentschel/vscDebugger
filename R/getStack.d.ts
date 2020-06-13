@@ -18,6 +18,7 @@ import { LazyTree } from './lazyTree';
 
 export declare module GetStack {
 
+
     function sendResponse(response: DebugProtocol.Response): void;
 
     function sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void;

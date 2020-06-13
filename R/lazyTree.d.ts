@@ -3,13 +3,10 @@
 export declare module LazyTree {
 
     // unique to each node. Specifies its position in the NodeList
-    type NodeId = number;
-
-    // List containing all Nodes, positions corresponding to nodeIds
-    type NodeList = LazyNode[];
+    // unsigned integer > 0. Use 0 to indicate "NULL-Node" (e.g. parent of root node)
+    type NodeId = number; 
 
     // properties of a (non-lazy) Node. All lazy nodes can be forced to contain these fields
-    // not actually used in lazy tree
     interface Node {
         nodeId: NodeId;
         parentId: NodeId;
@@ -62,7 +59,7 @@ export declare module LazyTree {
         contentArgs?: ContentArgs, // used to retrieve content when requested
         childrenArgs?: ChildrenArgs, // used to construct children when requested
 
-        preserve?: boolean //=false // only relevant while appying nodeArgs
+        preserve?: boolean //=false // keep pre-existing entries? only relevant while appying nodeArgs
 
         // If e.g. both content and contentArgs are specified, the more 'explicit' takes precedence:
         // content == children > contentArgs == childrenArgs > contentProducesChildren
@@ -72,6 +69,7 @@ export declare module LazyTree {
 
 
     // used to compute the content of a node
+    // result is usually supposed to contain field NodeArgs.contentContent
     type ContentFunction = (args: ContentArgs) => NodeArgs;
 
     // used to compute the children of a node
@@ -83,12 +81,30 @@ export declare module LazyTree {
         children: NestedList[];
     }
 
-    // implemented in R and to be used internally or by the user to modify the tree
-    interface globalFunctions {
+    class LazyTree {
+        // // // properties
+        defaultArgs: {
+            defaultContentProducesChildren: boolean;
+            defaultPreserve: boolean;
+            defaultLazy: boolean;
+        }
+
+        childrenFunction: ChildrenFunction;
+        contentFunction: ContentFunction;
+        nodes: LazyNode[];
+
+        // // // methods
         // // Construction of the tree
 
-        // delete existing tree and make a new tree with an empty root node
-        makeNewtree(contentFunction: ContentFunction, childrenFunction: ChildrenFunction): void;
+        // returns an instance of LazyTree
+        constructor(
+            childrenFunction?: ChildrenFunction,
+            contentFunction?: ContentFunction,
+            defaultContentProducesChildren?: boolean, //=false
+            defaultPreserve?: boolean, //=false
+            defaultLazy?: boolean, //=true
+            makeRootNode?: boolean //=false
+        )
 
         // create an empty node with parent specified by parentId
         getNewNodeId(parentId: NodeId): NodeId;
@@ -113,7 +129,7 @@ export declare module LazyTree {
 
         // orphan node, then set node and all children to NULL (does not shorten the node list)
         // invalidates the nodeIds of all deleted nodes!
-        deleteNode(id: NodeId): NodeId;
+        deleteNode(id: NodeId): NodeId[];
 
         // deletes all consecutive entries that contain only NULL from the end of the node list
         trimTree(): void;
@@ -152,6 +168,12 @@ export declare module LazyTree {
 
         // forces and retrieves the childrenIds of a node
         getChildrenIds(id: NodeId): NodeId[];
+
+        // retrieve parent Id
+        getParentId(id: NodeId): NodeId;
+
+        // retrieve ids of ancestors (not including the node itself, including final 0)
+        getAncestorIds(id: NodeId): NodeId[];
 
         // forces and gets the content of a list of nodes
         getContents(ids: NodeId[]): Content[];

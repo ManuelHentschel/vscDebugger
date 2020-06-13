@@ -152,7 +152,14 @@ storeFrameId <- function(node, R, vsc){
     )
 }
 
-storeFrameIds <- function(frames, frameNodes){
+storeFrameIds <- function(frames, frameNodes, preserve=FALSE){
+  if(!preserve){
+    session$frameIds <- list(
+      node = list(),
+      R = list(),
+      vsc = list()
+    )
+  }
   mapply(
     function(frameNode, frame){
       storeFrameId(
@@ -166,6 +173,37 @@ storeFrameIds <- function(frames, frameNodes){
   )
 
 }
+
+#' Converts the frame id
+#'
+#' Converts the frame id form R to vsc or viceversa
+#'
+#' @param vsc The frame id as used by vsc
+#' @param R The frame id as used by R
+#' @return The frame id as used by the other program
+convertFrameId <- function(vsc = NULL, R = NULL) {
+  frameIdsR <- session$frameIds$R
+  frameIdsVsc <- session$frameIds$vsc
+
+  if (is.null(vsc) && is.null(R)) {
+    return(NULL)
+  } else if (is.null(vsc)) {
+    ind <- which(R == frameIdsR)
+    if (length(ind) > 0) {
+      return(frameIdsVsc[[ind[1]]])
+    } else {
+      return(NULL)
+    }
+  } else {
+    ind <- which(vsc == frameIdsVsc)
+    if (length(ind) > 0) {
+      return(frameIdsR[[ind[1]]])
+    } else {
+      return(NULL)
+    }
+  }
+}
+
 
 storeVarRef <- function(varRef, node){
   session$varRefs <- list(

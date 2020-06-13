@@ -3,11 +3,9 @@
 
 #' @export
 .vsc.buildNewStack <- function(topFrame = parent.frame()){
-  id0 <- makeNewTree(
-    childrenFunction = childrenFunction,
-    contentFunction = contentFunction,
-    defaultContentProducesChildren = TRUE
-  )
+
+  id0 <- session$rootNode
+  tree <- session$tree
 
   stackArgs <- list(
     nodeType = 'Stack',
@@ -23,7 +21,7 @@
   nodeArgs = list(
     contentArgs = stackArgs
   )
-  idStack <- storeToNewNode(nodeArgs, id0)
+  idStack <- tree$storeToNewNode(nodeArgs, id0)
   return(idStack)
 }
 
@@ -344,12 +342,11 @@ gatherVariables <- function(args){
 
   childVariables <- c(
     infos$childVars,
-    infos$internalAttributes
-    # ,
-    # unlist(
-    #   infos$customAttributes,
-    #   recursive = FALSE
-    # )
+    infos$internalAttributes,
+    unlist(
+      infos$customAttributes,
+      recursive = FALSE
+    )
   )
 
   # return

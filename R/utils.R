@@ -103,10 +103,21 @@ unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
   return(ret)
 }
 
-# lget <- function(list, entry, default=NULL){
-#   ret <- list[[entry]]
-#   if(is.null(ret)){
-#     ret <- default
-#   }
-#   ret
-# }
+
+lgetSafe <- function(list, entry, default=NULL){
+  suppressWarnings(
+    tryCatch(
+      lget(list, entry, default),
+      error = function(e) default
+    )
+  )
+}
+
+lget <- function(list, entry, default=NULL){
+  ret <- list[[entry]]
+  if(is.null(ret)){
+    default
+  } else{
+    ret
+  }
+}
