@@ -14,18 +14,12 @@ export declare module LazyTree {
 
         contentContent?: Content;
     }
-
     // lazy extension of Node
     // stores arguments to compute content/children only if requested
     interface LazyNode extends Node {
-        nodeId: NodeId;
-        parentId: NodeId;
-
-        childrenIds: NodeId[];
         childrenReady: boolean;
         childrenArgs?: ChildrenArgs;
 
-        contentContent?: Content;
         contentReady: boolean;
         contentProducesChildren: boolean;
         contentArgs: ContentArgs;
@@ -39,16 +33,16 @@ export declare module LazyTree {
     // arguments passed to ChildrenFunction to retrieve list of children
     interface ChildrenArgs {
         nodeType: string;
-        lazy?: boolean; //=true
+        lazy?: boolean; //=true // Only relevant for LazyTree
     }
 
     // arguments passed to ContentFunction to retrieve content of a node
     interface ContentArgs {
         nodeType: string;
-        lazy?: boolean; //=true
+        lazy?: boolean; //=true // Only relevant for LazyTree
 
         // if true, the result of ContentFuntion also contains children/childrenArgs to construct children
-        contentProducesChildren?: boolean; //=false
+        contentProducesChildren?: boolean; //=false 
     }
 
     // arguments used to construct a node
@@ -56,8 +50,8 @@ export declare module LazyTree {
         contentContent?: Content, // directly stored to Node.contentContent
         children?: NodeArgs[], // used to (recursively) construct child nodes
 
-        contentArgs?: ContentArgs, // used to retrieve content when requested
-        childrenArgs?: ChildrenArgs, // used to construct children when requested
+        contentArgs?: ContentArgs, // used to construct content
+        childrenArgs?: ChildrenArgs, // used to construct children
 
         preserve?: boolean //=false // keep pre-existing entries? only relevant while appying nodeArgs
 
@@ -81,17 +75,12 @@ export declare module LazyTree {
         children: NestedList[];
     }
 
-    class LazyTree {
-        // // // properties
-        defaultArgs: {
-            defaultContentProducesChildren: boolean;
-            defaultPreserve: boolean;
-            defaultLazy: boolean;
-        }
+
+    class Tree {
 
         childrenFunction: ChildrenFunction;
         contentFunction: ContentFunction;
-        nodes: LazyNode[];
+        nodes: Node[];
 
         // // // methods
         // // Construction of the tree
@@ -100,9 +89,6 @@ export declare module LazyTree {
         constructor(
             childrenFunction?: ChildrenFunction,
             contentFunction?: ContentFunction,
-            defaultContentProducesChildren?: boolean, //=false
-            defaultPreserve?: boolean, //=false
-            defaultLazy?: boolean, //=true
             makeRootNode?: boolean //=false
         )
 
@@ -124,11 +110,11 @@ export declare module LazyTree {
 
         // // Tree manipulation (non-lazy stuff)
 
-        // remove nodeId from parent nodes childrenIds and set parentId to 0
+        // remove nodeId from parent nodes' childrenIds and set parentId to 0
         orphanNode(id: NodeId): NodeId;
 
         // orphan node, then set node and all children to NULL (does not shorten the node list)
-        // invalidates the nodeIds of all deleted nodes!
+        // invalidates the (externally known) nodeIds of all deleted nodes!
         deleteNode(id: NodeId): NodeId[];
 
         // deletes all consecutive entries that contain only NULL from the end of the node list
@@ -149,20 +135,7 @@ export declare module LazyTree {
         findLastEntry(): NodeId;
 
 
-        // // Tree manipulation (lazy stuff)
-
-        // computes the children of a node (if not ready yet)
-        forceChildren(id: NodeId): NodeId[];
-
-        // computesthe content of a node (if not ready yet)
-        forceContent(id: NodeId): Content;
-
-        // recursively calls forceChildren to compute teh children of the entire tree (up to given depth)
-        forceTree(id: NodeId, depth: number, forceContent: boolean, deleteArgs: boolean): NodeId;
-
-
         // // Info retrieval (work 'lazy-agnostic', everything is forced before returning)
-
         // forces and retrieves the content from a node
         getContent(id: NodeId): Content;
 
@@ -183,5 +156,39 @@ export declare module LazyTree {
 
         // forces and converts the tree to a NestedList  (up to given depth)
         treeToList(id: NodeId, depth: number): NestedList;
+    }
+
+    class LazyTree extends Tree {
+        // // // properties
+        defaultArgs: {
+            defaultContentProducesChildren: boolean;
+            defaultPreserve: boolean;
+            defaultLazy: boolean;
+        }
+
+        nodes: LazyNode[];
+
+        // // // methods
+        // // Construction of the tree
+
+        // returns an instance of LazyTree
+        constructor(
+            childrenFunction?: ChildrenFunction,
+            contentFunction?: ContentFunction,
+            defaultContentProducesChildren?: boolean, //=false
+            defaultPreserve?: boolean, //=false
+            defaultLazy?: boolean, //=true
+            makeRootNode?: boolean //=false
+        )
+
+        // // Tree manipulation (lazy stuff)
+        // computes the children of a node (if not ready yet)
+        forceChildren(id: NodeId): NodeId[];
+
+        // computesthe content of a node (if not ready yet)
+        forceContent(id: NodeId): Content;
+
+        // recursively calls forceChildren to compute teh children of the entire tree (up to given depth)
+        forceTree(id: NodeId, depth: number, forceContent: boolean, deleteArgs: boolean): NodeId;
     }
 }

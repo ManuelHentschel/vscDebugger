@@ -11,7 +11,8 @@ LazyTree <- function(
 ){
     tree <- local({
 
-        # define 'this', is removed before returning
+        # define 'this' to refer to the current tree (javascript/typescript convention)
+        # can be ommitted when reading from variables, but is necessary when writing, e.g.: `this$nodes <- append(nodes, list(newNode))`
         this <- environment()
 
         # properties
@@ -343,7 +344,6 @@ LazyTree <- function(
         }
 
         class(this) <- 'LazyTree'
-        rm("this")
         environment()
     })
 

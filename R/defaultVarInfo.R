@@ -1,39 +1,4 @@
 
-# helper functions for the default varInfos:
-
-getRow <- function(v, i) {
-  row <- v[i, ]
-  names(row) <- colnames(v)
-  if (is.null(names(row))) {
-    names(row) <- getIndices(v, row = i)
-  }
-  class(row) <- c('.vsc.matrixRow', '.vsc.internalClass')
-  return(row)
-}
-getCol <- function(v, j) {
-  col <- v[, j]
-  names(col) <- rownames(v)
-  if (is.null(names(col))) {
-    names(col) <- getIndices(v, col = j)
-  }
-  # matrixRow can be used here as well!
-  class(col) <- c('.vsc.matrixRow', '.vsc.internalClass')
-  return(col)
-}
-getIndices <- function(v, row = NULL, col = NULL) {
-  if (is.null(row) && is.null(col)) {
-    m <- expand.grid(nrow(v), ncol(v))
-    names <- mapply(function(i, j) paste0('[', i, ',', j, ']'), m[[1]], m[[2]])
-  } else if (is.null(row)) {
-    names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',', col, ']'))
-  } else if (is.null(col)) {
-    names <- lapply(seq_len(ncol(v)), function(j) paste0('[', row, ',', j, ']'))
-  } else {
-    names <- list(paste0('[', row, ',', col, ']'))
-  }
-}
-
-
 # Get default list of varInfos to handle most cases
 
 getDefaultVarInfos <- function() {

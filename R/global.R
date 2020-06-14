@@ -11,6 +11,11 @@ session <- local({
     node = list()
   )
   varRef <- 1
+  tree <- NULL
+  setBreakpointsInPackages <- FALSE
+  breakpointId <- 1
+  fileBreakpoints <- list()
+  threadId <- 1
 
   varLists <- list()
   varListArgs <- list()
@@ -23,6 +28,18 @@ session <- local({
   varInfos <- list()
   debugGlobal <- FALSE
   srcBreakpoints <- list()
+  breakOnErrorFromConsole <- FALSE
+  breakOnErrorFromFile <- TRUE
+  assignToAns <- TRUE
+
+  rStrings <- list(
+    delimiter0 = '<v\\s\\c>',
+    delimiter1 = '</v\\s\\c>',
+    prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+    continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+    append = ' ### <v\\s\\c\\COMMAND>'
+  )
+
   environment()
 })
 

@@ -3,23 +3,6 @@
 
 
 
-# session$stackNode <- 1
-
-# session$frameIds <- list(
-#     vsc = list(),
-#     R = list(),
-#     node = list()
-# )
-
-# session$varRefs <- list(
-#     varRef = list(),
-#     node = list()
-# )
-
-
-sourceRequest <- function(response, args, request){
-
-}
 
 stackTraceRequest <- function(response, args, request){
   # args: none relevant
@@ -89,20 +72,4 @@ variablesRequest <- function(response, args, request){
   response[['body']] <- list(variables = variables)
   
   sendResponse(response)
-}
-
-setVariableRequest <- function(response, args, request){
-    
-}
-
-setExpressionRequest <- function(response, args, request){
-    
-}
-
-completionsRequest <- function(response, args, request){
-    
-}
-
-readMemoryRequest <- function(response, args, request){
-    
 }

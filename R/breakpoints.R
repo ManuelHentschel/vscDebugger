@@ -116,6 +116,7 @@ fixSrcrefOnTracedFunction <- function(what, at, where){
 sendBreakpoints <- function(bps = list(), acknowledge = TRUE, id = 0) {
   for (bp in bps) {
     .vsc.sendToVsc(message = 'breakpointVerification', body = bp, id = 0)
+    sendBreakpointEvent("changed", bp)
   }
   # send separate acknowledge message to make sure that all breakpoints are received first
   if(acknowledge){

@@ -16,8 +16,8 @@ evaluateRequest <- function(response, args, request){
   }
 
   silent <- (context == 'watch')
-  assignToAns <- TRUE
-  catchErrors <- FALSE # TODO: get form options()
+  assignToAns <- session$assignToAns
+  catchErrors <- !session$breakOnErrorFromConsole
 
   valueAndVisible <- .vsc.evalInFrame(
     expr,
@@ -57,6 +57,7 @@ evaluateRequest <- function(response, args, request){
 
   sendResponse(response)
 }
+
 
 
 #' Evaluate an expression and send result to vsc
