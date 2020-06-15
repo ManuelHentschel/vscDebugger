@@ -32,6 +32,7 @@ stackTraceRequest <- function(response, args, request){
 }
 
 
+
 scopesRequest <- function(response, args, request){
   # args:
   frameIdVsc <- args$frameId
@@ -39,7 +40,7 @@ scopesRequest <- function(response, args, request){
   # do stuff:
   tree <- session$tree
   frameNode <- getNodeId(vsc = frameIdVsc)
-  scopeNodes <- tree$getChildrenIds(frameNode)
+  scopeNodes <- tree$getChildrenIds(frameNode, refresh=TRUE)
   scopes <- tree$getContents(scopeNodes)
 
   # make sure the variableReferences are linked to the corresponding nodeIds
@@ -61,8 +62,10 @@ variablesRequest <- function(response, args, request){
   tree <- session$tree
   nodeId <- getNodeId(varRef = varRef)
 
-  variableNodes <- tree$getChildrenIds(nodeId)
+  variableNodes <- tree$getChildrenIds(nodeId, refresh=TRUE)
   variables <- tree$getContents(variableNodes)
+
+  names(variables) <- NULL
 
   # make sure the variableReferences are linked to the corresponding nodeIds
   storeVarRefs(variables, variableNodes)

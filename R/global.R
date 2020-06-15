@@ -21,6 +21,8 @@ session <- local({
   overwriteCat <- TRUE
   overwriteSource <- TRUE
 
+  ignoreNextCallback <- FALSE
+
   noDebug <- FALSE
 
   varLists <- list()
@@ -45,6 +47,8 @@ session <- local({
     continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
     append = ' ### <v\\s\\c\\COMMAND>'
   )
+
+  time <- Sys.time()
 
   environment()
 })

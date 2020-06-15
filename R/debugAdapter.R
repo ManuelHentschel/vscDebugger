@@ -17,6 +17,7 @@ prepareResponse <- function(request){
 
 #' @export
 .vsc.dispatchRequest <- function(request){
+  session$ignoreNextCallback <- TRUE
   response <- prepareResponse(request)
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
@@ -109,6 +110,45 @@ sendOutputEvent <- function(
   ))
 }
 
+
+makeStoppedEvent <- function(reason="breakpoint", description=NULL, text=NULL){
+  event <- makeEvent("stopped")
+  event$body <- list(
+    reason = reason,
+    allThreadsStopped = TRUE,
+    preserveFocusHint = FALSE
+  )
+  event$body$description <- description
+  event$body$text <- text
+  event
+}
+sendStoppedEvent <- function(reason="breakpoint", description=NULL, text=NULL){
+  sendEvent(makeStoppedEvent(reason, description, text))
+}
+
+makeContinuedEvent <- function(){
+  event <- makeEvent("continued")
+  body <- list(
+    threadId = session$threadId,
+    allThreadsContinued = TRUE
+  )
+  event
+}
+sendContinuedEvent <- function(){
+  sendEvent(makeContinuedEvent())
+}
+
+globalStepCallback <- function(...){
+  if(lget(session, 'ignoreNextCallback', FALSE)){
+    session$ignoreNextCallback <- FALSE
+  } else{
+    sendContinuedEvent()
+    sendStoppedEvent(reason="step")
+  }
+  TRUE
+}
+
+
 makeBreakpointEvent <- function(reason, breakpoint){
   event <- makeEvent("breakpoint")
   event$body <- list(
@@ -134,6 +174,26 @@ makeAndSendEvent <- function(eventType, body){
   )
 }
 
+makeExitEvent <- function(exitCode=0){
+  event <- makeEvent("exited")
+  event$body <- list(
+    exitCode = exitCode
+  )
+  event
+}
+sendExitedEvent <- function(exitCode=0){
+  sendEvent(makeExitEvent(exitCode))
+}
+
+makeTerminatedEvent <- function(restart=NULL){
+  event <- makeEvent("terminated")
+  event$body <- list()
+  event$body$restart <- restart
+  event
+}
+sendTerminatedEvent <- function(restart=NULL){
+  sendEvent(makeTerminatedEvent(restart))
+}
 
 setExceptionBreakPointsRequest <- function(response, args, request){
   filters <- lget(args, 'filters', list())
@@ -175,7 +235,7 @@ launchRequest <- function(response, args, request){
   }
   session$allowGlobalDebugging <- allowGlobalDebugging
   session$workingDirectory <- wd
-  session$file <- normalizePathInWd(file, wd=wd)
+  session$file <- suppressWarnings(normalizePathInWd(file, wd=wd))
   session$mainFunction <- mainFunction
   session$includePackages <- includePackages
 
@@ -208,7 +268,8 @@ configurationDoneRequest <- function(response, args, request){
 
   attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
 
-  options(error = .vsc.onError)
+  # options(error = .vsc.onError)
+  options(error = recover)
 
   if(session$debugMode == 'function'){
     # set breakpoints
@@ -225,6 +286,16 @@ configurationDoneRequest <- function(response, args, request){
     eval(call(session$mainFunction), globalenv())
   } else{
     # do nothing/send stack?
+    # sendStoppedEvent("entry")
+  }
+
+  if(session$allowGlobalDebugging){
+    addTaskCallback(globalStepCallback)
+    session$ignoreNextCallback <- FALSE
+  } else{
+    print("No global debugging :(")
+    sendTerminatedEvent()
+    sendExitedEvent()
   }
 }
 

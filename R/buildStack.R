@@ -105,7 +105,7 @@ buildStack <- function(args){
   skipFromBottom <- lget(args, 'skipFromBottom', 0)
   isError <- lget(args, 'isError', FALSE)
   forceDummyStack <- lget(args, 'forceDummyStack', FALSE)
-  dummyFile <- lget(args, 'dummyFile', '')
+  dummyFile <- lget(args, "dummyFile", '')
 
   # nothing to do
 
@@ -135,29 +135,45 @@ buildFrame <- function(args){
   frameIdR <- lget(args, 'frameIdR', list(0))
   frameIdVsc <- lget(args, 'frameIdVsc', list(0))
   dummyFile <- lget(args, 'dummyFile', '')
+  isDummyFrame <- lget(args, 'isDummyFrame', FALSE)
 
   # do stuff
-  call <- sys.call(frameIdR)
-  firstenv <- sys.frame(frameIdR)
   lastenv <- globalenv()
-  name <- getFrameName(call)
-  source <- getSource(call = call, frameIdR = frameIdR)
-  source <- getSource(sys.call(frameIdR+1), frameIdR+1)
-  variablesReference <- getNewVarRef()
+
+  if(isDummyFrame){
+    firstenv <- globalenv()
+    name <- "Global Workspace"
+    presentationHint <- 'label'
+    source <- NULL
+    line <- 0
+    column <- 0
+    endLine <- NULL
+    endColumn <- NULL
+  } else{
+    call <- sys.call(frameIdR)
+    firstenv <- sys.frame(frameIdR)
+    name <- getFrameName(call)
+    presentationHint <- 'normal'
+    source <- getSource(sys.call(frameIdR+1), frameIdR+1)
+    line <- source$line
+    column <- source$column
+    endLine <- source$endLine
+    endColumn <- source$endColumn + 1
+  }
   ###
 
   # return
   frame <- list(
     id = frameIdVsc,
     name = name,
-    source = source,
-    line = source$line,
-    column = source$column,
-    endLine = source$endLine,
-    endColumn = source$endColumn,
-    presentationHint = '',
+    presentationHint = presentationHint,
     frameIdR = frameIdR
   )
+  frame$source <- source
+  frame$line <- line
+  frame$column <- column
+  frame$endLine <- endLine
+  frame$endColumn <- endColumn
 
   scopesArgs <- list(
     firstenv = firstenv,
@@ -269,18 +285,22 @@ gatherFrames <- function(args){
   }
 
   nFrames <- getNFrames(topFrame)
-  frameIdsR <- seq2((nFrames - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
-  frameIdsVsc <- seq2(length(frameIdsR)) - 1
-  firstenvs <- lapply(frameIdsR, sys.frame)
-  lastenv <- globalenv()
+  if(nFrames == 0 || forceDummyStack){
+    forceDummyStack <- TRUE
+    frameIdsR <- c(0)
+    frameIdsVsc <- c(0)
+  } else{
+    frameIdsR <- seq2((nFrames - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
+    frameIdsVsc <- seq2(length(frameIdsR)) - 1
+  }
 
-  ###
-
+  # return
   makeNodeArgs <- function(frameIdR, frameIdVsc){
     frameArgs <- list(
       frameIdR = frameIdR,
       frameIdVsc = frameIdVsc,
-      dummyFile = dummyFile
+      dummyFile = dummyFile,
+      isDummyFrame = forceDummyStack
     )
     list(
       contentArgs = frameArgs

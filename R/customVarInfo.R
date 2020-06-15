@@ -155,7 +155,7 @@
             )
           )
           if(valueAndError$isError){
-            continue
+            next
           } else{
             tmp <- valueAndError$value
           }

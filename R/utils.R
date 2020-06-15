@@ -65,7 +65,6 @@ zeroList <- function(list0) {
   return(lapply(list0, function(x) 0))
 }
 
-
 appendNested <- function(l0, l1){
   names <- as.list(unique(c(names(l0), names(l1))))
   ret <- list()

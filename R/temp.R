@@ -22,7 +22,7 @@ NO_buildStack <- function(args){
 NO_buildDummyStack <- function(response, args){
   # clearVarLists() # TODO: replace
   
-  file <- lget(args, dummyFile, '')
+  file <- lget(args, "dummyFile", '')
 
   frames <- list(list(
     firstenv = globalenv(),

@@ -153,6 +153,7 @@ export declare module StackTree {
         frameIdR: number;
         frameIdVsc: number;
         dummyFile?: string;
+        isDummyFrame?: boolean;
     }
     
     interface ScopesArgs extends ChildrenArgs {

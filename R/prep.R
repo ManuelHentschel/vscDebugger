@@ -49,7 +49,7 @@ evaluateRequest <- function(response, args, request){
     body <- list(
       result = "",
       type = "",
-      varaiblesReference = 0
+      variablesReference = 0
     )
   }
 
@@ -94,6 +94,7 @@ evaluateRequest <- function(response, args, request){
     ts <- tracingState(FALSE)
 
     # eval
+    valueAndVisible <- list(value=NULL, visible=FALSE)
     valueAndVisible <- try(
       {
         b <- parse(text=expr)
@@ -115,6 +116,7 @@ evaluateRequest <- function(response, args, request){
     options(error = .vsc.onError)
   } else{
     # eval
+    valueAndVisible <- list(value=NULL, visible=FALSE)
     if (catchErrors) {
       valueAndVisible <- try(
         {
