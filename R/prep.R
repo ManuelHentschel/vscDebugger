@@ -197,8 +197,11 @@ isPackageFrame <- function(env = parent.frame()) {
   lineAndFile <- .vsc.getCallingLineAndFile(skipCalls = skipCalls+1, default = list(line=0, file=''))
   line <- lineAndFile$line
   file <- lineAndFile$file
+  source <- list(path=file, name=basename(file))
 
-  .vsc.sendToVsc('print', list(output = output, file = file, line = line))
+  sendOutputEvent(category="stdout", output = output, line=line, source=source)
+
+  # .vsc.sendToVsc('print', list(output = output, file = file, line = line))
   invisible(NULL)
 }
 
@@ -218,13 +221,15 @@ isPackageFrame <- function(env = parent.frame()) {
     return(base::print(x, ...))
   }
   ret <- capture.output(base::print(x, ...))
-  output <- paste(ret, sep = "", collapse = "\n")
+  output <- paste(ret, "\n", sep = "", collapse = "\n")
 
   lineAndFile <- .vsc.getCallingLineAndFile(skipCalls = skipCalls+1, default = list(line=0, file=''))
   line <- lineAndFile$line
   file <- lineAndFile$file
+  source <- list(path=file, name=basename(file))
 
-  .vsc.sendToVsc('print', list(output = output, file = file, line = line))
+  sendOutputEvent(category="stdout", output = output, line=line, source=source)
+  # .vsc.sendToVsc('print', list(output = output, file = file, line = line))
   invisible(x)
 }
 
@@ -371,50 +376,50 @@ removeNonJsonElements <- function(v){
   id = 0
 ) {
 
-  session$debugGlobal <- allowGlobalDebugging
+  # session$debugGlobal <- allowGlobalDebugging
 
-  if(!is.null(rStrings)){
-    session$rStrings <- rStrings
-  } else{
-    session$rStrings <- list(
-      delimiter0 = '<v\\s\\c>',
-      delimiter1 = '</v\\s\\c>',
-      prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-      continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-      startup = '<v\\s\\c\\R\\STARTUP>',
-      libraryNotFound = '<v\\s\\c\\LIBRARY\\NOT\\FOUND>',
-      packageName = 'vscDebugger',
-      append = ' ### <v\\s\\c\\COMMAND>'
-    )
-  }
+  # if(!is.null(rStrings)){
+  #   session$rStrings <- rStrings
+  # } else{
+  #   session$rStrings <- list(
+  #     delimiter0 = '<v\\s\\c>',
+  #     delimiter1 = '</v\\s\\c>',
+  #     prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+  #     continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+  #     startup = '<v\\s\\c\\R\\STARTUP>',
+  #     libraryNotFound = '<v\\s\\c\\LIBRARY\\NOT\\FOUND>',
+  #     packageName = 'vscDebugger',
+  #     append = ' ### <v\\s\\c\\COMMAND>'
+  #   )
+  # }
 
-  options(prompt = paste0(session$rStrings$prompt, '\n'))
-  options(continue = paste0(session$rStrings$continue, '\n'))
-  options(browserNLdisabled = TRUE)
+  # options(prompt = paste0(session$rStrings$prompt, '\n'))
+  # options(continue = paste0(session$rStrings$continue, '\n'))
+  # options(browserNLdisabled = TRUE)
 
-  attachList <- list()
+  # attachList <- list()
 
-  if (overwritePrint) {
-    attachList$print <- .vsc.print
-  }
+  # if (overwritePrint) {
+  #   attachList$print <- .vsc.print
+  # }
 
-  if (overwriteCat) {
-    attachList$cat <- .vsc.cat
-  }
+  # if (overwriteCat) {
+  #   attachList$cat <- .vsc.cat
+  # }
 
-  if (overwriteSource) {
-    attachList$source <- .vsc.debugSource
-  }
+  # if (overwriteSource) {
+  #   attachList$source <- .vsc.debugSource
+  # }
 
-  attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
+  # attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
 
-  session$isEvaluating <- FALSE
+  # session$isEvaluating <- FALSE
 
-  options(error = .vsc.onError)
-  .vsc.sendToVsc('go', id=id)
-  if(!findMain){
-    session$isRunningDebugSession <- TRUE
-  }
+  # options(error = .vsc.onError)
+  # .vsc.sendToVsc('go', id=id)
+  # if(!findMain){
+  #   session$isRunningDebugSession <- TRUE
+  # }
 }
 
 #' Look for a main function

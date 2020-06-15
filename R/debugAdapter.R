@@ -32,7 +32,7 @@ prepareResponse <- function(request){
     setExpressionRequest(response, args, request)
   } else if(command == 'evaluate'){
     evaluateRequest(response, args, request)
-  } else if(command == 'setExceptionBreakPointsRequest'){
+  } else if(command == 'setExceptionBreakpoints'){
     setExceptionBreakPointsRequest(response, args, request)
   } else if(command == 'completions'){
     completionsRequest(response, args, request)
@@ -42,6 +42,10 @@ prepareResponse <- function(request){
     setBreakpointsRequest(response, args, request)
   } else if(command == 'initialize'){
     initializeRequest(response, args, request)
+  } else if(command == 'configurationDone'){
+    configurationDoneRequest(response, args, request)
+  } else if(command == 'launch'){
+    launchRequest(response, args, request)
   } else {
     # ignore
   }
@@ -56,6 +60,53 @@ makeEvent <- function(eventType, body=NULL){
     event = eventType,
     body = body
   )
+}
+
+makeOutputEvent <- function(
+  output,
+  category='console',
+  group=NULL,
+  variablesReference=0,
+  source=NULL,
+  line=NULL,
+  column=NULL,
+  data=NULL
+){
+  event <- makeEvent('output')
+  body <- list(
+    category = category,
+    output = output
+  )
+  body$group <- group
+  body$variablesReference <- variablesReference
+  body$source <- source
+  body$line <- line
+  body$column <- column
+  body$data <- data
+
+  event$body <- body
+  event
+}
+sendOutputEvent <- function(
+  output,
+  category='console',
+  group=NULL,
+  variablesReference=0,
+  source=NULL,
+  line=NULL,
+  column=NULL,
+  data=NULL
+){
+  sendEvent(makeOutputEvent(
+    output,
+    category,
+    group,
+    variablesReference,
+    source,
+    line,
+    column,
+    data
+  ))
 }
 
 makeBreakpointEvent <- function(reason, breakpoint){
@@ -103,6 +154,78 @@ threadsRequest <- function(response, args, request){
     )
   )
   sendResponse(response)
+}
+
+launchRequest <- function(response, args, request){
+  print("Handling launch request!")
+  # args
+  debugMode <- lget(args, 'debugMode', '')
+  allowGlobalDebugging <- lget(args, 'allowGlobalDebugging', TRUE)
+  wd <- lget(args, 'workingDirectory', '.')
+  file <- lget(args, 'file', '')
+  mainFunction <- lget(args, 'mainFunction', 'main')
+  includePackages <- lget(args, 'includePackages', FALSE)
+
+  ## do stuff
+  # assign to session
+  if(debugMode %in% c('function', 'file', 'workspace')){
+    session$debugMode <- debugMode
+  } else{
+    stop(paste0("Invalid debugMode:", format(debugMode), collapse=''))
+  }
+  session$allowGlobalDebugging <- allowGlobalDebugging
+  session$workingDirectory <- wd
+  session$file <- normalizePathInWd(file, wd=wd)
+  session$mainFunction <- mainFunction
+  session$includePackages <- includePackages
+
+  setwd(wd)
+  if (debugMode == 'function'){
+    base::source(file)
+  }
+
+  sendResponse(response)
+}
+
+
+configurationDoneRequest <- function(response, args, request){
+  # no args
+  session$isConfigurationDone <- TRUE
+
+  attachList <- list()
+
+  if (session$overwritePrint) {
+    attachList$print <- .vsc.print
+  }
+
+  if (session$overwriteCat) {
+    attachList$cat <- .vsc.cat
+  }
+
+  if (session$overwriteSource) {
+    attachList$source <- .vsc.debugSource
+  }
+
+  attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
+
+  options(error = .vsc.onError)
+
+  if(session$debugMode == 'function'){
+    # set breakpoints
+    .vsc.setStoredBreakpoints()
+  }
+
+  # send response before launching main/debugSource!
+  sendResponse(response)
+
+  # do stuff
+  if(session$debugMode == 'file'){
+    .vsc.debugSource(session[['file']])
+  } else if (session$debugMode == 'function'){
+    eval(call(session$mainFunction), globalenv())
+  } else{
+    # do nothing/send stack?
+  }
 }
 
 
@@ -162,6 +285,21 @@ initializeRequest <- function(response, args, request){
   body$supportsClipboardContext <- TRUE
   body$supportsSetVariable <- FALSE
   body$supportsSetExpression <- FALSE
+
+  # assign to session
+  session$isInitialized <- TRUE
+  session$isConfigurationDone <- FALSE
+
+  rStrings <- lget(args, 'rStrings', list())
+  lapply(names(rStrings), function(name){
+    session$rStrings[[name]] <- rStrings[[name]]
+  })
+
+  options(prompt = paste0(session$rStrings$prompt, '\n'))
+  options(continue = paste0(session$rStrings$continue, '\n'))
+  options(browserNLdisabled = TRUE)
+
+
 
   response$body <- body
   sendResponse(response)

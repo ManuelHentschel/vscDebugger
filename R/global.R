@@ -17,6 +17,12 @@ session <- local({
   fileBreakpoints <- list()
   threadId <- 1
 
+  overwritePrint <- TRUE
+  overwriteCat <- TRUE
+  overwriteSource <- TRUE
+
+  noDebug <- FALSE
+
   varLists <- list()
   varListArgs <- list()
   varListPersistent <- list()

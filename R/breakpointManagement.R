@@ -126,8 +126,13 @@ getRequestedBreakpointLines <- function(path){
 
 #' @export
 .vsc.setStoredBreakpoints <- function() {
-  for (sbp in session$srcBreakpoints) {
-    sbp$bps <- .vsc.setBreakpoints(sbp$file, sbp$breakpoints, includePackages = sbp$includePackages)
+  for (fbp in session$fileBreakpoints){
+    file <- lget(fbp$source, 'path', '')
+    if(file != ''){
+      bps <- lget(fbp, 'breakpoints', list())
+      includePackages <- lget(session, 'includePackages', FALSE)
+      .vsc.setBreakpoints(file, bps, includePackages = includePackages)
+    }
   }
 }
 

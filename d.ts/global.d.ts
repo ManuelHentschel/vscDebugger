@@ -13,6 +13,10 @@ export declare module Session {
     breakOnErrorFromFile: boolean;
     assignToAns: boolean;
 
+    overwritePrint: boolean;
+    overwriteCat: boolean;
+    overwriteSource: boolean;
+
     rStrings: {
       delimiter0: string;
       delimiter1: string;
@@ -23,7 +27,18 @@ export declare module Session {
 
     threadId: number; //dummy
 
+    // debugSession:
+    noDebug: boolean; // todo
+    debugMode: ("function" | "file" | "workspace")
+    allowGlobalDebugging: boolean;
+    workingDirectory: string;
+    file: string;
+    mainFunction: string;
+    includePackages: boolean;
+
     // state:
+    isInitialized: boolean;
+    isConfigurationDone: boolean;
     isRunningDebugSession: boolean;
     isEvaluating: boolean;
 
