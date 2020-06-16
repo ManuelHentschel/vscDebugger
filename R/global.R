@@ -22,6 +22,7 @@ session <- local({
   overwriteSource <- TRUE
 
   ignoreNextCallback <- FALSE
+  isError <- FALSE
 
   noDebug <- FALSE
 

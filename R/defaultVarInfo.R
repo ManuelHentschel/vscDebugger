@@ -372,8 +372,21 @@ getDefaultVarInfos <- function() {
       longType = function(v) typeof(v),
       type = function(v) typeof(v),
       includeAttributes = TRUE,
+      internalAttributes = function(v) {
+        attr <- attributes(v)
+        names <- names(attr)
+        names <- paste0("_", names)
+        mapply(
+          function(a, n){
+            list(name=n, rValue=a)
+          },
+          attr,
+          names,
+          SIMPLIFY = FALSE,
+          USE.NAMES = FALSE
+        )
+      },
       customAttributes = list(),
-      internalAttributes = list(),
       hasChildren = function(v) !is.null(attributes(v)),
       toString = function(v) {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")

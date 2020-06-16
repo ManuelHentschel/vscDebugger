@@ -455,6 +455,7 @@ removeNonJsonElements <- function(v){
 #' @export
 #' @param err The message to be sent to vsc. Defaults to `geterrmessage()`
 .vsc.onError <- function(err=NULL) {
+  session$isError <- TRUE
   if(is.null(err)){
     message <- geterrmessage()
   } else{

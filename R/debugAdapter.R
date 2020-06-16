@@ -142,6 +142,7 @@ globalStepCallback <- function(...){
   if(lget(session, 'ignoreNextCallback', FALSE)){
     session$ignoreNextCallback <- FALSE
   } else{
+    session$isError <- FALSE
     sendContinuedEvent()
     sendStoppedEvent(reason="step")
   }
@@ -217,7 +218,6 @@ threadsRequest <- function(response, args, request){
 }
 
 launchRequest <- function(response, args, request){
-  print("Handling launch request!")
   # args
   debugMode <- lget(args, 'debugMode', '')
   allowGlobalDebugging <- lget(args, 'allowGlobalDebugging', TRUE)
@@ -269,7 +269,7 @@ configurationDoneRequest <- function(response, args, request){
   attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
 
   # options(error = .vsc.onError)
-  options(error = recover)
+  options(error = .vsc.onError)
 
   if(session$debugMode == 'function'){
     # set breakpoints

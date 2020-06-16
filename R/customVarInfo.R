@@ -140,7 +140,6 @@
     applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
     if(applies){
       for(info in matching){
-        # print(info)
         # get and (if function) apply info:
         tmp <- varInfo[[info]]
         if(is.function(tmp)){
@@ -162,11 +161,11 @@
         }
         # append or store result:
         if(isStacking[info]){
-          # cat('stacking: ', info, '\n')
-          ret[[info]] <- append(ret[[info]], list(tmp))
-          # keep looking
+          if(!is.null(tmp)){
+            ret[[info]] <- append(ret[[info]], list(tmp))
+          }
+          # keep looking...
         } else{
-          # cat('non-stacking: ', info, '\n')
           ret[[info]] <- tmp
           # remove from missing infos:
           ind <- which(missingInfos == info)

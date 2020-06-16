@@ -279,6 +279,8 @@ gatherFrames <- function(args){
   forceDummyStack <- lget(args, 'forceDummyStack', FALSE)
   dummyFile <- lget(args, 'dummyFile', '')
 
+  isError <- lget(session, 'isError', FALSE)
+
   # do stuff
   if (isError) {
     skipFromTop = skipFromTop + 1
@@ -362,12 +364,17 @@ gatherVariables <- function(args){
 
   childVariables <- c(
     infos$childVars,
-    infos$internalAttributes,
-    unlist(
-      infos$customAttributes,
-      recursive = FALSE
-    )
+    infos$internalAttributes
   )
+
+  customAttributes <- unlist(infos$customAttributes, recursive = FALSE)
+  if(length(customAttributes)>0){
+    childVariables <- c(
+      childVariables,
+      customAttributes
+    )
+  }
+
 
   # return
   makeNodeArgs <- function(v){
