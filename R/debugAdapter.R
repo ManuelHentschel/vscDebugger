@@ -47,6 +47,8 @@ prepareResponse <- function(request){
     configurationDoneRequest(response, args, request)
   } else if(command == 'launch'){
     launchRequest(response, args, request)
+  } else if(command == 'continue'){
+    continueRequest(response, args, request)
   } else {
     # ignore
   }
@@ -143,6 +145,7 @@ globalStepCallback <- function(...){
     session$ignoreNextCallback <- FALSE
   } else{
     session$isError <- FALSE
+    setErrorHandler(session$breakOnErrorFromConsole)
     sendContinuedEvent()
     sendStoppedEvent(reason="step")
   }
@@ -217,6 +220,10 @@ threadsRequest <- function(response, args, request){
   sendResponse(response)
 }
 
+continueRequest <- function(response, args, request){
+  setErrorHandler(session$breakOnErrorFromFile)
+}
+
 launchRequest <- function(response, args, request){
   # args
   debugMode <- lget(args, 'debugMode', '')
@@ -268,8 +275,6 @@ configurationDoneRequest <- function(response, args, request){
 
   attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
 
-  # options(error = .vsc.onError)
-  options(error = .vsc.onError)
 
   if(session$debugMode == 'function'){
     # set breakpoints
@@ -281,10 +286,13 @@ configurationDoneRequest <- function(response, args, request){
 
   # do stuff
   if(session$debugMode == 'file'){
+    setErrorHandler(session$breakOnErrorFromFile)
     .vsc.debugSource(session[['file']])
   } else if (session$debugMode == 'function'){
+    setErrorHandler(session$breakOnErrorFromFile)
     eval(call(session$mainFunction), globalenv())
   } else{
+    setErrorHandler(session$breakOnErrorFromConsole)
     # do nothing/send stack?
     # sendStoppedEvent("entry")
   }
@@ -293,7 +301,6 @@ configurationDoneRequest <- function(response, args, request){
     addTaskCallback(globalStepCallback)
     session$ignoreNextCallback <- FALSE
   } else{
-    print("No global debugging :(")
     sendTerminatedEvent()
     sendExitedEvent()
   }

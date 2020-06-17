@@ -10,14 +10,14 @@ evaluateRequest <- function(response, args, request){
   context <- lget(args, 'context', '')
 
   if(context == 'clipboard'){
-    response.success <- FALSE
+    response$success <- FALSE
     sendResponse(response)
     return(invisible(NULL))
   }
 
   silent <- (context == 'watch')
   assignToAns <- session$assignToAns
-  catchErrors <- !session$breakOnErrorFromConsole
+  catchErrors <- !(session$breakOnErrorFromConsole)
 
   valueAndVisible <- .vsc.evalInFrame(
     expr,
@@ -89,7 +89,7 @@ evaluateRequest <- function(response, args, request){
 
   if(silent){
     # prepare settings
-    options(error=traceback)
+    setErrorHandler(FALSE)
     session$isEvaluating <- TRUE
     ts <- tracingState(FALSE)
 
@@ -113,7 +113,7 @@ evaluateRequest <- function(response, args, request){
     # reset settings
     tracingState(ts)
     session$isEvaluating <- FALSE
-    options(error = .vsc.onError)
+    setErrorHandler(session$breakOnErrorFromConsole)
   } else{
     # eval
     valueAndVisible <- list(value=NULL, visible=FALSE)
@@ -130,6 +130,7 @@ evaluateRequest <- function(response, args, request){
         silent = FALSE
       )
     } else {
+      setErrorHandler(TRUE)
       b <- parse(text=expr)
       for(exp in b){
         cl <- call('withVisible', exp)
@@ -143,6 +144,7 @@ evaluateRequest <- function(response, args, request){
 
   # reset settings
   session$debugGlobal <- tmpDebugGlobal
+  setErrorHandler(session$breakOnErrorFromConsole)
 
   # assign to .ans
   if(assignToAns && !silent){
@@ -351,79 +353,6 @@ removeNonJsonElements <- function(v){
 
 
 
-
-
-#' Prep the r session for vsc
-#'
-#' @description
-#' Preps the r session for runing the r debugger in vscode and reports back to vsc
-#'
-#' @export
-#' @param overWritePrint Whether to overwrite `base::print` with a version that sends output to vsc
-#' @param overWriteCat Whether to overwrite `base::cat` with a version that sends output to vsc
-#' @param overwriteSource Whether to overwrite `base::source` with a version that supports breakpoints
-#' @param findMain Whether to look for a main function
-#' @param mainFunction Name of the main function
-#' @param allowGlobalDebugging Whether to allow debugging after finishing a main function/script
-#' @param rStrings List of unique strings used to communicate with vsc
-#' @param id id of the response sent to vsc
-.vsc.prepGlobalEnv <- function(
-  overwritePrint = TRUE,
-  overwriteCat = TRUE,
-  overwriteSource = TRUE,
-  findMain = TRUE,
-  mainFunction = 'main',
-  allowGlobalDebugging = FALSE,
-  rStrings = NULL,
-  id = 0
-) {
-
-  # session$debugGlobal <- allowGlobalDebugging
-
-  # if(!is.null(rStrings)){
-  #   session$rStrings <- rStrings
-  # } else{
-  #   session$rStrings <- list(
-  #     delimiter0 = '<v\\s\\c>',
-  #     delimiter1 = '</v\\s\\c>',
-  #     prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-  #     continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-  #     startup = '<v\\s\\c\\R\\STARTUP>',
-  #     libraryNotFound = '<v\\s\\c\\LIBRARY\\NOT\\FOUND>',
-  #     packageName = 'vscDebugger',
-  #     append = ' ### <v\\s\\c\\COMMAND>'
-  #   )
-  # }
-
-  # options(prompt = paste0(session$rStrings$prompt, '\n'))
-  # options(continue = paste0(session$rStrings$continue, '\n'))
-  # options(browserNLdisabled = TRUE)
-
-  # attachList <- list()
-
-  # if (overwritePrint) {
-  #   attachList$print <- .vsc.print
-  # }
-
-  # if (overwriteCat) {
-  #   attachList$cat <- .vsc.cat
-  # }
-
-  # if (overwriteSource) {
-  #   attachList$source <- .vsc.debugSource
-  # }
-
-  # attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
-
-  # session$isEvaluating <- FALSE
-
-  # options(error = .vsc.onError)
-  # .vsc.sendToVsc('go', id=id)
-  # if(!findMain){
-  #   session$isRunningDebugSession <- TRUE
-  # }
-}
-
 #' Look for a main function
 #' 
 #' Looks for main function and reports back to vsc
@@ -467,6 +396,13 @@ removeNonJsonElements <- function(v){
   browser()
 }
 
+setErrorHandler <- function(useVscOnError = TRUE){
+  if(useVscOnError){
+    options(error = .vsc.onError)
+  } else{
+    options(error = traceback)
+  }
+}
 
 #' Check if debugger is evaluating
 #'
