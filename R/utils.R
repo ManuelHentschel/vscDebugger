@@ -65,7 +65,6 @@ zeroList <- function(list0) {
   return(lapply(list0, function(x) 0))
 }
 
-
 appendNested <- function(l0, l1){
   names <- as.list(unique(c(names(l0), names(l1))))
   ret <- list()
@@ -101,4 +100,41 @@ unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
   names(ret) <- names
 
   return(ret)
+}
+
+
+lgetSafe <- function(list, entry, default=NULL){
+  suppressWarnings(
+    tryCatch(
+      lget(list, entry, default),
+      error = function(e) default
+    )
+  )
+}
+
+lget <- function(list, entry, default=NULL){
+  ret <- list[[entry]]
+  if(is.null(ret)){
+    default
+  } else{
+    ret
+  }
+}
+
+
+isCalledFromBrowser <- function(){
+  tryCatch(
+    {
+      browserText()
+      TRUE
+    },
+    error = function(e) FALSE
+  )
+}
+
+
+setOptionIfNull <- function(option, value){
+  if(is.null(getOption(option))){
+    options(structure(list(value), names=option))
+  }
 }

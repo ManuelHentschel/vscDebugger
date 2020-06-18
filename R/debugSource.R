@@ -48,8 +48,8 @@
   body <- mySetBreakpoints(body, ats)
 
   # store state
-  tmpDebugGlobal <- session$debugGlobal
-  session$debugGlobal <- FALSE
+  tmpallowGlobalDebugging <- session$allowGlobalDebugging
+  session$allowGlobalDebugging <- FALSE
   if(chdir){
     tmpwd <- setwd(dirname(file))
   }
@@ -61,7 +61,7 @@
 
 
   # restore state
-  session$debugGlobal <- tmpDebugGlobal
+  session$allowGlobalDebugging <- tmpallowGlobalDebugging
   if(chdir){
     setwd(tmpwd)
   }

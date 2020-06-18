@@ -4,10 +4,10 @@
 \alias{.vsc.setBreakpoints}
 \title{Set breakpoints in a file}
 \usage{
-.vsc.setBreakpoints(file, bps = NULL, includePackages = NULL, id = 0)
+.vsc.setBreakpoints(file, bps = NULL, includePackageScopes = NULL, id = 0)
 }
 \arguments{
-\item{includePackages}{Whether to set breakpoints in packages}
+\item{includePackageScopes}{Whether to set breakpoints in packages}
 
 \item{id}{The id of the answer sent to vsc}
 

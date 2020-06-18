@@ -1,56 +1,10 @@
 
-
-# type rValue = any;
-# type NULL = undefined;
-# interface namedList {names: string[], values: rValue[]}; // names, value must be same length
-# interface maybeNamedList {names: string[]|NULL, values: rValue[]}; // names, value must be same length
-# interface varInfo {
-#     name: string;
-#     doesApply: ((v: rValue) => boolean);
-#     childVars: ((v:rValue) => maybeNamedList)|maybeNamedList|NULL;
-#     customAttributes: ((v:rValue) => namedList)|namedList|NULL;
-#     internalAttributes: ((v:rValue) => namedList)|namedList|NULL;
-#     hasChildren: ((v:rValue) => boolean)|boolean|NULL;
-#     toString: ((v:rValue) => string)|string|NULL;
-#     shortType: ((v:rValue) => string)|string|NULL;
-#     longType: ((v:rValue) => string)|string|NULL;
-#     includeAttributes: ((v:rValue) => boolean)|boolean|NULL;
-#     evaluateName: ((v:rValue) => string)|string|NULL;
-# }
-# type varInfos = varInfo[];
-
-# if childVars(v)$names==NULL, use names(childVars(v)$value) if given
-
-
-# Explanation of the entries:
-# name: Human friendly name of the entry, informative purpose only
-# doesApply: Function that determines if the entry is to be used for a given variable
-# childVars: The child variables (typically entries of a list etc.)
-# customAttributes: Informative attributes. Meant to be added by the user. Names should be preceded by '__'
-# internalAttributes: Attributes used internally to handle custom variable info (e.g. promises)
-# hasChildren: Can be used to check for children (attributes or childVars), without actually evaluating them, to improve performance
-# toString: String representation of the variable. Must be a single atomic string!
-# shortType: Short type, e.g. "c" for vectors. Currently not used --> remove?
-# longType: Type of the variable shown in the debugger
-# includeAttributes: Whether to include the normal attributes. Can be used to properly show custom variable info (e.g. promises)
-# evaluateName: Expression that can be evaluated to get the variable value. Used to copy variable as expression
-
-
 #' @export
-.vsc.getCustomInfo <- function(v, info, default = NULL, onError = NULL, append = FALSE, appendNested = FALSE) {
-  # checks the entries in session$varInfos for a matching entry
-  # returns the requested info if available
-  # info can be a string from the list:
-  #     childVars
-  #     customAttributes
-  #     internalAttributes
-  #     hasChildren
-  #     toString
-  #     shortType
-  #     longType
-  #     includeAttributes
-  #     evaluateName
-
+.vsc.getCustomInfo <- function(
+  v, info, default = NULL,
+  onError = NULL, append = FALSE,
+  appendNested = FALSE, setInfo = NULL
+) {
   # make sure default is a list, if append==TRUE
   if(append && !is.list(default)){
     ret <- list()
@@ -72,7 +26,11 @@
         if (applies){
           if (is.function(varInfo[[info]])) {
             # apply function to v
-            ret2 <- varInfo[[info]](v)
+            if(is.null(setInfo)){
+              ret2 <- varInfo[[info]](v)
+            } else{
+              ret2 <- varInfo[[info]](v, setInfo)
+            }
           } else {
             # ...or return (constant) value
             ret2 <- varInfo[[info]]
@@ -101,6 +59,96 @@
     return(ret)
   }
 }
+
+.vsc.applyVarInfos <- function(
+  v,
+  infos = character(0),
+  stackingInfos = character(0)
+) {
+  # check args
+  if(is.null(stackingInfos)) {
+    stackingInfos <- c()
+  } else if(is.list(stackingInfos)) {
+    stackingInfos <- unlist(stackingInfos)
+  }
+  if(is.null(infos)) {
+    infos <- c()
+  } else if(is.list(infos)) {
+    infos <- unlist(infos)
+  }
+
+  missingInfos <- c(infos, stackingInfos)
+  names(missingInfos) <- missingInfos
+  isStacking <- c(logical(length(infos)), !logical(length(stackingInfos)))
+  names(isStacking) <- missingInfos
+  ret <- list()
+
+  for (varInfo in session$varInfos) {
+    # find missing infos that are supplied by this varInfo:
+    matching <- intersect(missingInfos, names(varInfo))
+    applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
+    if(applies){
+      for(info in matching){
+        # get and (if function) apply info:
+        tmp <- varInfo[[info]]
+        if(is.function(tmp)){
+          valueAndError <- tryCatch(
+            list(
+              value = tmp(v),
+              isError = FALSE
+            ),
+            error = function(e) list(
+              value = NULL,
+              isError = TRUE
+            )
+          )
+          if(valueAndError$isError){
+            next
+          } else{
+            tmp <- valueAndError$value
+          }
+        }
+        # append or store result:
+        if(isStacking[info]){
+          if(!is.null(tmp)){
+            ret[[info]] <- append(ret[[info]], list(tmp))
+          }
+          # keep looking...
+        } else{
+          ret[[info]] <- tmp
+          # remove from missing infos:
+          ind <- which(missingInfos == info)
+          missingInfos <- missingInfos[-ind]
+          isStacking <- isStacking[-ind]
+        }
+      }
+      if(length(missingInfos) == 0){
+        break
+      }
+    }
+  }
+  ret
+}
+
+toAtomicBoolean <- function(v, ...){
+  # outputs TRUE or FALSE
+  # for nice input equivalent to `as.logical(v)[[1]]`
+  # catches all errors, suppresses all warnings
+  # able to handle any number of inputs, only considers 1st, returns FALSE if no arguments
+  # able to handle e.g. NULL, c(), integer(0), list(), NA, NaN (all of these return FALSE)
+  # if input throws an error and is lazy -> evaluated withing tryCatch -> returns FALSE
+  suppressWarnings(
+    tryCatch(
+      if(as.logical(v)[[1]]){
+        TRUE
+      } else{
+        FALSE
+      },
+      error = function(e) FALSE
+    )
+  )
+}
+
 
 
 #' @export

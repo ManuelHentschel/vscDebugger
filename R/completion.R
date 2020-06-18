@@ -2,6 +2,25 @@
 #   'class' | 'interface' | 'module' | 'property' | 'unit' | 'value' | 'enum' |
 #   'keyword' | 'snippet' | 'text' | 'color' | 'file' | 'reference' | 'customcolor';
 
+
+
+completionsRequest <- function(response, args, request) {
+  # args
+  frameIdVsc <- lget(args, 'frameId', 0)
+  text <- lget(args, 'text', '')
+  column <- lget(args, 'column', 0)
+  line <- lget(args, 'line', 1)
+
+  # do stuff
+  targets <- .vsc.getCompletion(frameIdVsc, text, column, line)
+
+  # return
+  response$body <- list(
+    targets = targets
+  )
+  sendResponse(response)
+}
+
 constants <- c("TRUE", "FALSE", "NULL",
   "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_",
   "Inf", "NaN")
@@ -35,6 +54,7 @@ getInstalledPackages <- function() {
     firstenv <- globalenv()
   } else {
     frameId <- convertFrameId(vsc = frameIdVsc)
+    if(is.null(frameId)) frameId <- 0
     firstenv <- sys.frame(frameId)
   }
   lastenv <- globalenv()
@@ -101,7 +121,8 @@ getInstalledPackages <- function() {
     targets <- getCompletionList(var, text2, envs)
   }
 
-  .vsc.sendToVsc('completion', targets, id)
+  # .vsc.sendToVsc('completion', targets, id)
+  invisible(targets)
 }
 
 getLastVar <- function(text) {
