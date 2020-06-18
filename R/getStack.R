@@ -1,9 +1,5 @@
 
 
-
-
-
-
 stackTraceRequest <- function(response, args, request){
   # args: none relevant
 

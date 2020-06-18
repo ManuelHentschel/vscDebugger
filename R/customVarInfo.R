@@ -1,61 +1,10 @@
 
-
-# type rValue = any;
-# type NULL = undefined;
-# interface childVar {name: string, value: rValue, setExpression: rValue, setEnvironment: rValue}
-# interface namedList {names: string[], values: rValue[]}; // names, value must be same length
-# interface maybeNamedList {names: string[]|NULL, values: rValue[]}; // names, value must be same length
-# interface varInfo {
-#     name: string;
-#     doesApply: ((v: rValue) => boolean);
-#     childVars: ((v:rValue) => childVar[])|childVar[]|NULL;
-#     customAttributes: ((v:rValue) => namedList)|namedList|NULL;
-#     internalAttributes: ((v:rValue) => namedList)|namedList|NULL;
-#     hasChildren: ((v:rValue) => boolean)|boolean|NULL;
-#     toString: ((v:rValue) => string)|string|NULL;
-#     shortType: ((v:rValue) => string)|string|NULL;
-#     longType: ((v:rValue) => string)|string|NULL;
-#     includeAttributes: ((v:rValue) => boolean)|boolean|NULL;
-#     evaluateName: ((v:rValue) => string)|string|NULL;
-# }
-# type varInfos = varInfo[];
-
-# if childVars(v)$names==NULL, use names(childVars(v)$value) if given
-
-
-# Explanation of the entries:
-# name: Human friendly name of the entry, informative purpose only
-# doesApply: Function that determines if the entry is to be used for a given variable
-# childVars: The child variables (typically entries of a list etc.)
-# customAttributes: Informative attributes. Meant to be added by the user. Names should be preceded by '__'
-# internalAttributes: Attributes used internally to handle custom variable info (e.g. promises)
-# hasChildren: Can be used to check for children (attributes or childVars), without actually evaluating them, to improve performance
-# toString: String representation of the variable. Must be a single atomic string!
-# shortType: Short type, e.g. "c" for vectors. Currently not used --> remove?
-# longType: Type of the variable shown in the debugger
-# includeAttributes: Whether to include the normal attributes. Can be used to properly show custom variable info (e.g. promises)
-# evaluateName: Expression that can be evaluated to get the variable value. Used to copy variable as expression
-
-
 #' @export
 .vsc.getCustomInfo <- function(
   v, info, default = NULL,
   onError = NULL, append = FALSE,
   appendNested = FALSE, setInfo = NULL
 ) {
-  # checks the entries in session$varInfos for a matching entry
-  # returns the requested info if available
-  # info can be a string from the list:
-  #     childVars
-  #     customAttributes
-  #     internalAttributes
-  #     hasChildren
-  #     toString
-  #     shortType
-  #     longType
-  #     includeAttributes
-  #     evaluateName
-
   # make sure default is a list, if append==TRUE
   if(append && !is.list(default)){
     ret <- list()

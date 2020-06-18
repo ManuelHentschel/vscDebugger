@@ -13,35 +13,38 @@ export declare module StackTree {
     
     
     interface Content extends LazyTree.Content {
+        // The types of content present
         nodeType: ('Stack'|'Frame'|'Scope'|'Variable');
     }
     
     interface ChildrenArgs extends LazyTree.ChildrenArgs {
+        // Type of content in children nodes (same as content types)
         nodeType: ('Stack'|'Frame'|'Scope'|'Variable');
     }
     
     interface ContentArgs extends LazyTree.ContentArgs {
+        // Type of content in children nodes 
         nodeType: ('Stack'|'Frame'|'Scope'|'Variable');
     }
     
-    type varInfos = varInfo[];
-    
     interface Source extends DebugProtocol.Source {
-        name: string;
+        // used to uniquely identify a source
         path: string;
-        sourceReference: number;
+
+        // not present in DAP source, but e.g. in DebugProtocol.StackFrame
         line: number;
         endLine: number;
         column: number;
         endColumn: number;
+        // the entire source body, used to show anonymous functions as pseudo-file
         srcbody: string;
         isFile: boolean;
-        presentationHint?: 'normal' | 'emphasize' | 'deemphasize';
     }
     
     
     interface Stack extends Content {
         totalFrames?: number,
+        // stackFrames is added later
     }
     
     interface StackFrame extends DebugProtocol.StackFrame, Content {
@@ -86,22 +89,7 @@ export declare module StackTree {
         setter?: RValue;
         setInfo?: SetInfo;
     }
-    
-    type ChildVarFunction = (rValue: RValue) => MinimalVariable[];
-    
-    interface varInfo {
-        name: string;
-        doesApply: ((v: RValue) => boolean);
-        childVars?: ChildVarFunction | MinimalVariable[];
-        customAttributes?: ChildVarFunction | MinimalVariable[];
-        internalAttributes?: ChildVarFunction | MinimalVariable[];
-        hasChildren?: ((v:RValue) => boolean) | boolean;
-        toString?: ((v:RValue) => string) | string;
-        type?: ((v:RValue) => string) | string;
-        includeAttributes?: ((v:RValue) => boolean) | boolean;
-        evaluateName?: ((v:RValue) => string) | string;
-    }
-    
+
     function getSource(call?: RCall, frameIdR?: number): Source;
     
     

@@ -8,7 +8,7 @@ export declare module Session {
   interface Session {
     // settings:
     setBreakpointsInPackages: boolean;
-    debugGlobal: boolean;
+    allowGlobalDebugging: boolean;
     breakOnErrorFromConsole: boolean;
     breakOnErrorFromFile: boolean;
     assignToAns: boolean;
@@ -30,11 +30,10 @@ export declare module Session {
     // debugSession:
     noDebug: boolean; // todo
     debugMode: ("function" | "file" | "workspace")
-    allowGlobalDebugging: boolean;
     workingDirectory: string;
     file: string;
     mainFunction: string;
-    includePackages: boolean;
+    includePackageScopes: boolean;
 
     // state:
     isInitialized: boolean;

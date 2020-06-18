@@ -7,19 +7,19 @@
 #' @param srcfile The file in which to set breakpoints
 #' @param lines A list of lines in which to set breakpoints
 #' @param ids A list of numbers, specifying the id of each breakpoint. Same length as `lines`
-#' @param includePackages Whether to set breakpoints in packages
+#' @param includePackageScopes Whether to set breakpoints in packages
 #' @param id The id of the answer sent to vsc
 #'
-.vsc.setBreakpoints <- function(file, bps = NULL, includePackages = NULL, id = 0) {
+.vsc.setBreakpoints <- function(file, bps = NULL, includePackageScopes = NULL, id = 0) {
   # breakpoints: bp[]
   # bp: {id: number; line: number; verified: boolean}
 
-  # make sure includePackages is bool:
-  if (is.null(includePackages)) {
-    includePackages <- FALSE
+  # make sure includePackageScopes is bool:
+  if (is.null(includePackageScopes)) {
+    includePackageScopes <- FALSE
   }
 
-  if (includePackages) {
+  if (includePackageScopes) {
     lastenv <- emptyenv() # searches through package-envs as well
   } else {
     lastenv <- .GlobalEnv # searches only through 'user'-envs

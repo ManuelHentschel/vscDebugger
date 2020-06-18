@@ -35,7 +35,7 @@ session <- local({
   frameIdsVsc <- list()
   breakpoints <- list()
   varInfos <- list()
-  debugGlobal <- FALSE
+  allowGlobalDebugging <- FALSE
   srcBreakpoints <- list()
   breakOnErrorFromConsole <- FALSE
   breakOnErrorFromFile <- TRUE
@@ -56,18 +56,23 @@ session <- local({
 
 .onLoad <- function(...) {
   options(error = traceback)
-  if(is.null(getOption('vsc.previewPromises'))){
-    options(vsc.previewPromises = FALSE)
-  }
-  if(is.null(getOption('vsc.trySilent'))){
-    options(vsc.trySilent = TRUE)
-  }
-  if(is.null(getOption('vsc.matricesByRow'))){
-    options(vsc.matricesByRow = TRUE)
-  }
-  if(is.null(getOption('vsc.evaluateActiveBindings'))){
-    options(vsc.evaluateActiveBindings = FALSE)
-  }
+  setOptionIfNull('vsc.previewPromises', FALSE)
+  setOptionIfNull('vsc.trySilent', TRUE)
+  setOptionIfNull('vsc.matricesByRow', TRUE)
+  setOptionIfNull('vsc.evaluateActiveBindings', FALSE)
+  setOptionIfNull('vsc.defaultIncludePackageScopes', FALSE)
+
+  setOptionIfNull('vsc.includePackageScopes', FALSE)
+  setOptionIfNull('vsc.setBreakpointsInPackages', FALSE)
+  setOptionIfNull('vsc.assignToAns', TRUE)
+  setOptionIfNull('vsc.overwritePrint', TRUE)
+  setOptionIfNull('vsc.overwriteCat', TRUE)
+  setOptionIfNull('vsc.overwriteSource', TRUE)
+
+  setOptionIfNull('vsc.defaultDebugMode', 'file')
+  setOptionIfNull('vsc.defaultAllowGlobalDebugging', FALSE)
+  setOptionIfNull('vsc.defaultFile', 'main.R')
+
   session$varInfos <- getDefaultVarInfos()
 
   session$tree <- LazyTree(
@@ -77,3 +82,4 @@ session <- local({
   )
   session$rootNode <- session$tree$getNewNodeId()
 }
+

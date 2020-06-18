@@ -130,6 +130,7 @@ export declare module LazyTree {
 
     ///////////////////
     // Lazy Stuff
+    // extension of normal tree to compute contents/children only when requested
 
 
     // used to compute the content of a node

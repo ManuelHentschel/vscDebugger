@@ -120,3 +120,21 @@ lget <- function(list, entry, default=NULL){
     ret
   }
 }
+
+
+isCalledFromBrowser <- function(){
+  tryCatch(
+    {
+      browserText()
+      TRUE
+    },
+    error = function(e) FALSE
+  )
+}
+
+
+setOptionIfNull <- function(option, value){
+  if(is.null(getOption(option))){
+    options(structure(list(value), names=option))
+  }
+}
