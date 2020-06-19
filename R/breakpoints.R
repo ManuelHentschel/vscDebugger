@@ -148,7 +148,7 @@ summarizeRefs <- function(refList) {
       if (identical(ref$name, sRef$name) && identical(ref$env, sRef$env)) {
         found <- TRUE
         # avoid adding the same breakpoint twice:
-        if (!(ref$at %in% sRef$at)) {
+        if (!any(sapply(sRef$at, identical, ref$at))){
           sRef$at <- appendToList(sRef$at, ref$at)
           sRef$line <- appendToList(sRef$line, ref$line)
           sRef$requestedLine <- appendToList(sRef$requestedLine, ref$requestedLine)
