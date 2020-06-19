@@ -179,6 +179,23 @@ initializeRequest <- function(response, args, request){
   options(continue = paste0(session$rStrings$continue, '\n'))
   options(browserNLdisabled = TRUE)
 
+  session$useServer <- lget(args, 'useServer', FALSE)
+
+  if(session$useServer){
+    session$port <- lget(args, 'port', 0)
+    session$host <- lget(args, 'host', '127.0.0.1')
+    session$serverConnection <- socketConnection(
+      host = session$host,
+      port = session$port,
+      server = FALSE,
+      blocking = FALSE,
+      open = "r+"
+    )
+    cat('Use server: ', session$host, ':', session$port, '\n', sep="")
+  } else{
+    cat("Don't use server\n")
+  }
+
   session$threadId <- lget(args, 'threadId', 1)
 
   response$body <- body

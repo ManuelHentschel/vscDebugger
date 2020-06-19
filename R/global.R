@@ -26,6 +26,11 @@ session <- local({
 
   noDebug <- FALSE
 
+  useServer <- FALSE
+  port <- 0
+  host <- '127.0.0.1'
+  serverConnection <- NULL
+
   varLists <- list()
   varListArgs <- list()
   varListPersistent <- list()
@@ -48,8 +53,6 @@ session <- local({
     continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
     append = ' ### <v\\s\\c\\COMMAND>'
   )
-
-  time <- Sys.time()
 
   environment()
 })

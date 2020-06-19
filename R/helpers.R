@@ -117,8 +117,16 @@ printToVsc <- function(ret, skipCalls=0){
 .vsc.sendToVsc <- function(message, body = "", id = 0) {
   s <- .vsc.makeStringForVsc(message, body, id)
   base::cat(s)
+  if(session$useServer){
+    j <- getJson(body)
+    base::cat(j, '\n', sep='', file=session$serverConnection)
+  }
 }
 
+getJson <- function(body){
+  body <- removeNonJsonElements(body)
+  s <- jsonlite::toJSON(body, auto_unbox = TRUE, force = TRUE)
+}
 
 
 #' Prepare a message as string for vsc

@@ -27,6 +27,12 @@ export declare module Session {
 
     threadId: number; //dummy
 
+    // server
+    useServer: boolean;
+    host?: string; // only if useServer==TRUE
+    port?: number; // only if useServer==TRUE
+    serverConnection?: RValue; // only if useServer==TRUE
+
     // debugSession:
     noDebug: boolean; // todo
     debugMode: ("function" | "file" | "workspace")
