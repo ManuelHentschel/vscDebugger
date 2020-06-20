@@ -8,12 +8,27 @@
 # TODO: enable breakpoints in specific columns?
 
 #' @export
-.vsc.debugSource <- function(file, lines = list(), envir = parent.frame(), encoding = "unknown", applyInternalBreakpoints = TRUE, recursive = TRUE, ...) {
+.vsc.debugSource <- function(
+  file, lines = list(), local = FALSE, envir = NULL, chdir = FALSE,
+  encoding = "unknown", applyInternalBreakpoints = TRUE,
+  recursive = TRUE, ...
+) {
+  # determine envir
+  if(!is.null(envir)){
+    # do nothing
+  } else if(is.environment(local)){
+    envir <- local
+  } else if(local){
+    envir <- parent.frame()
+  } else{
+    envir <- globalenv()
+  }
+  
   # parse file:
   file <- normalizePath(file)
   body <- parse(file, encoding = encoding, keep.source = TRUE)
 
-  # apply breakpoints stored in .packageEnv$breakpoints
+  # apply breakpoints stored in session$srcBreakpoints
   if (applyInternalBreakpoints) {
     bps <- .vsc.getBreakpoints(file)
     lines <- .vsc.getBreakpointLines(file)
@@ -32,9 +47,12 @@
   # set breakpoints:
   body <- mySetBreakpoints(body, ats)
 
-  # store debugState
-  tmpDebugGlobal <- .packageEnv$debugGlobal
-  .packageEnv$debugGlobal <- FALSE
+  # store state
+  tmpallowGlobalDebugging <- session$allowGlobalDebugging
+  session$allowGlobalDebugging <- FALSE
+  if(chdir){
+    tmpwd <- setwd(dirname(file))
+  }
 
   # actually run the code:
   enclos <- baseenv()
@@ -42,8 +60,11 @@
   # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
 
 
-  # restore debugState
-  .packageEnv$debugGlobal <- tmpDebugGlobal
+  # restore state
+  session$allowGlobalDebugging <- tmpallowGlobalDebugging
+  if(chdir){
+    setwd(tmpwd)
+  }
 }
 
 
@@ -71,7 +92,7 @@ mySetBreakpoint <- function(body, at, finalize = FALSE) {
     atr <- attributes(body)
     srcref <- list(atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]])
     # cat() a dummy tracing statement to indicate to vsc that this breakpoint is set by the debugger (-> sends 1x 'n' immediately)
-    b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step\n')), quote(browser()), body[[at]])
+    b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step\n')), quote(.doTrace(browser())), body[[at]])
     b2 <- structure(
       b2,
       srcref = srcref,
@@ -136,6 +157,7 @@ encloseBody <- function(body) {
 }
 
 prependDummySrcref <- function(srcref) {
+  # used to make a new srcref that contains a dummy for the call to '{'
   dummySrcref <- c(1, 1, 1, 1, 1, 1, 1, 1)
   attributes(dummySrcref) <- attributes(srcref[[1]])
   newSrcref <- append(list(dummySrcref), srcref)
@@ -144,6 +166,7 @@ prependDummySrcref <- function(srcref) {
 }
 
 findLine <- function(b, line, at = c()) {
+  # recursively find a given line in a body `b` 
   if (hasSrcref(b)) {
     at <- findLineWithSrcref(b, line, at)
   } else {
@@ -159,7 +182,7 @@ lineFind <- function(line, b, at = c()) {
 findLineWithoutSrcref <- function(b, line, at) {
   try({
     # fails if b is a symbol -> try()
-    for (i in seq(length(b))) {
+    for (i in seq_along(b)) {
       # try all sub-steps of b
       bb <- b[[i]]
       if (length(bb) > 1) {

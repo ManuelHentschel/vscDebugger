@@ -6,20 +6,20 @@
 #' @export
 #' @param srcfile The file in which to set breakpoints
 #' @param lines A list of lines in which to set breakpoints
-#' @param ids A list of numbers, specifying the id of each breakpoint. Same length as \code{lines}
-#' @param includePackages Whether to set breakpoints in packages
+#' @param ids A list of numbers, specifying the id of each breakpoint. Same length as `lines`
+#' @param includePackageScopes Whether to set breakpoints in packages
 #' @param id The id of the answer sent to vsc
 #'
-.vsc.setBreakpoints <- function(file, bps = NULL, includePackages = NULL, id = 0) {
+.vsc.setBreakpoints <- function(file, bps = NULL, includePackageScopes = NULL, id = 0) {
   # breakpoints: bp[]
   # bp: {id: number; line: number; verified: boolean}
 
-  # make sure includePackages is bool:
-  if (is.null(includePackages)) {
-    includePackages <- FALSE
+  # make sure includePackageScopes is bool:
+  if (is.null(includePackageScopes)) {
+    includePackageScopes <- FALSE
   }
 
-  if (includePackages) {
+  if (includePackageScopes) {
     lastenv <- emptyenv() # searches through package-envs as well
   } else {
     lastenv <- .GlobalEnv # searches only through 'user'-envs
@@ -60,15 +60,15 @@
   summarizedRefs <- summarizeRefs(refList)
 
   # set breakpoints
-  # ISSUE: trace does not preserve src-info for the line that is modified
-  # --> replace with custom trace()? Handle complex cases (see source code of trace)?
   for (sRef in summarizedRefs) {
+    # use generic trace function -> does not preserve source info
     trace(
       what = sRef$name,
       tracer = browser,
       at = sRef$at,
       where = sRef$env
     )
+    # add source info to lines overwritten by trace():
     fixSrcrefOnTracedFunction(
       what = sRef$name,
       at = sRef$at,
@@ -113,12 +113,15 @@ fixSrcrefOnTracedFunction <- function(what, at, where){
   methods:::.assignOverBinding(what, f, where, FALSE)
 }
 
-sendBreakpoints <- function(bps, id = 0) {
+sendBreakpoints <- function(bps = list(), acknowledge = TRUE, id = 0) {
   for (bp in bps) {
     .vsc.sendToVsc(message = 'breakpointVerification', body = bp, id = 0)
+    sendBreakpointEvent("changed", bp)
   }
   # send separate acknowledge message to make sure that all breakpoints are received first
-  .vsc.sendToVsc(message = 'acknowledge', id = id)
+  if(acknowledge){
+    .vsc.sendToVsc(message = 'acknowledge', id = id)
+  }
 }
 
 
@@ -145,7 +148,7 @@ summarizeRefs <- function(refList) {
       if (identical(ref$name, sRef$name) && identical(ref$env, sRef$env)) {
         found <- TRUE
         # avoid adding the same breakpoint twice:
-        if (!(ref$at %in% sRef$at)) {
+        if (!any(sapply(sRef$at, identical, ref$at))){
           sRef$at <- appendToList(sRef$at, ref$at)
           sRef$line <- appendToList(sRef$line, ref$line)
           sRef$requestedLine <- appendToList(sRef$requestedLine, ref$requestedLine)

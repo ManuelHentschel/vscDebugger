@@ -26,21 +26,21 @@ lIdentical <- function(xList, xElement) {
 
 #' Modified version of base::seq
 #'
-#' Modified version of \code{base::seq}
+#' Modified version of `base::seq`
 #' @usage seq2(from, to, by=1)
 #' @usage seq2(from)
 #'
 #' @param from Can be the starting value of the sequence, or the end value of the sequence, or a vector of length>1, or a list
 #' @param to The ending value of the sequence
-#' @param by The step size (as in \code{base::seq})
+#' @param by The step size (as in `base::seq`)
 #' @return A vector containing a sequence of numbers
 #'
 #' @details
-#' If \code{from, to, by} are supplied, the function returns the same as \code{base::seq}.
-#' If \code{from, to} are supplied the function returns \code{NULL} if \code{from>to},
-#' else the same as \code{base::seq}.
-#' If \code{from} is a number, the same as \code{seq2(1,from)} is returned.
-#' If \code{from} is a vector of length>1 or a list, \code{seq2(length(from))} is returned.
+#' If `from, to, by} are supplied, the function returns the same as \code{base::seq`.
+#' If `from, to} are supplied the function returns \code{NULL} if \code{from>to`,
+#' else the same as `base::seq`.
+#' If `from} is a number, the same as \code{seq2(1,from)` is returned.
+#' If `from} is a vector of length>1 or a list, \code{seq2(length(from))` is returned.
 seq2 <- function(from, to = NULL, by = 1) {
   if (is.null(from) || is.list(from) || (is.vector(from) && length(from) > 1)) {
     return(seq2(1, length(from), by))
@@ -65,9 +65,16 @@ zeroList <- function(list0) {
   return(lapply(list0, function(x) 0))
 }
 
+appendNested <- function(l0, l1){
+  names <- as.list(unique(c(names(l0), names(l1))))
+  ret <- list()
+  for (name in names) {
+    ret[[name]] <- append(l0[[name]], l1[[name]])
+  }
+  return(ret)
+}
 
 
-#' @export
 summarizeLists <- function(lists) {
   names <- as.list(unique(unlist(lapply(lists, names))))
   ret <- list()
@@ -77,7 +84,6 @@ summarizeLists <- function(lists) {
   return(ret)
 }
 
-#' @export
 unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
   if (length(items) == 0) {
     return(list())
@@ -94,4 +100,41 @@ unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
   names(ret) <- names
 
   return(ret)
+}
+
+
+lgetSafe <- function(list, entry, default=NULL){
+  suppressWarnings(
+    tryCatch(
+      lget(list, entry, default),
+      error = function(e) default
+    )
+  )
+}
+
+lget <- function(list, entry, default=NULL){
+  ret <- list[[entry]]
+  if(is.null(ret)){
+    default
+  } else{
+    ret
+  }
+}
+
+
+isCalledFromBrowser <- function(){
+  tryCatch(
+    {
+      browserText()
+      TRUE
+    },
+    error = function(e) FALSE
+  )
+}
+
+
+setOptionIfNull <- function(option, value){
+  if(is.null(getOption(option))){
+    options(structure(list(value), names=option))
+  }
 }

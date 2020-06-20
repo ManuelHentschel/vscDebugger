@@ -1,2 +1,2 @@
-"C:\Program Files\R\R-3.6.3\bin\R.exe" --file build.R
+"C:\Program Files\R\R-4.0.0\bin\R.exe" --file=build.R --silent --vanilla
 :EOF
