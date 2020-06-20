@@ -131,7 +131,7 @@ sendStoppedEvent <- function(reason="breakpoint", description=NULL, text=NULL){
 
 makeContinuedEvent <- function(){
   event <- makeEvent("continued")
-  body <- list(
+  event$body <- list(
     threadId = session$threadId,
     allThreadsContinued = TRUE
   )

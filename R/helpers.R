@@ -115,11 +115,12 @@ printToVsc <- function(ret, skipCalls=0){
 #' @param id The message id. Is usually provided in the function call from vsc.
 #' @export
 .vsc.sendToVsc <- function(message, body = "", id = 0) {
-  s <- .vsc.makeStringForVsc(message, body, id)
-  base::cat(s)
   if(session$useServer){
     j <- getJson(body)
     base::cat(j, '\n', sep='', file=session$serverConnection)
+  } else {
+    s <- .vsc.makeStringForVsc(message, body, id)
+    base::cat(s)
   }
 }
 
