@@ -16,11 +16,28 @@ prepareResponse <- function(request){
 }
 
 #' @export
+.vsc.handleJson <- function(json){
+  registerEntryFrame()
+  obj <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  if(lget(obj, 'type', '') == 'request'){
+    .vsc.dispatchRequest(obj)
+    success <- TRUE
+  } else{
+    cat('Unknown json: ', json, '\n')
+    success <- FALSE
+  }
+  unregisterEntryFrame()
+  invisible(success)
+}
+
+#' @export
 .vsc.dispatchRequest <- function(request){
+  registerEntryFrame()
   session$ignoreNextCallback <- TRUE
   response <- prepareResponse(request)
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
+  success <- TRUE
   if(command == 'stackTrace'){
     stackTraceRequest(response, args, request)
   } else if(command == 'scopes'){
@@ -51,8 +68,10 @@ prepareResponse <- function(request){
     continueRequest(response, args, request)
   } else {
     sendResponse(response)
+    success <- FALSE
   }
-  invisible(NULL)
+  unregisterEntryFrame()
+  invisible(success)
 }
 
 
