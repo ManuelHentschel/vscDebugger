@@ -11,7 +11,7 @@ stackTraceRequest <- function(response, args, request){
     tree$deleteNode(oldStackNode)
   }
 
-  stackNode <- .vsc.buildNewStack(topFrame = parent.frame(2))
+  stackNode <- .vsc.buildNewStack()
   session$stackNode <- stackNode
   frameNodes <- tree$getChildrenIds(stackNode)
   stackFrames <- tree$getContents(frameNodes)

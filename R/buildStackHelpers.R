@@ -15,8 +15,9 @@ getSource <- function(call, frameIdR = 0) {
   srcfile <- attr(srcref, 'srcfile')
 
   originalSrcfile <- srcfile$original
+  filename <- lget(srcfile, 'filename', '')
 
-  if(!is.null(originalSrcfile)){
+  if(filename == '' && !is.null(originalSrcfile)){
     srcfile <- originalSrcfile
   }
 
@@ -27,7 +28,9 @@ getSource <- function(call, frameIdR = 0) {
   wd <- srcfile$wd
   path <- srcfile$filename
   name <- basename(path)
-  path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
+  if(path != ''){
+    path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
+  }
 
   srcbody <- paste0(srcfile$lines, '## end of source body', collapse='\n')
   isFile <- file.exists(path)

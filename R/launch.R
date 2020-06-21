@@ -98,11 +98,15 @@ configurationDoneRequest <- function(response, args, request){
 
   # do stuff
   if(session$debugMode == 'file'){
+    registerLaunchFrame()
     setErrorHandler(session$breakOnErrorFromFile)
     .vsc.debugSource(session[['file']])
+    unregisterLaunchFrame()
   } else if (session$debugMode == 'function'){
+    registerLaunchFrame(skipCalls=2)
     setErrorHandler(session$breakOnErrorFromFile)
     eval(call(session$mainFunction), globalenv())
+    unregisterLaunchFrame()
   } else{
     setErrorHandler(session$breakOnErrorFromConsole)
   }
@@ -191,9 +195,6 @@ initializeRequest <- function(response, args, request){
       blocking = FALSE,
       open = "r+"
     )
-    cat('Use server: ', session$host, ':', session$port, '\n', sep="")
-  } else{
-    cat("Don't use server\n")
   }
 
   session$threadId <- lget(args, 'threadId', 1)

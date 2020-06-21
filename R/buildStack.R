@@ -2,16 +2,19 @@
 
 
 #' @export
-.vsc.buildNewStack <- function(topFrame = parent.frame()){
-
+.vsc.buildNewStack <- function(){ 
   id0 <- session$rootNode
   tree <- session$tree
 
+  topFrameId <- getTopFrameId()
+
+  skipFromBottom <- getSkipFromBottom()
+
   stackArgs <- list(
     nodeType = 'Stack',
-    topFrame = topFrame,
+    topFrameId = topFrameId,
     skipFromTop = 0,
-    skipFromBottom = 0,
+    skipFromBottom = skipFromBottom,
     isError = FALSE,
     forceDummyStack = FALSE,
     dummyFile = '',
@@ -99,14 +102,7 @@ contentFunction <- function(args){
 # interface stackArgs extends ContentArgs {
 # }
 buildStack <- function(args){
-  # read args
-  topFrame <- lget(args, 'topFrame', globalenv())
-  skipFromTop <- lget(args, 'skipFromTop', 0)
-  skipFromBottom <- lget(args, 'skipFromBottom', 0)
-  isError <- lget(args, 'isError', FALSE)
-  forceDummyStack <- lget(args, 'forceDummyStack', FALSE)
-  dummyFile <- lget(args, "dummyFile", '')
-
+  # no args relevant
   # nothing to do
 
   # return
@@ -252,7 +248,7 @@ buildVariable <- function(args){
 #     childrenArgs: ScopesArgs
 # }[]
 # interface FramesArgs extends ChildrenArgs {
-#     topFrame: REnvironment;
+#     topFrameId: number;
 #     skipFromTop?: number;
 #     skipFromBottom?: number;
 #     isError: boolean;
@@ -272,7 +268,7 @@ buildVariable <- function(args){
 gatherFrames <- function(args){
 
   # read args
-  topFrame <- lget(args, 'topFrame', globalenv())
+  topFrameId <- lget(args, 'topFrameId', sys.nframe()-1)
   skipFromTop <- lget(args, 'skipFromTop', 0)
   skipFromBottom <- lget(args, 'skipFromBottom', 0)
   isError <- lget(args, 'isError', FALSE)
@@ -286,15 +282,15 @@ gatherFrames <- function(args){
     skipFromTop = skipFromTop + 1
   }
 
-  nFrames <- getNFrames(topFrame)
-  if(nFrames == 0 || forceDummyStack){
+  if(topFrameId <= 0 || forceDummyStack){
     forceDummyStack <- TRUE
     frameIdsR <- c(0)
     frameIdsVsc <- c(0)
   } else{
-    frameIdsR <- seq2((nFrames - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
+    frameIdsR <- seq2((topFrameId - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
     frameIdsVsc <- seq2(length(frameIdsR)) - 1
   }
+
 
   # return
   makeNodeArgs <- function(frameIdR, frameIdVsc){

@@ -23,6 +23,8 @@ session <- local({
 
   ignoreNextCallback <- FALSE
   isError <- FALSE
+  entryFrames <- c(1)
+  launchframes <- c(1)
 
   noDebug <- FALSE
 

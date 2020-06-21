@@ -25,7 +25,7 @@ export declare module Session {
       append: string;
     }
 
-    threadId: number; //dummy
+    threadId: number; //dummy, but must match the one used in the DAP host
 
     // server
     useServer: boolean;
@@ -46,6 +46,8 @@ export declare module Session {
     isConfigurationDone: boolean;
     isRunningDebugSession: boolean;
     isEvaluating: boolean;
+    internalFrames: number[];
+    launchFrame?: number;
 
     // data:
     tree?: LazyTree.LazyTree;

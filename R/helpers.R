@@ -205,17 +205,19 @@ setErrorHandler <- function(useVscOnError = TRUE){
 
 
 globalStepCallback <- function(...){
+  registerEntryFrame()
   if(lget(session, 'ignoreNextCallback', FALSE)){
     session$ignoreNextCallback <- FALSE
   } else{
-    if(session$allowGlobalDebugging){
+    if(calledFromGlobal()){
       session$isError <- FALSE
       setErrorHandler(session$breakOnErrorFromConsole)
       sendContinuedEvent()
       sendStoppedEvent(reason="step")
     } else{
-      quit(save = 'no')
+      # do nothing?
     }
   }
+  unregisterEntryFrame()
   TRUE
 }
