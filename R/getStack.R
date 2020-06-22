@@ -37,7 +37,15 @@ scopesRequest <- function(response, args, request){
   tree <- session$tree
   frameNode <- getNodeId(vsc = frameIdVsc)
   scopeNodes <- tree$getChildrenIds(frameNode, refresh=TRUE)
-  scopes <- tree$getContents(scopeNodes)
+
+  scopes <- lapply(scopeNodes, function(nodeId){
+    scope <- tree$getContent(nodeId)
+    childCount <- length(tree$getChildrenIds(nodeId))
+    scope$indexedVariables  <- childCount
+    scope$namedVariables<- 0
+    scope$expensive <- FALSE
+    scope
+  })
 
   # make sure the variableReferences are linked to the corresponding nodeIds
   storeVarRefs(scopes, scopeNodes)
@@ -53,13 +61,30 @@ scopesRequest <- function(response, args, request){
 variablesRequest <- function(response, args, request){
   # args:
   varRef <- args$variablesReference
+  start <- lget(args, 'start', 0)
+  count <- lget(args, 'count', 0)
 
   # do stuff:
   tree <- session$tree
   nodeId <- getNodeId(varRef = varRef)
 
   variableNodes <- tree$getChildrenIds(nodeId, refresh=TRUE)
+
+  if(count>0){
+    ind <- (start+1):(start+count)
+    variableNodes <- variableNodes[ind]
+  }
+
   variables <- tree$getContents(variableNodes)
+
+  variables <- lapply(variableNodes, function(nodeId){
+    variable <- tree$getContent(nodeId)
+    childCount <- length(tree$getChildrenIds(nodeId))
+    variable$indexedVariables  <- childCount
+    variable$namedVariables<- 0
+    variable$expensive <- FALSE
+    variable
+  })
 
   names(variables) <- NULL
 
@@ -71,4 +96,9 @@ variablesRequest <- function(response, args, request){
   response[['body']] <- list(variables = variables)
   
   sendResponse(response)
+}
+
+
+getChildCount <- function(nodeId){
+  childCount <- length(getChildrenIds(nodeId))
 }
