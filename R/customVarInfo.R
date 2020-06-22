@@ -78,6 +78,7 @@
   } else if(is.list(infos)) {
     infos <- unlist(infos)
   }
+  force(v)
 
   missingInfos <- c(infos, stackingInfos)
   names(missingInfos) <- missingInfos
@@ -96,8 +97,7 @@
     # find missing infos that are supplied by this varInfo:
     matching <- intersect(missingInfos, names(varInfo))
     if(verbose) cat("Checking ", varInfo$name, "...\n", sep="")
-    # applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
-    applies <- varInfo$doesApply(v) # safe conversion to atomic boolean
+    applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
     if(applies){
       if(verbose) cat("applies!\n")
       for(info in matching){
