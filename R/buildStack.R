@@ -352,10 +352,20 @@ gatherVariables <- function(args){
   rValue <- lget(args, 'rValue', NULL)
 
   # do stuff
+  infos <- c('childVars')
+  if(getOption('vsc.showAttributes', TRUE)){
+    infos <- c(infos, 'internalAttributes')
+  }
+
+  stackingInfos <- c()
+  if(getOption('vsc.showCustomAttributes', TRUE)){
+    stackingInfos <- c('customAttributes')
+  }
+
   infos <- .vsc.applyVarInfos(
     rValue,
-    infos = c('childVars', 'internalAttributes'),
-    stackingInfos = 'customAttributes'
+    infos = infos,
+    stackingInfos = stackingInfos
   )
 
   childVariables <- c(

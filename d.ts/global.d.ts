@@ -44,10 +44,11 @@ export declare module Session {
     // state:
     isInitialized: boolean;
     isConfigurationDone: boolean;
-    isRunningDebugSession: boolean;
     isEvaluating: boolean;
-    internalFrames: number[];
-    launchFrame?: number;
+    isError: boolean;
+    entryFrames: number[];
+    launchFrames: number;
+    ignoreNextCallback: boolean;
 
     // data:
     tree?: LazyTree.LazyTree;
@@ -64,17 +65,5 @@ export declare module Session {
     varRef: number;
     breakpointId: number;
     fileBreakpoints: Breakpoints.FileBreakpoints[];
-
-
-    // (deprecated)
-    varLists: any; // deprecated
-    varListArgs: any; // deprecated
-    varListPersistent: any; // deprecated
-
-    frameIdsR: any; // deprecated
-    frameIdsVsc: any; // deprecated
-    breakpoints: any; // deprecated
-    varInfos: any; // deprecated
-    srcBreakpoints: any; // deprecated
   }
 }

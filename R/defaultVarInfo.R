@@ -140,13 +140,26 @@ getDefaultVarInfos <- function() {
       name = 'Factor',
       doesApply = is.factor,
       childVars = function(v) {
-        ret <- list(rValue = format(v))
-        if (is.null(names(ret$value))) {
-          ret$name <- paste0('[', seq_along(ret$value), ']')
+        if (is.null(names(v))) {
+          names <- paste0('[', seq_along(v), ']')
         } else{
-          ret$name <- names(ret$value)
+          names <- names(ret$value)
         }
-        unsummarizeLists(ret)
+        if(getOption('vsc.convertFactorEntries', FALSE)){
+          rValues <- as.list(format(v))
+        } else if(length(v)>1){
+          rValues <- as.list(v)
+        } else{
+          rValues <- list()
+          names <- list()
+        }
+        ret <- mapply(
+          function(vv, n) list(rValue=vv, name=n),
+          rValues,
+          names,
+          SIMPLIFY = FALSE,
+          USE.NAMES = FALSE
+        )
       },
       hasChildren = function(v) length(v) > 0,
       shortType = 'factor',
@@ -158,6 +171,7 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) inherits(v, '.vsc.matrixRow'),
       includeAttributes = FALSE,
       internalAttributes = list(),
+      customAttributes = list(),
       toString = function(v) {
         attributes(v) <- list()
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
@@ -168,7 +182,11 @@ getDefaultVarInfos <- function() {
       name = 'Matrix',
       doesApply = function(v) is.matrix(v) || is.data.frame(v), # data.frame specific info is handled above
       childVars = function(v) {
-        if (getOption('vsc.matricesByRow', TRUE)) {
+        byRow <- (
+          is.matrix(v) && getOption('vsc.matricesByRow', TRUE) || 
+          is.data.frame(v) && getOption('vsc.dataFramesByRow', FALSE) 
+        )
+        if (byRow) {
           if (ncol(v) == 1) {
             vars <- as.list(v)
             names <- rownames(v)
@@ -361,7 +379,25 @@ getDefaultVarInfos <- function() {
       name = 'Scalar',
       doesApply = function(v) is.atomic(v) && length(v) == 1 && is.null(attributes(v)),
       hasChildren = FALSE,
-      toString = function(v) paste(deparse(v), collapse = '\n', sep = ';')
+      toString = function(v) {
+        if(is.numeric(v) || is.logical(v) || is.character(v)){
+          names(v) <- NULL
+        }
+        paste(deparse(v), collapse = '\n', sep = ';')
+      }
+    ),
+    # named scalar
+    list(
+      name = 'NamedScalar',
+      doesApply = function(v){
+        is.atomic(v) && length(v) == 1 && identical(names(attributes(v)), c("names")) &&
+        (is.numeric(v) || is.logical(v) || is.character(v))
+      },
+      hasChildren = FALSE,
+      toString = function(v) {
+        names(v) <- NULL
+        paste(deparse(v), collapse = '\n', sep = ';')
+      }
     ),
     # default case
     list(
