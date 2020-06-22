@@ -48,8 +48,8 @@ getDefaultVarInfos <- function() {
       hasChildren = TRUE,
       toString = 'Active binding',
       includeAttributes = FALSE, # TODO: Can active bindings have non-active attributes?
-      childVars = list(),
-      internalAttributes = function(v) {
+      internalAttributes = list(),
+      childVars = function(v) {
         list(
           list(
             name = 'bindingFunction',
@@ -161,7 +161,13 @@ getDefaultVarInfos <- function() {
           USE.NAMES = FALSE
         )
       },
-      hasChildren = function(v) length(v) > 0,
+      hasChildren = function(v) {
+        if( length(v) > 1 || getOption('vsc.showAttributes', TRUE)){
+          TRUE
+        } else{
+          NULL
+        }
+      },
       shortType = 'factor',
       longType = 'factor'
     ),
@@ -266,8 +272,12 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Vector',
       doesApply = function(v) {
-        attributes(v) <- NULL
-        is.vector(v) && length(v) > 1
+        if(is.factor(v)){
+          FALSE
+        } else{
+          attributes(v) <- NULL
+          is.vector(v) && length(v) > 1
+        }
       },
       childVars = function(v) {
         names <- names(v)
@@ -353,7 +363,13 @@ getDefaultVarInfos <- function() {
           error = function(e) list()
         )
       },
-      hasChildren = TRUE
+      hasChildren = function(v){
+        if(getOption('vsc.showCustomAttributes')){
+          TRUE
+        } else{
+          NULL
+        }
+      }
     ),
     # function
     list(
@@ -367,7 +383,13 @@ getDefaultVarInfos <- function() {
           )
         )
       },
-      hasChildren = TRUE,
+      hasChildren = function(v){
+        if(getOption('vsc.showCustomAttributes', TRUE)){
+          TRUE
+        } else{
+          getOption('vsc.showAttributes', TRUE) && !is.null(attributes(v))
+        }
+      },
       shortType = '',
       longType = 'function',
       toString = function(v) {
@@ -423,7 +445,24 @@ getDefaultVarInfos <- function() {
         )
       },
       customAttributes = list(),
-      hasChildren = function(v) !is.null(attributes(v)),
+      hasChildren = function(v) {
+        if(length(v)>1){
+          return(TRUE)
+        } else if(getOption('vsc.showAttributes') && !is.null(attributes(v))){
+          return(TRUE)
+        } else {
+          childVars <- .vsc.applyVarInfos(v, infos='childVars')[[1]]
+          if(length(childVars)>0){
+            return(TRUE)
+          } else if(getOption('vsc.showCustomAttributes')){
+            customAttributes <- .vsc.applyVarInfos(v, stackingInfos = 'customAttributes')[[1]]
+            customAttributes <- unlist(customAttributes, recursive = FALSE)
+            return(length(customAttributes)>0)
+          } else{
+            return(FALSE)
+          }
+        }
+      },
       toString = function(v) {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
       },

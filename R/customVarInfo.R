@@ -60,10 +60,12 @@
   }
 }
 
+#' @export
 .vsc.applyVarInfos <- function(
   v,
   infos = character(0),
-  stackingInfos = character(0)
+  stackingInfos = character(0),
+  verbose = FALSE
 ) {
   # check args
   if(is.null(stackingInfos)) {
@@ -83,11 +85,21 @@
   names(isStacking) <- missingInfos
   ret <- list()
 
+  if(verbose){
+    cat("Missing Infos:\n")
+    print(missingInfos)
+    cat("IsStacking:\n")
+    print(isStacking)
+  }
+
   for (varInfo in session$varInfos) {
     # find missing infos that are supplied by this varInfo:
     matching <- intersect(missingInfos, names(varInfo))
-    applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
+    if(verbose) cat("Checking ", varInfo$name, "...\n", sep="")
+    # applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
+    applies <- varInfo$doesApply(v) # safe conversion to atomic boolean
     if(applies){
+      if(verbose) cat("applies!\n")
       for(info in matching){
         # get and (if function) apply info:
         tmp <- varInfo[[info]]
@@ -108,11 +120,15 @@
             tmp <- valueAndError$value
           }
         }
+        if(verbose){
+          cat(info, " gives: ", sep="")
+          print(tmp)
+        }
         # append or store result:
-        if(isStacking[info]){
-          if(!is.null(tmp)){
-            ret[[info]] <- append(ret[[info]], list(tmp))
-          }
+        if(is.null(tmp)){
+          # ignore result
+        } else if(isStacking[info]){
+          ret[[info]] <- append(ret[[info]], list(tmp))
           # keep looking...
         } else{
           ret[[info]] <- tmp
