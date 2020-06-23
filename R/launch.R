@@ -72,7 +72,7 @@ initializeRequest <- function(response, args, request){
       port = session$port,
       server = FALSE,
       blocking = FALSE,
-      open = "r+"
+      open = "r+b"
     )
   }
 

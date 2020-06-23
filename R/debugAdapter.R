@@ -1,5 +1,45 @@
 
 
+
+
+
+#' @export
+.vsc.listenOnPort <- function(timeout=0){
+  registerEntryFrame()
+  if(!lget(session, 'useServer', FALSE)){
+    return(NULL)
+  }
+  t <- as.numeric(Sys.time())
+  repeat{
+    char <- readChar(session$serverConnection, nchars=1)
+    if(length(char)==0){
+      if(timeout == 0 || (timeout > 0 && as.numeric(Sys.time()) - t > timeout)){
+        break
+      } else{
+        Sys.sleep(0.01)
+      }
+    } else {
+      if(char == '\n'){
+        json <- session$restOfLine
+        cat('Received json: ', json, '\n', sep='')
+        .vsc.handleJson(json)
+        session$restOfLine <- ''
+      } else{
+        session$restOfLine <- paste0(session$restOfLine, char)
+      }
+      t <- as.numeric(Sys.time())
+    }
+  }
+  session$ignoreNextCallback <- FALSE
+  unregisterEntryFrame()
+}
+
+
+
+
+
+
+
 sendResponse <- function(response){
   .vsc.sendToVsc(message = 'response', body = response)
 }
@@ -66,6 +106,8 @@ prepareResponse <- function(request){
     launchRequest(response, args, request)
   } else if(command == 'continue'){
     continueRequest(response, args, request)
+  } else if(command == 'terminate'){
+    terminateRequest(response, args, request)
   } else {
     sendResponse(response)
     success <- FALSE
@@ -243,5 +285,12 @@ setVariableRequest <- function(response, args, request){
 
 setExpressionRequest <- function(response, args, request){
     
+}
+
+terminateRequest <- function(response, args, request){
+  if(lget(session, 'useServer', FALSE)){
+    close(session$serverConnection)
+  }
+  quit(save = 'no')
 }
 

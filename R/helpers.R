@@ -207,14 +207,18 @@ setErrorHandler <- function(useVscOnError = TRUE){
 globalStepCallback <- function(...){
   registerEntryFrame()
   if(lget(session, 'ignoreNextCallback', FALSE)){
+    print('Ignoring callback')
     session$ignoreNextCallback <- FALSE
   } else{
     if(calledFromGlobal()){
+      print('Doing callback')
       session$isError <- FALSE
       setErrorHandler(session$breakOnErrorFromConsole)
       sendContinuedEvent()
       sendStoppedEvent(reason="step")
+      .vsc.listenOnPort(timeout=2)
     } else{
+      print('Callback from browser -> ignore')
       # do nothing?
     }
   }
