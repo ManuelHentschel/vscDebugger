@@ -23,7 +23,7 @@
   } else{
     envir <- globalenv()
   }
-  
+
   # parse file:
   file <- normalizePath(file)
   body <- parse(file, encoding = encoding, keep.source = TRUE)
@@ -48,20 +48,19 @@
   body <- mySetBreakpoints(body, ats)
 
   # store state
-  tmpallowGlobalDebugging <- session$allowGlobalDebugging
-  session$allowGlobalDebugging <- FALSE
   if(chdir){
     tmpwd <- setwd(dirname(file))
   }
 
+  registerLaunchFrame()
   # actually run the code:
   enclos <- baseenv()
   .Internal(eval(body, envir, enclos))
   # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
+  unregisterLaunchFrame()
 
 
   # restore state
-  session$allowGlobalDebugging <- tmpallowGlobalDebugging
   if(chdir){
     setwd(tmpwd)
   }

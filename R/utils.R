@@ -132,6 +132,89 @@ isCalledFromBrowser <- function(){
   )
 }
 
+# Is used to avoid showing internal frames in the stack tree
+registerEntryFrame <- function(skipCalls=0, entryFrames = NULL){
+  if(is.null(entryFrames)){
+    parentFrame <- sys.nframe()-1
+    session$entryFrames <- c(session$entryFrames, parentFrame - skipCalls)
+  } else{
+    session$entryFrames <- entryFrames
+  }
+  invisible(session$entryFrames)
+}
+
+# Is used to avoid showing internal frames in the stack tree
+unregisterEntryFrame <- function(all=FALSE){
+  ret <- session$entryFrames
+  n <- sys.nframe() - 1
+  unregisterFrame(n, all)
+  invisible(ret)
+}
+
+registerLaunchFrame <- function(skipCalls=0, launchFrames = NULL){
+  if(is.null(launchFrames)){
+    parentFrame <- sys.nframe()-1
+    session$launchFrames <- c(session$launchFrames, parentFrame + skipCalls)
+  } else{
+    session$launchFrames <- launchFrames
+  }
+  invisible(session$launchFrames)
+}
+
+unregisterLaunchFrame <- function(all=FALSE){
+  ret <- session$launchFrames
+  n <- sys.nframe() - 1
+  unregisterFrame(n, all)
+  invisible(ret)
+}
+
+unregisterFrame <- function(upto=sys.nframe()-1, all=FALSE){
+  lf <- session$launchFrames
+  ef <- session$entryFrames
+  if(all){
+    lf <- c()
+    ef <- c()
+  } else{
+    lf <- lf[lf < upto]
+    ef <- ef[ef < upto]
+  }
+  session$launchFrames <- lf
+  session$entryFrames <- ef
+}
+
+#' @export
+getSkipFromBottom <- function(){
+  suppressWarnings({
+    lf <- min(session$launchFrames)
+    ef <- min(session$entryFrames)
+  })
+  if(ef == 1 && lf < Inf){
+    return(lf)
+  } else{
+    return(0)
+  }
+}
+
+#' @export
+getTopFrameId <- function(){
+  suppressWarnings({
+    lf <- max(session$launchFrames)
+    efs <- session$entryFrames
+    ef <- max(efs)
+  })
+  if(ef > lf){
+    while((ef - 1) %in% efs && ef > lf){
+      ef <- ef - 1
+    }
+    if(ef>0){
+      ef <- ef - 1
+    }
+  } else{
+    ef <- sys.nframe() - 1
+  }
+  return(ef)
+}
+
 
 setOptionIfNull <- function(option, value){
   if(is.null(getOption(option))){

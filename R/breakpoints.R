@@ -32,7 +32,7 @@
   for (i in seq2(bps)) {
     bp <- bps[[i]]
     line <- bp$requestedLine
-    maxOffset <- bp$maxOffset
+    maxOffset <- lget(bp, 'maxOffset', 0)
     maxLine <- min(line + maxOffset, linesInFile)
 
     # find line numbers in functions
@@ -115,13 +115,13 @@ fixSrcrefOnTracedFunction <- function(what, at, where){
 
 sendBreakpoints <- function(bps = list(), acknowledge = TRUE, id = 0) {
   for (bp in bps) {
-    .vsc.sendToVsc(message = 'breakpointVerification', body = bp, id = 0)
+    # .vsc.sendToVsc(message = 'breakpointVerification', body = bp, id = 0)
     sendBreakpointEvent("changed", bp)
   }
   # send separate acknowledge message to make sure that all breakpoints are received first
-  if(acknowledge){
-    .vsc.sendToVsc(message = 'acknowledge', id = id)
-  }
+  # if(acknowledge){
+  #   .vsc.sendToVsc(message = 'acknowledge', id = id)
+  # }
 }
 
 

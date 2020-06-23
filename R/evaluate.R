@@ -67,8 +67,9 @@ evaluateRequest <- function(response, args, request){
 #' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
 #' @param catchErrors Whether to catch errors or let them be handled by `options(error = ...)`
 .vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE) {
+  registerEntryFrame()
   # evaluate calls that were made from top level cmd line in the .GlobalEnv
-  if (session$allowGlobalDebugging && calledFromGlobal()) {
+  if (calledFromGlobal()) {
     env <- .GlobalEnv
   } else {
     frameIdR <- convertFrameId(vsc = frameId)
@@ -79,9 +80,7 @@ evaluateRequest <- function(response, args, request){
     }
   }
 
-  # prepare settings
-  tmpallowGlobalDebugging <- session$allowGlobalDebugging
-  session$allowGlobalDebugging <- FALSE
+  registerLaunchFrame(8)
 
   if(silent){
     # prepare settings
@@ -138,14 +137,13 @@ evaluateRequest <- function(response, args, request){
     }
   }
 
-  # reset settings
-  session$allowGlobalDebugging <- tmpallowGlobalDebugging
-  setErrorHandler(session$breakOnErrorFromConsole)
+  unregisterLaunchFrame()
 
   # assign to .ans
   if(assignToAns && !silent){
     .GlobalEnv$.ans <- valueAndVisible$value
   }
   
+  unregisterEntryFrame()
   return(valueAndVisible)
 }
