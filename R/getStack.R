@@ -63,12 +63,28 @@ variablesRequest <- function(response, args, request){
   varRef <- args$variablesReference
   start <- lget(args, 'start', 0)
   count <- lget(args, 'count', 0)
+  filter <- lget(args, 'filter', '')
 
   # do stuff:
   tree <- session$tree
   nodeId <- getNodeId(varRef = varRef)
 
   variableNodes <- tree$getChildrenIds(nodeId, refresh=TRUE)
+  variable <- tree$getContent(nodeId)
+  namedVariables <- lget(variable, 'namedVariables', 0)
+  indexedVariables <- lget(variable, 'indexedVariables', 0)
+
+  if(filter == 'named'){
+    # return all named variables (come after indexedVariables)
+    start <- indexedVariables # excluding first variable
+    count <- namedVariables
+  } else if(filter == 'indexed'){
+    # return as specified by start, count
+  } else{
+    # return all variables:
+    start <- 0
+    count <- 0
+  }
 
   if(count>0){
     ind <- (start+1):(start+count)
@@ -76,15 +92,6 @@ variablesRequest <- function(response, args, request){
   }
 
   variables <- tree$getContents(variableNodes)
-
-  variables <- lapply(variableNodes, function(nodeId){
-    variable <- tree$getContent(nodeId)
-    childCount <- length(tree$getChildrenIds(nodeId))
-    variable$indexedVariables  <- childCount
-    variable$namedVariables<- 0
-    variable$expensive <- FALSE
-    variable
-  })
 
   names(variables) <- NULL
 
