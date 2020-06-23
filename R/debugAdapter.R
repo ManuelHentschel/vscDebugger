@@ -2,7 +2,8 @@
 
 
 
-
+# Can be used to dispatch requests via tcp socket instead of stdin
+# Is currently not used by the VS-Code extension
 #' @export
 .vsc.listenOnPort <- function(timeout=0){
   registerEntryFrame()
@@ -33,8 +34,6 @@
   session$ignoreNextCallback <- FALSE
   unregisterEntryFrame()
 }
-
-
 
 
 
