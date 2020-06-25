@@ -182,7 +182,6 @@ unregisterFrame <- function(upto=sys.nframe()-1, all=FALSE){
   session$entryFrames <- ef
 }
 
-#' @export
 getSkipFromBottom <- function(){
   suppressWarnings({
     lf <- min(session$launchFrames)
@@ -195,7 +194,6 @@ getSkipFromBottom <- function(){
   }
 }
 
-#' @export
 getTopFrameId <- function(){
   suppressWarnings({
     lf <- max(session$launchFrames)
