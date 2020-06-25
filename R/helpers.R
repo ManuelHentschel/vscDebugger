@@ -171,6 +171,7 @@ removeNonJsonElements <- function(v){
 #' @export
 #' @param err The message to be sent to vsc. Defaults to `geterrmessage()`
 .vsc.onError <- function(err=NULL) {
+  registerEntryFrame()
   session$isError <- TRUE
   if(is.null(err)){
     message <- geterrmessage()
@@ -182,6 +183,7 @@ removeNonJsonElements <- function(v){
   # .vsc.sendToVsc('error', body)
   sendStoppedEvent('exception', description = 'Stopped on Exception', text = message)
   browser()
+  unregisterEntryFrame()
 }
 
 setErrorHandler <- function(useVscOnError = TRUE){
