@@ -214,7 +214,7 @@ globalStepCallback <- function(...){
       setErrorHandler(session$breakOnErrorFromConsole)
       sendContinuedEvent()
       sendStoppedEvent(reason="step")
-      .vsc.listenOnPort(timeout=2)
+      # .vsc.listenOnPort(timeout=2)
     } else{
       # do nothing?
     }
