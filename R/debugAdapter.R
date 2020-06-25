@@ -1,5 +1,44 @@
 
 
+
+
+# Can be used to dispatch requests via tcp socket instead of stdin
+# Is currently not used by the VS-Code extension
+#' @export
+.vsc.listenOnPort <- function(timeout=0){
+  registerEntryFrame()
+  if(!lget(session, 'useServer', FALSE)){
+    return(NULL)
+  }
+  t <- as.numeric(Sys.time())
+  repeat{
+    char <- readChar(session$serverConnection, nchars=1)
+    if(length(char)==0){
+      if(timeout == 0 || (timeout > 0 && as.numeric(Sys.time()) - t > timeout)){
+        break
+      } else{
+        Sys.sleep(0.01)
+      }
+    } else {
+      if(char == '\n'){
+        json <- session$restOfLine
+        cat('Received json: ', json, '\n', sep='')
+        .vsc.handleJson(json)
+        session$restOfLine <- ''
+      } else{
+        session$restOfLine <- paste0(session$restOfLine, char)
+      }
+      t <- as.numeric(Sys.time())
+    }
+  }
+  session$ignoreNextCallback <- FALSE
+  unregisterEntryFrame()
+}
+
+
+
+
+
 sendResponse <- function(response){
   .vsc.sendToVsc(message = 'response', body = response)
 }
@@ -16,11 +55,28 @@ prepareResponse <- function(request){
 }
 
 #' @export
+.vsc.handleJson <- function(json){
+  registerEntryFrame()
+  obj <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  if(lget(obj, 'type', '') == 'request'){
+    .vsc.dispatchRequest(obj)
+    success <- TRUE
+  } else{
+    cat('Unknown json: ', json, '\n')
+    success <- FALSE
+  }
+  unregisterEntryFrame()
+  invisible(success)
+}
+
+#' @export
 .vsc.dispatchRequest <- function(request){
+  registerEntryFrame()
   session$ignoreNextCallback <- TRUE
   response <- prepareResponse(request)
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
+  success <- TRUE
   if(command == 'stackTrace'){
     stackTraceRequest(response, args, request)
   } else if(command == 'scopes'){
@@ -49,10 +105,14 @@ prepareResponse <- function(request){
     launchRequest(response, args, request)
   } else if(command == 'continue'){
     continueRequest(response, args, request)
+  } else if(command == 'terminate'){
+    terminateRequest(response, args, request)
   } else {
     sendResponse(response)
+    success <- FALSE
   }
-  invisible(NULL)
+  unregisterEntryFrame()
+  invisible(success)
 }
 
 
@@ -131,7 +191,7 @@ sendStoppedEvent <- function(reason="breakpoint", description=NULL, text=NULL){
 
 makeContinuedEvent <- function(){
   event <- makeEvent("continued")
-  body <- list(
+  event$body <- list(
     threadId = session$threadId,
     allThreadsContinued = TRUE
   )
@@ -224,5 +284,12 @@ setVariableRequest <- function(response, args, request){
 
 setExpressionRequest <- function(response, args, request){
     
+}
+
+terminateRequest <- function(response, args, request){
+  if(lget(session, 'useServer', FALSE)){
+    close(session$serverConnection)
+  }
+  quit(save = 'no')
 }
 

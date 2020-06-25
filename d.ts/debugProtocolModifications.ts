@@ -1,6 +1,6 @@
 
 
-import { DebugProtocol } from 'vscode-debugprotocol';
+import { DebugProtocol } from './debugProtocol';
 import * as VsCode from 'vscode';
 
 export enum DebugMode {
@@ -63,6 +63,9 @@ export interface RStrings {
 export interface InitializeRequestArguments extends DebugProtocol.InitializeRequestArguments {
     rStrings?: RStrings;
     threadId?: number;
+    host?: string;
+    port?: number;
+    useServer?: boolean;
 }
 
 export interface InitializeRequest extends DebugProtocol.InitializeRequest {

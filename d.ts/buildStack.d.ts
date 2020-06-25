@@ -129,7 +129,7 @@ export declare module StackTree {
     }
     
     interface FramesArgs extends ChildrenArgs {
-        topFrame: REnvironment;
+        topFrameId: number;
         skipFromTop?: number;
         skipFromBottom?: number;
         isError: boolean;

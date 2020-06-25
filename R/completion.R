@@ -50,7 +50,7 @@ getInstalledPackages <- function() {
   if (column > 1) {
     text <- substring(text, 1, column - 1)
   }
-  if (onlyGlobalEnv) {
+  if (onlyGlobalEnv || !isCalledFromBrowser()) {
     firstenv <- globalenv()
   } else {
     frameId <- convertFrameId(vsc = frameIdVsc)

@@ -11,7 +11,7 @@ stackTraceRequest <- function(response, args, request){
     tree$deleteNode(oldStackNode)
   }
 
-  stackNode <- .vsc.buildNewStack(topFrame = parent.frame(2))
+  stackNode <- .vsc.buildNewStack()
   session$stackNode <- stackNode
   frameNodes <- tree$getChildrenIds(stackNode)
   stackFrames <- tree$getContents(frameNodes)
@@ -37,7 +37,15 @@ scopesRequest <- function(response, args, request){
   tree <- session$tree
   frameNode <- getNodeId(vsc = frameIdVsc)
   scopeNodes <- tree$getChildrenIds(frameNode, refresh=TRUE)
-  scopes <- tree$getContents(scopeNodes)
+
+  scopes <- lapply(scopeNodes, function(nodeId){
+    scope <- tree$getContent(nodeId)
+    childCount <- length(tree$getChildrenIds(nodeId))
+    scope$indexedVariables  <- childCount
+    scope$namedVariables<- 0
+    scope$expensive <- FALSE
+    scope
+  })
 
   # make sure the variableReferences are linked to the corresponding nodeIds
   storeVarRefs(scopes, scopeNodes)
@@ -53,12 +61,36 @@ scopesRequest <- function(response, args, request){
 variablesRequest <- function(response, args, request){
   # args:
   varRef <- args$variablesReference
+  start <- lget(args, 'start', 0)
+  count <- lget(args, 'count', 0)
+  filter <- lget(args, 'filter', '')
 
   # do stuff:
   tree <- session$tree
   nodeId <- getNodeId(varRef = varRef)
 
   variableNodes <- tree$getChildrenIds(nodeId, refresh=TRUE)
+  variable <- tree$getContent(nodeId)
+  namedVariables <- lget(variable, 'namedVariables', 0)
+  indexedVariables <- lget(variable, 'indexedVariables', 0)
+
+  if(filter == 'named'){
+    # return all named variables (come after indexedVariables)
+    start <- indexedVariables # excluding first variable
+    count <- namedVariables
+  } else if(filter == 'indexed'){
+    # return as specified by start, count
+  } else{
+    # return all variables:
+    start <- 0
+    count <- 0
+  }
+
+  if(count>0){
+    ind <- (start+1):(start+count)
+    variableNodes <- variableNodes[ind]
+  }
+
   variables <- tree$getContents(variableNodes)
 
   names(variables) <- NULL
@@ -71,4 +103,9 @@ variablesRequest <- function(response, args, request){
   response[['body']] <- list(variables = variables)
   
   sendResponse(response)
+}
+
+
+getChildCount <- function(nodeId){
+  childCount <- length(getChildrenIds(nodeId))
 }
