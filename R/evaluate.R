@@ -69,7 +69,7 @@ evaluateRequest <- function(response, args, request){
 .vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE) {
   registerEntryFrame()
   # evaluate calls that were made from top level cmd line in the .GlobalEnv
-  if (calledFromGlobal()) {
+  if (!isCalledFromBrowser()) {
     env <- .GlobalEnv
   } else {
     frameIdR <- convertFrameId(vsc = frameId)
