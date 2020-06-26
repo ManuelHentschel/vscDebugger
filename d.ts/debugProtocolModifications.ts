@@ -1,6 +1,6 @@
 
 
-import { DebugProtocol } from './debugProtocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 import * as VsCode from 'vscode';
 
 export enum DebugMode {
@@ -8,6 +8,22 @@ export enum DebugMode {
     File = "file",
     Workspace = "workspace"
 }
+
+
+export type DataSource = "stdout"|"stderr"|"jsonSocket"|"sinkSocket";
+export type OutputMode = "all"|"filtered"|"nothing";
+
+export interface RStartupArguments {
+    path: string;
+    args: string[];
+    logLevel?: number;
+    logLevelCP?: number;
+    useJsonServer?: boolean;
+    useSinkServer?: boolean;
+    jsonPort?: number;
+    sinkPort?: number;
+}
+
 
 export interface DebugConfiguration extends VsCode.DebugConfiguration {
     // specify what to debug (required)
@@ -63,9 +79,12 @@ export interface RStrings {
 export interface InitializeRequestArguments extends DebugProtocol.InitializeRequestArguments {
     rStrings?: RStrings;
     threadId?: number;
-    host?: string;
-    port?: number;
-    useServer?: boolean;
+    useJsonServer?: boolean;
+    jsonPort?: number;
+    jsonHost?: string;
+    useSinkServer?: boolean;
+    sinkPort?: number;
+    sinkHost?: string;
 }
 
 export interface InitializeRequest extends DebugProtocol.InitializeRequest {

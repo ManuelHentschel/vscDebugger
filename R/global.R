@@ -20,10 +20,15 @@ session <- local({
 
   threadId <- 1
 
-  useServer <- FALSE
-  port <- 0
-  host <- '127.0.0.1'
-  serverConnection <- NULL
+  useJsonServer <- FALSE
+  jsonPort <- 0
+  jsonHost <- 'localhost'
+  jsonServerConnection <- NULL
+
+  useSinkServer <- FALSE
+  sinkPort <- 0
+  sinkHost <- 'localhost'
+  sinkServerConnection <- NULL
 
   noDebug <- FALSE # currently not used
   debugMode <- NULL
