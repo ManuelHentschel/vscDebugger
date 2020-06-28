@@ -115,9 +115,9 @@ printToVsc <- function(ret, skipCalls=0){
 #' @param id The message id. Is usually provided in the function call from vsc.
 #' @export
 .vsc.sendToVsc <- function(message, body = "", id = 0) {
-  if(session$useServer){
+  if(session$useJsonServer){
     j <- getJson(body)
-    base::cat(j, '\n', sep='', file=session$serverConnection)
+    base::cat(j, '\n', sep='', file=session$jsonServerConnection)
   } else {
     s <- .vsc.makeStringForVsc(message, body, id)
     base::cat(s)
@@ -140,8 +140,7 @@ getJson <- function(body){
 #' @return A (json) string that can be interpreted by vsc
 .vsc.makeStringForVsc <- function(message, body = "", id = 0) {
   body <- removeNonJsonElements(body)
-  l <- list(message = message, body = body, id = id)
-  s <- jsonlite::toJSON(l, auto_unbox = TRUE, force = TRUE)
+  s <- jsonlite::toJSON(body, auto_unbox = TRUE, force = TRUE)
   r <- paste0(
     session$rStrings$delimiter0,
     s,
@@ -171,6 +170,7 @@ removeNonJsonElements <- function(v){
 #' @export
 #' @param err The message to be sent to vsc. Defaults to `geterrmessage()`
 .vsc.onError <- function(err=NULL) {
+  registerEntryFrame()
   session$isError <- TRUE
   if(is.null(err)){
     message <- geterrmessage()
@@ -182,6 +182,7 @@ removeNonJsonElements <- function(v){
   # .vsc.sendToVsc('error', body)
   sendStoppedEvent('exception', description = 'Stopped on Exception', text = message)
   browser()
+  unregisterEntryFrame()
 }
 
 setErrorHandler <- function(useVscOnError = TRUE){

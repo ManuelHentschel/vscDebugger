@@ -7,12 +7,12 @@
 #' @export
 .vsc.listenOnPort <- function(timeout=0){
   registerEntryFrame()
-  if(!lget(session, 'useServer', FALSE)){
+  if(!lget(session, 'useJsonServer', FALSE)){
     return(NULL)
   }
   t <- as.numeric(Sys.time())
   repeat{
-    char <- readChar(session$serverConnection, nchars=1)
+    char <- readChar(session$jsonServerConnection, nchars=1)
     if(length(char)==0){
       if(timeout == 0 || (timeout > 0 && as.numeric(Sys.time()) - t > timeout)){
         break
@@ -287,8 +287,11 @@ setExpressionRequest <- function(response, args, request){
 }
 
 terminateRequest <- function(response, args, request){
-  if(lget(session, 'useServer', FALSE)){
-    close(session$serverConnection)
+  if(lget(session, 'useJsonServer', FALSE)){
+    close(session$jsonServerConnection)
+  }
+  if(lget(session, 'useSinkServer', FALSE)){
+    close(session$sinkServerConnection)
   }
   quit(save = 'no')
 }

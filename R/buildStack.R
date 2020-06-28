@@ -305,16 +305,11 @@ gatherFrames <- function(args){
   topFrameId <- lget(args, 'topFrameId', sys.nframe()-1)
   skipFromTop <- lget(args, 'skipFromTop', 0)
   skipFromBottom <- lget(args, 'skipFromBottom', 0)
-  isError <- lget(args, 'isError', FALSE)
   forceDummyStack <- lget(args, 'forceDummyStack', FALSE)
   dummyFile <- lget(args, 'dummyFile', '')
 
-  isError <- lget(session, 'isError', FALSE)
 
   # do stuff
-  if (isError) {
-    skipFromTop = skipFromTop + 1
-  }
 
   if(topFrameId <= 0 || forceDummyStack){
     forceDummyStack <- TRUE

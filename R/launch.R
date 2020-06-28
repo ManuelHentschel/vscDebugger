@@ -62,18 +62,31 @@ initializeRequest <- function(response, args, request){
   options(continue = paste0(session$rStrings$continue, '\n'))
   options(browserNLdisabled = TRUE)
 
-  session$useServer <- lget(args, 'useServer', FALSE)
-
-  if(session$useServer){
-    session$port <- lget(args, 'port', 0)
-    session$host <- lget(args, 'host', '127.0.0.1')
-    session$serverConnection <- socketConnection(
-      host = session$host,
-      port = session$port,
+  session$useJsonServer <- lget(args, 'useJsonServer', FALSE)
+  if(session$useJsonServer){
+    session$jsonPort <- lget(args, 'jsonPort', 0)
+    session$jsonHost <- lget(args, 'jsonHost', '127.0.0.1')
+    session$jsonServerConnection <- socketConnection(
+      host = session$jsonHost,
+      port = session$jsonPort,
       server = FALSE,
       blocking = FALSE,
       open = "r+b"
     )
+  }
+
+  session$useSinkServer <- lget(args, 'useSinkServer', FALSE)
+  if(session$useSinkServer){
+    session$sinkPort <- lget(args, 'sinkPort', 0)
+    session$sinkHost <- lget(args, 'sinkHost', 'localhost')
+    session$sinkServerConnection <- socketConnection(
+      host = session$sinkHost,
+      port = session$sinkPort,
+      server = FALSE,
+      blocking = FALSE,
+      open = "r+b"
+    )
+    sink(session$sinkServerConnection)
   }
 
   session$threadId <- lget(args, 'threadId', 1)

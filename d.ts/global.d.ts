@@ -28,10 +28,15 @@ export declare module Session {
     threadId: number; //dummy, but must match the one used in the DAP host
 
     // server
-    useServer: boolean;
-    host?: string; // only if useServer==TRUE
-    port?: number; // only if useServer==TRUE
-    serverConnection?: RValue; // only if useServer==TRUE
+    useJsonServer?: boolean;
+    jsonPort?: number;
+    jsonHost?: string;
+    jsonServerConnection?: RValue; // only if useJsonServer==TRUE
+
+    useSinkServer?: boolean;
+    sinkPort?: number;
+    sinkHost?: string;
+    sinkServerConnection?: RValue; // only if useSinkServer==TRUE
 
     // debugSession:
     noDebug: boolean; // todo
