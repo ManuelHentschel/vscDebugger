@@ -116,13 +116,17 @@ getDefaultVarInfos <- function() {
       doesApply = is.environment,
       childVars = function(v) {
         vars <- getVarsInEnv(v)
-        lapply(vars, function(var){
-          list(
-            name = var$name,
+        ret <- lapply(vars, function(var){
+          name <- var$name
+          setter <- substitute(env[[name]], list(name=name))
+          l <- list(
+            name = name,
             rValue = var$value,
-            setInfo = list(environment=v, expression=as.symbol(var$name))
+            setter = setter,
+            setInfo = list(environment=v, setter = setter)
           )
         })
+        ret
       },
       toString = format,
       hasChildren = function(v) length(ls(v, all.names = TRUE)) > 0
@@ -200,7 +204,7 @@ getDefaultVarInfos <- function() {
               names <- getIndices(v, col = 1)
             }
             setters <- lapply(seq_along(vars), function(s){
-              substitute(.vsc.parent[s,1])
+              substitute(parent[s,1], list(s=s))
             })
           } else {
             vars <- lapply(seq2(nrow(v)), getRow, v = v)
@@ -209,7 +213,7 @@ getDefaultVarInfos <- function() {
               names <- getIndices(v, col = '')
             }
             setters <- lapply(seq_along(vars), function(s){
-              substitute(.vsc.parent[s,])
+              substitute(parent[s,], list(s=s))
             })
           }
         } else { # by column
@@ -220,7 +224,7 @@ getDefaultVarInfos <- function() {
               names <- getIndices(v, row = 1)
             }
             setters <- lapply(seq_along(vars), function(s){
-              substitute(.vsc.parent[1,s])
+              substitute(parent[1,s], list(s=s))
             })
           } else {
             vars <- lapply(seq2(ncol(v)), getCol, v = v)
@@ -229,7 +233,7 @@ getDefaultVarInfos <- function() {
               names <- getIndices(v, row = '')
             }
             setters <- lapply(seq_along(vars), function(s){
-              substitute(.vsc.parent[,s])
+              substitute(parent[,s], list(s=s))
             })
           }
         }
@@ -260,7 +264,7 @@ getDefaultVarInfos <- function() {
           list(
             rValue = v[[s]],
             name = name,
-            setter = substitute(.vsc.parent[[s]])
+            setter = substitute(parent[[s]], list(s=s))
           )
         })
       },
@@ -286,10 +290,12 @@ getDefaultVarInfos <- function() {
           if(is.null(name)){
             name <- paste0('[', s, ']')
           }
+          rValue <- v[s]
+          attributes(rValue) <- NULL
           list(
-            rValue = v[s],
+            rValue = rValue,
             name = name,
-            setter = substitute(.vsc.parent[s])
+            setter = substitute(parent[s], list(s=s))
           )
         })
       },
@@ -415,7 +421,6 @@ getDefaultVarInfos <- function() {
         is.atomic(v) && length(v) == 1 && identical(names(attributes(v)), c("names")) &&
         (is.numeric(v) || is.logical(v) || is.character(v))
       },
-      hasChildren = FALSE,
       toString = function(v) {
         names(v) <- NULL
         paste(deparse(v), collapse = '\n', sep = ';')
@@ -433,10 +438,13 @@ getDefaultVarInfos <- function() {
       internalAttributes = function(v) {
         attr <- attributes(v)
         names <- names(attr)
-        names <- paste0("_", names)
         mapply(
           function(a, n){
-            list(name=n, rValue=a)
+            list(
+              name = paste0("_", n),
+              rValue = a,
+              setter = substitute(attr(parent, name), list(name=n))
+            )
           },
           attr,
           names,

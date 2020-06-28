@@ -30,7 +30,7 @@ initializeRequest <- function(response, args, request){
   # enable exception-info (not working???)
   body$supportsExceptionInfoRequest <- FALSE
   body$supportsExceptionOptions <- TRUE
-  exceptionBreakpointFilters <- list(
+  body$exceptionBreakpointFilters <- list(
     list(
       filter = 'fromFile',
       label = 'Errors from R file',
@@ -42,12 +42,10 @@ initializeRequest <- function(response, args, request){
       default = FALSE
     )
   )
-  body$exceptionBreakpointFilters <- exceptionBreakpointFilters
   
   # 
   body$supportsClipboardContext <- TRUE
-  body$supportsSetVariable <- FALSE
-  body$supportsSetExpression <- FALSE
+  body$supportsSetVariable <- TRUE
 
   # assign to session
   session$isInitialized <- TRUE

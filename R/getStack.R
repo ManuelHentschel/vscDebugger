@@ -106,6 +106,26 @@ variablesRequest <- function(response, args, request){
 }
 
 
-getChildCount <- function(nodeId){
-  childCount <- length(getChildrenIds(nodeId))
+updateVariableValue <- function(nodeId, newValue){
+  variable <- session$tree$getContent(nodeId)
+  minVar <- list(
+    name = variable$name,
+    rValue = newValue,
+    setter = variable$setter,
+    setInfo = variable$setInfo
+  )
+  nodeArgs <- list(
+    contentArgs = list(
+      minVar = minVar,
+      nodeType = "Variable",
+      contentProducesChildren = TRUE
+    ),
+    preserve = FALSE
+  )
+  session$tree$deleteChildren(nodeId)
+  session$tree$storeToNode(nodeArgs, nodeId)
+  newVariable <- session$tree$getContent(nodeId)
+  storeVarRefs(list(newVariable), list(nodeId))
+  return(newVariable)
 }
+
