@@ -171,7 +171,9 @@ buildFrame <- function(args){
     presentationHint = presentationHint,
     frameIdR = frameIdR
   )
-  frame$source <- source
+  if(lget(source, "isFile", FALSE)){
+    frame$source <- source
+  }
   frame$line <- line
   frame$column <- column
   frame$endLine <- endLine
