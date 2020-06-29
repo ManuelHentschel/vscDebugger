@@ -32,7 +32,7 @@ getSource <- function(call, frameIdR = 0) {
     path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
   }
 
-  srcbody <- paste0(srcfile$lines, '## end of source body', collapse='\n')
+  srcbody <- paste0(srcfile$lines, collapse='\n')
   isFile <- file.exists(path)
 
   if(isFile){

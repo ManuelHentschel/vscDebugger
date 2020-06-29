@@ -40,7 +40,7 @@ isPackageFrame <- function(env = parent.frame()) {
     # return(base::cat(...))
     return(base::cat(...))
   }
-  ret <- capture.output(base::cat(...))
+  ret <- capture.output({base::cat(...);base::cat("\n")})
   printToVsc(ret, skipCalls+1)
   invisible(NULL)
 }
@@ -61,12 +61,13 @@ isPackageFrame <- function(env = parent.frame()) {
     return(base::print(x, ...))
   }
   ret <- capture.output(base::print(x, ...))
+  ret <- c(ret, "")
   printToVsc(ret, skipCalls+1)
   invisible(x)
 }
 
 printToVsc <- function(ret, skipCalls=0){
-  output <- paste(ret, "\n", sep = "", collapse = "\n")
+  output <- paste0(ret, collapse = "\n")
 
   lineAndFile <- .vsc.getCallingLineAndFile(skipCalls = skipCalls+1, default = list(line=0, file=''))
   line <- lineAndFile$line
