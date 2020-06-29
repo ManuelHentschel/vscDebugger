@@ -65,7 +65,6 @@ getFileBreakpoints <- function(path){
   return(NULL)
 }
 
-#' @export
 .vsc.getBreakpoints <- function(path){
   fbp <- getFileBreakpoints(path)
   breakpoints <- fbp$breakpoints
@@ -76,7 +75,6 @@ getRequestedBreakpointLines <- function(path){
   lines <- lapply(fbp$breakpoints, function(bp) bp$requestedLine)
 }
 
-#' @export
 .vsc.getBreakpointLines <- function(path, getActualLines = FALSE){
   if(getActualLines){
     fbp <- getFileBreakpoints(path)
@@ -87,7 +85,6 @@ getRequestedBreakpointLines <- function(path){
 }
 
 
-#' @export
 .vsc.setStoredBreakpoints <- function() {
   for (fbp in session$fileBreakpoints){
     file <- lget(fbp$source, 'path', '')
@@ -100,7 +97,6 @@ getRequestedBreakpointLines <- function(path){
 }
 
 
-#' @export
 .vsc.getAllBreakpoints <- function() {
   return(session$fileBreakpoints)
 }

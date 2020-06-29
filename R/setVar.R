@@ -2,7 +2,6 @@
 
 
 setVariableRequest <- function(response, args, request){
-  #args:
   varRef <- lget(args, "variablesReference", 0)
   name <- lget(args, "name", "")
   value <- lget(args, "value", "")
@@ -39,7 +38,6 @@ setVariableRequest <- function(response, args, request){
 }
 
 
-
 setVar <- function(setInfos, valueString){
   sv <- substituteSetInfos(setInfos)
   target <- sv$expression
@@ -51,9 +49,11 @@ setVar <- function(setInfos, valueString){
     reason <- "No set-info available.\n"
   } else{
     err <- try({
+      tmpTracingState <- tracingState(FALSE)
       rValue <- eval(parse(text=valueString), envir=env)
       cl <- as.call(list(`<-`, target, rValue))
       eval(cl)
+      tracingState(tmpTracingState)
     })
     success <- !inherits(err, "try-error")
   }
@@ -88,9 +88,5 @@ substituteSetInfos <- function(setInfos){
     environment = env
   )
   return(ret)
-}
-
-substituteSetter <- function(setter, parent){
-  do.call('substitute', list(setter, list(v = parent)))
 }
 

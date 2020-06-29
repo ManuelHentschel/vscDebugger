@@ -1,10 +1,7 @@
 
-# TODO: make sure browser-output is correctly parsed by vsc
-# TODO: make sure call stack is correctly returned to vsc (skipped frames etc.)
 # TODO: function definitions:
 #       - do not modify function body directly
 #       - instead: define function normally, then trace function (-> bp can be easily unset)
-# TODO: recursive debugSource() -> simply replace source() in .GlobalEnv
 # TODO: enable breakpoints in specific columns?
 
 #' @export
@@ -38,7 +35,7 @@
   ats <- lapply(lines, lineFind, body)
 
   # check if bps were found and confirm breakpoints to vsc
-  for (i in seq2(bps)) {
+  for (i in seq_along(bps)) {
     bps[[i]]$verified <- length(ats[[i]]) > 0
   }
   sendBreakpoints(bps)

@@ -1,28 +1,4 @@
 
-calledFromGlobal <- function() {
-  # determine if a call was made from the command line (=global) or not
-  # can be used inside other functions from this package
-
-  # Make sure not to nest this line: (!!!)
-  thisPackageEnv <- parent.env(environment())
-
-  # check if the first call (stack frame) is to a funcion from this package:
-  if (identical(parent.env(sys.frame(1)), thisPackageEnv)) {
-    return(TRUE)
-  } else {
-    return(FALSE)
-  }
-}
-isPackageFrame <- function(env = parent.frame()) {
-  while (!identical(env, emptyenv())) {
-    if (identical(env, globalenv())) {
-      return(FALSE)
-    }
-    env <- parent.env(env)
-  }
-  return(TRUE)
-}
-
 
 #' Modified version of `cat()` for vsc
 #'
@@ -69,7 +45,7 @@ isPackageFrame <- function(env = parent.frame()) {
 printToVsc <- function(ret, skipCalls=0){
   output <- paste0(ret, collapse = "\n")
 
-  lineAndFile <- .vsc.getCallingLineAndFile(skipCalls = skipCalls+1, default = list(line=0, file=''))
+  lineAndFile <- getSource(sys.call(-skipCalls))
   line <- lineAndFile$line
   file <- lineAndFile$path
   source <- list(path=file, name=basename(file))
@@ -77,34 +53,6 @@ printToVsc <- function(ret, skipCalls=0){
   sendOutputEvent(category="stdout", output = output, line=line, source=source)
 }
 
-
-#' Send info about some vars to vsc
-#'
-#' Gathers info about the specified variablesReferences and sends them to vsc
-#'
-#' @export
-#' @param refs A list of variableReferences, as specified in the scopes/previous variables
-#' @param id The id of the message sent to vsc
-#' @return None (The variable info, formatted as a nested named list is sent to vsc)
-#'
-.vsc.getVarLists <- function(refs, id = 0) {
-  varLists <- makeVarLists(refs)
-  .vsc.sendToVsc('variables', varLists, id)
-}
-
-
-#' Get Line and File info for a frameId
-#' 
-#' Get Line and File info for a frameId
-#' 
-#' @export
-#' @param frameId The id of the frame as used by `sys.call()`
-#' @param skipCalls Skip this number of frames (is substracted from `frameId`)
-#' @param default The results defaults to this if an error is encountered
-#' @return See `.vsc.getLineAndFile`
-.vsc.getCallingLineAndFile <- function(frameId = 0, skipCalls = 0, default=NULL) {
-  getSource(sys.call(frameId - skipCalls))
-}
 
 
 #' Send a message to vsc
@@ -114,13 +62,12 @@ printToVsc <- function(ret, skipCalls=0){
 #' @param message A string identifying the type of message
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
 #' @param id The message id. Is usually provided in the function call from vsc.
-#' @export
-.vsc.sendToVsc <- function(message, body = "", id = 0) {
+.vsc.sendToVsc <- function(body = "") {
   if(session$useJsonServer){
     j <- getJson(body)
     base::cat(j, '\n', sep='', file=session$jsonServerConnection)
   } else {
-    s <- .vsc.makeStringForVsc(message, body, id)
+    s <- .vsc.makeStringForVsc(body)
     base::cat(s)
   }
 }
@@ -135,11 +82,9 @@ getJson <- function(body){
 #'
 #' Prepare a message as string for vsc
 #'
-#' @param message A string identifying the type of message
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
-#' @param id The message id. Is usually provided in the function call from vsc.
 #' @return A (json) string that can be interpreted by vsc
-.vsc.makeStringForVsc <- function(message, body = "", id = 0) {
+.vsc.makeStringForVsc <- function(body = "") {
   body <- removeNonJsonElements(body)
   s <- jsonlite::toJSON(body, auto_unbox = TRUE, force = TRUE)
   r <- paste0(
@@ -180,7 +125,6 @@ removeNonJsonElements <- function(v){
     message <- err
   }
   body <- list(message=message)
-  # .vsc.sendToVsc('error', body)
   sendStoppedEvent('exception', description = 'Stopped on Exception', text = message)
   browser()
   unregisterEntryFrame()
@@ -198,7 +142,6 @@ setErrorHandler <- function(useVscOnError = TRUE){
 #'
 #' Returns `TRUE` iff an expression is being evaluated by the debugger during a breakpoint
 #'
-#' @export
 #' @return Boolean indicating whether an expression is being evaluated
 .vsc.isEvaluating <- function() {
   return(session$isEvaluating)
@@ -223,4 +166,26 @@ globalStepCallback <- function(...){
   }
   unregisterEntryFrame()
   TRUE
+}
+
+calledFromGlobal <- function() {
+  # determine if a call was made from the command line (=global) or not
+  # can be used inside other functions from this package
+  # Make sure not to nest this line: (!!!)
+  thisPackageEnv <- parent.env(environment())
+  # check if the first call (stack frame) is to a funcion from this package:
+  if (identical(parent.env(sys.frame(1)), thisPackageEnv)) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+isPackageFrame <- function(env = parent.frame()) {
+  while (!identical(env, emptyenv())) {
+    if (identical(env, globalenv())) {
+      return(FALSE)
+    }
+    env <- parent.env(env)
+  }
+  return(TRUE)
 }
