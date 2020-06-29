@@ -111,4 +111,18 @@ getNodeId <- function(R = NULL, vsc = NULL, varRef=NULL){
 }
 
 
+getNodeIdByVarRefAndName <- function(varRef, name){
+  parentId <- getNodeId(varRef = varRef)
+  childrenIds <- session$tree$getChildrenIds(parentId)
+  children <- session$tree$getContents(childrenIds)
+  matches <- sapply(children, function(child) identical(child$name, name))
+  if(length(matches>0)){
+    ind <- which(matches)[1]
+    nodeId <- childrenIds[ind]
+  } else{
+    nodeId <- 0
+  }
+  return(nodeId)
+}
+
 

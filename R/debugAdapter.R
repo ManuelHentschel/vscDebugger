@@ -278,10 +278,6 @@ continueRequest <- function(response, args, request){
   }
 }
 
-setVariableRequest <- function(response, args, request){
-    
-}
-
 setExpressionRequest <- function(response, args, request){
     
 }
