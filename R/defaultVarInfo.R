@@ -58,36 +58,12 @@ getDefaultVarInfos <- function() {
         )
       }
     ),
-    # Ellipses entry (custom type)
+    # Ellipsis (custom type)
     list(
-      name = 'EllipsesEntry',
-      doesApply = function(v) inherits(v, '.vsc.ellipsesEntry'),
-      includeAttributes = FALSE,
-      internalAttributes = function(v) list(
-        list(
-          name = '__dotEnvironment',
-          rValue = v$dotEnv
-        )
-      ),
-      childVars = list(),
-      longType = 'ellipses entry',
-      shortType = '',
-      toString = function(v) paste0(format(v$dotExpr), collapse = '\n')
-    ),
-    # Ellipses (custom type)
-    list(
-      name = 'Ellipses',
-      doesApply = function(v) inherits(v, '.vsc.ellipses'),
-      childVars = function(v) {
-        lapply(v, function(vv) {
-          class(vv) <- c('.vsc.ellipsesEntry', '.vsc.internalClass')
-          list(
-            rValue = vv,
-            name = '<Ellipses Entry Name???>'
-          )
-        })
-      },
-      longType = 'ellipses',
+      name = 'Ellipsis',
+      doesApply = function(v) inherits(v, '.vsc.ellipsis'),
+      longType = 'ellipsis',
+      toString = '<Ellipsis Arguments>',
       includeAttributes = FALSE,
       internalAttributes = list()
     ),
