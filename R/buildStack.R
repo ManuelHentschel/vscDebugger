@@ -266,6 +266,7 @@ buildVariable <- function(args){
   )
 
   allVars <- c(childVars, attrVars)
+  allVars <- fixNames(allVars)
 
   nodeArgs <- lapply(allVars, function(v){
     list(contentArgs = list(minVar = v))
