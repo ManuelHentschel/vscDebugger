@@ -45,7 +45,6 @@ getInstalledPackages <- function() {
   .packages(all.available = TRUE)
 }
 
-#' @export
 .vsc.getCompletion <- function(frameIdVsc, text, column = 0, line = 1, id = 0, onlyGlobalEnv = FALSE) {
   if (column > 1) {
     text <- substring(text, 1, column - 1)
@@ -120,8 +119,6 @@ getInstalledPackages <- function() {
     # find all children of the last variable
     targets <- getCompletionList(var, text2, envs)
   }
-
-  # .vsc.sendToVsc('completion', targets, id)
   invisible(targets)
 }
 

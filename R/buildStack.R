@@ -1,7 +1,6 @@
 
 
 
-#' @export
 .vsc.buildNewStack <- function(){ 
   id0 <- session$rootNode
   tree <- session$tree
@@ -279,28 +278,6 @@ buildVariable <- function(args){
 }
 
 
-# declare function gatherFrames(args: FramesArgs): {
-#     contentArgs: FrameArgs
-#     childrenArgs: ScopesArgs
-# }[]
-# interface FramesArgs extends ChildrenArgs {
-#     topFrameId: number;
-#     skipFromTop?: number;
-#     skipFromBottom?: number;
-#     isError: boolean;
-#     forceDummyStack?: boolean;
-#     dummyFile?: string;
-# }
-# interface FrameArgs extends ContentArgs {
-#     frameIdR: number;
-#     frameIdVsc: number;
-#     firstenv: REnvironment;
-#     dummyFile?: string;
-# }
-# interface ScopesArgs extends ChildrenArgs {
-#     firstenv: REnvironment;
-#     lastenv: REnvironment;
-# }
 gatherFrames <- function(args){
 
   # read args
@@ -319,7 +296,7 @@ gatherFrames <- function(args){
     frameIdsVsc <- c(0)
   } else{
     frameIdsR <- seq2((topFrameId - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
-    frameIdsVsc <- seq2(length(frameIdsR)) - 1
+    frameIdsVsc <- seq_along(frameIdsR) - 1
   }
 
 
@@ -345,13 +322,6 @@ gatherFrames <- function(args){
   )
 }
 
-# declare function gatherScopes(args: ScopesArgs): {
-#     contentArgs: ScopeArgs[];
-# }
-# interface ScopesArgs extends ChildrenArgs {
-#     firstenv: REnvironment;
-#     lastenv: REnvironment;
-# }
 gatherScopes <- function(args){
   # read args
   firstenv <- lget(args, 'firstenv', globalenv())
@@ -374,9 +344,6 @@ gatherScopes <- function(args){
   })
 }
 
-# declare function gatherVariables(args: VariablesArgs): {
-#     contentArgs: VariableArgs;
-# }[]
 gatherVariables <- function(args){
   # print('gathering variables...')
   # read args

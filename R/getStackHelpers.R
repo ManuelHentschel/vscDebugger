@@ -79,7 +79,6 @@ storeVarRefs <- function(variables, variableNodes){
     variableNodes,
     variables
   )
-
 }
 
 

@@ -60,7 +60,6 @@ evaluateRequest <- function(response, args, request){
 #'
 #' Evaluates an expression in a given frameId and sends the result to vsc
 #'
-#' @export
 #' @param expr The espression to be evaluated
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc

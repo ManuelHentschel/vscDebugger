@@ -4,7 +4,7 @@
 \alias{.vsc.getCallingLineAndFile}
 \title{Get Line and File info for a frameId}
 \usage{
-.vsc.getCallingLineAndFile(frameId = 0, skipCalls = 0, default = NULL)
+.vsc.getCallingLineAndFile(frameId = 0, skipCalls = 0)
 }
 \arguments{
 \item{frameId}{The id of the frame as used by \code{sys.call()}}

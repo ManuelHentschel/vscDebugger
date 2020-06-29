@@ -37,10 +37,8 @@
 
 
 
-
-
 sendResponse <- function(response){
-  .vsc.sendToVsc(message = 'response', body = response)
+  .vsc.sendToVsc(body = response)
 }
 
 prepareResponse <- function(request){
@@ -215,7 +213,7 @@ sendBreakpointEvent <- function(reason, breakpoint){
 }
 
 sendEvent <- function(event){
-  .vsc.sendToVsc(message='event', body=event, id=0)
+  .vsc.sendToVsc(body=event)
 }
 
 makeAndSendEvent <- function(eventType, body){

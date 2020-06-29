@@ -1,66 +1,7 @@
 
-#' @export
-.vsc.getCustomInfo <- function(
-  v, info, default = NULL,
-  onError = NULL, append = FALSE,
-  appendNested = FALSE, setInfo = NULL
-) {
-  # make sure default is a list, if append==TRUE
-  if(append && !is.list(default)){
-    ret <- list()
-    ret[[1]] <- default # does nothing if default==NULL
-  } else{
-    ret <- default
-  }
+# TODO:
+# User facing functions in this file need to be updated to match the new entries in VarInfo!
 
-  try({
-    # loop through varInfos
-    for (varInfo in session$varInfos) {
-      # check if varInfo provides the required info
-      if (!is.null(varInfo[[info]])) {
-        # check if varInfo applies to v
-        applies <- tryCatch(
-          applies <- varInfo$doesApply(v)[[1]],
-          error = function(e) FALSE
-        )
-        if (applies){
-          if (is.function(varInfo[[info]])) {
-            # apply function to v
-            if(is.null(setInfo)){
-              ret2 <- varInfo[[info]](v)
-            } else{
-              ret2 <- varInfo[[info]](v, setInfo)
-            }
-          } else {
-            # ...or return (constant) value
-            ret2 <- varInfo[[info]]
-          }
-
-          if (appendNested) {
-            # append nested. Used if e.g.:
-            # ret = list(values=list(1,2,3), names=list('a', 'b', 'c'))
-            # ret2 = list(values=list(4), names=list('d'))
-            ret <- appendNested(ret, ret2)
-          } else if (append){
-            # append to results and continue looking
-            ret <- append(ret, ret2)
-          } else{
-            # return only this result
-            ret <- ret2
-            break
-          }
-        }
-      }
-    }
-  }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (inherits(ret, 'try-error')) {
-    return(onError)
-  } else {
-    return(ret)
-  }
-}
-
-#' @export
 .vsc.applyVarInfos <- function(
   v,
   infos = character(0),
@@ -167,17 +108,14 @@ toAtomicBoolean <- function(v, ...){
 
 
 
-#' @export
 .vsc.resetVarInfo <- function() {
   session$varInfos <- getDefaultVarInfos()
 }
 
-#' @export
 .vsc.clearVarInfo <- function() {
   session$varInfos <- list()
 }
 
-#' @export
 .vsc.addVarInfo <- function(
   name = '',
   doesApply = NULL,
@@ -222,7 +160,6 @@ toAtomicBoolean <- function(v, ...){
   session$varInfos <- append(session$varInfos, list(varInfo), position)
 }
 
-#' @export
 .vsc.removeVarInfo <- function(position = 1) {
   if (position < 0) {
     position <- length(session$varInfos) + 1 + position
@@ -230,10 +167,9 @@ toAtomicBoolean <- function(v, ...){
   session$varInfos[position] <- NULL
 }
 
-#' @export
 .vsc.listVarInfo <- function(position = NULL) {
   if (is.null(position)) {
-    position <- seq2(session$varInfos)
+    position <- seq_along(session$varInfos)
   }
   varInfos <- .vsc.getAllVarInfos()
   varInfos <- lapply(position, function(pos) varInfos[pos])
@@ -241,7 +177,6 @@ toAtomicBoolean <- function(v, ...){
   return(varInfos)
 }
 
-#' @export
 .vsc.getVarInfo <- function(positionOrName = NULL){
   if(is.null(positionOrName)){
     return(NULL)
@@ -256,7 +191,6 @@ toAtomicBoolean <- function(v, ...){
   return(varInfo)
 }
 
-#' @export
 .vsc.getAllVarInfos <- function(){
   varInfos <- session$varInfos
   varInfos <- lapply(seq_along(varInfos), function(i){
@@ -283,7 +217,7 @@ applyTestVar <- function(varInfo, testVar){
   return(varInfo)
 }
 
-#' @export
+# Needs to be updated!
 .vsc.checkVarInfo <- function(varInfo, testCase, verbose=TRUE) {
   err <- list()
   warn <- list()

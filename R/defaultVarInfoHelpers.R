@@ -72,7 +72,6 @@ getActiveBinding <- function(name, env){
   ret <- if (getRversion() >= "4.0.0") {
     activeBindingFunction(name, env)
   } else {
-    # as.list.environment(env)[[name]]
     getInfoVar("R version >= 4.0.0 required to show active binding function!")
   }
   structure(list(bindingFunction = ret), class = c('.vsc.activeBinding', '.vsc.internalClass'))
@@ -124,11 +123,7 @@ getDotVars <- function(env) {
           ##TODO: use proper formatting function
           paste0(toString(x), collapse = ";"), 
           error = function(e) {
-            if (isTRUE(getOption('vsc.trySilent', default=TRUE))) {
-              "???"
-            } else {
-              stop(e, call. = FALSE)
-            }
+            "???"
           }
         ),
         ##TODO: which environment do we want to display here?
@@ -203,27 +198,18 @@ isPromise <- function(name, env, strict = TRUE) {
   .Call(c_is_promise, sym, env, strict)
 }
 
-getDummyVariable <- function(name) {
-  variable <- list(
-    name = name,
-    value = '???',
-    type = '???',
-    variablesReference = 0
-  )
-}
 
 
-varToStringWithCaptureOutput <- function(v) {
-  # dirty way to convert anything to string
-  # should be avoided!
-  # TODO: replace with proper use of format(...)?
-  ret <- try({
-    paste0(capture.output(v), collapse = '\n')
-  }, silent = getOption('vsc.trySilent', default=TRUE))
-  if (inherits(ret, 'try-error')) {
-    ret <- '???'
+
+unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
+  if (length(items) == 0) {
+    return(list())
   }
+  if (1 != length(unique(lapply(items, length)))) {
+    stop('Not all item-lists of the same size.')
+  }
+  makeLists <- function(...) mapply(list, ..., MoreArgs = repeatItems, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  ret <- do.call(makeLists, args = items)
+  names(ret) <- names
   return(ret)
 }
-
-

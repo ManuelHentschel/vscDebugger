@@ -100,6 +100,20 @@ getFrameName <- function(call) {
   return(name)
 }
 
+varToStringWithCaptureOutput <- function(v) {
+  # dirty way to convert anything to string
+  # should be avoided!
+  # TODO: replace with proper use of format(...)?
+  ret <- try({
+    paste0(capture.output(v), collapse = '\n')
+  }, silent = getOption('vsc.trySilent', default=TRUE))
+  if (inherits(ret, 'try-error')) {
+    ret <- '???'
+  }
+  return(ret)
+}
+
+
 
 
 getNewVarRef <- function(){
