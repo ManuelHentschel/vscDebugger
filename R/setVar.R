@@ -28,7 +28,7 @@ setVariableRequest <- function(response, args, request){
     } else{
       response$success <- FALSE
       if(is.null(successAndRValue$reason)){
-        cat("Changing the variable value was not successful.\n", file = stderr())
+        cat("<Changing the variable value was unsuccessful>\n", file = stderr())
       } else{
         cat(successAndRValue$reason, file = stderr())
       }
@@ -46,7 +46,7 @@ setVar <- function(setInfos, valueString){
   reason <- NULL
   if(is.null(target) || is.null(env)){
     success <- FALSE
-    reason <- "No set-info available.\n"
+    reason <- "<No set-info available>\n"
   } else{
     err <- try({
       tmpTracingState <- tracingState(FALSE)

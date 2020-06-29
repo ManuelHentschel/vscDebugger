@@ -114,24 +114,7 @@ getDotVars <- function(env) {
   ## Note: substitute(...()) is officially not supported, but it 
   ## works as intended for all relevant R versions (at least from R 3.0.0)
   dots <- substitute(...(), env = env)
-  ret <- lapply(
-    dots, 
-    function(x) {
-      list(
-        dotExpr = x,
-        dotCode = tryCatch(
-          ##TODO: use proper formatting function
-          paste0(toString(x), collapse = ";"), 
-          error = function(e) {
-            "???"
-          }
-        ),
-        ##TODO: which environment do we want to display here?
-        dotEnv = env
-      )
-    }
-  )
-  structure(ret, class = ".vsc.ellipses")
+  structure(dots, class = c(".vsc.ellipsis", ".vsc.internalClass"))
 } 
 
 #' Get a representation of a promise

@@ -152,3 +152,16 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
 }
 
 
+fixNames <- function(childVars){
+  names <- lapply(childVars, function(var) var$name)
+  inds <- which(duplicated(names) | names == "")
+  while(length(inds)>0){
+    for(ind in inds){
+      newName <- paste0(names[[ind]], "<", ind, ">")
+      childVars[[ind]]$name <- newName
+      names[[ind]] <- newName
+    }
+    inds <- which(duplicated(names))
+  }
+  return(childVars)
+}
