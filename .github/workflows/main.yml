@@ -19,7 +19,7 @@ jobs:
       run: |
         apt-get update
         apt-get install git ssh curl bzip2 libffi-dev -y
-    - name: Install httpgd
+    - name: Install vscDebugger
       run: |
         Rscript -e "install.packages(c('remotes', 'rcmdcheck'), repos = 'https://cloud.r-project.org')"
         Rscript -e "remotes::install_deps(dependencies = TRUE)"
@@ -40,7 +40,7 @@ jobs:
     - uses: r-lib/actions/setup-r@v1
       with:
         r-version: ${{ matrix.r }}
-    - name: Install httpgd
+    - name: Install vscDebugger
       run: |
         Rscript -e "install.packages(c('remotes', 'rcmdcheck'), repos = 'https://cloud.r-project.org', type = 'mac.binary')"
         Rscript -e "remotes::install_deps(dependencies = TRUE, type = 'mac.binary')"
