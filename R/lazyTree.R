@@ -163,6 +163,7 @@ LazyTree <- function(
       return(ids)
     }
 
+
     ### Tree Manipulation (non-lazy stuff)
 
     orphanNode <- function(id){
@@ -285,7 +286,7 @@ LazyTree <- function(
 
     ### Tree manipulation (lazy stuff)
 
-    forceChildren <- function(id, refresh=FALSE){
+    forceChildren <- function(id, refresh=FALSE, indices=integer(0)) {
       if(!refresh){
         # do nothing
       } else if(!is.null(this$nodes[[id]]$childrenArgs)) {

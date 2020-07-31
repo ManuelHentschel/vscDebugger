@@ -28,18 +28,18 @@
 }
 
 
-childrenFunction <- function(args){
+childrenFunction <- function(args, indices=integer(0)){
   # cat('\nChildrenArgs:\n')
   # print(args)
   nodeType <- lget(args, 'nodeType', '')
   if(nodeType == 'Frame'){
-    ret <- gatherFrames(args)
+    ret <- gatherFrames(args, indices)
     childType <- 'Scope'
   } else if(nodeType == 'Scope'){
-    ret <- gatherScopes(args)
+    ret <- gatherScopes(args, indices)
     childType <- 'Variable'
   } else if(nodeType == 'Variable'){
-    ret <- gatherVariables(args)
+    ret <- gatherVariables(args, indices)
     childType <- 'Variable'
   } else {
     stop("nodeType must be specified for children")
@@ -279,7 +279,7 @@ buildVariable <- function(args){
 }
 
 
-gatherFrames <- function(args){
+gatherFrames <- function(args, indices=integer(0)){
 
   # read args
   topFrameId <- lget(args, 'topFrameId', sys.nframe()-1)
@@ -323,7 +323,7 @@ gatherFrames <- function(args){
   )
 }
 
-gatherScopes <- function(args){
+gatherScopes <- function(args, indices=integer(0)){
   # read args
   firstenv <- lget(args, 'firstenv', globalenv())
   lastenv <- lget(args, 'lastenv', globalenv())
@@ -345,7 +345,7 @@ gatherScopes <- function(args){
   })
 }
 
-gatherVariables <- function(args){
+gatherVariables <- function(args, indices=integer(0)){
   # print('gathering variables...')
   # read args
   rValue <- lget(args, 'rValue', NULL)

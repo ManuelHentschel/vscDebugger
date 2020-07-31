@@ -111,7 +111,7 @@ export declare module LazyTree {
         getContent(id: NodeId): Content;
 
         // retrieves the childrenIds of a node
-        getChildrenIds(id: NodeId): NodeId[];
+        getChildrenIds(id: NodeId, indices?: number[]): NodeId[];
 
         // retrieve parent Id
         getParentId(id: NodeId): NodeId;
@@ -123,7 +123,7 @@ export declare module LazyTree {
         getContents(ids: NodeId[]): Content[];
 
         // gets the contents of the children of a node
-        getChildrenContents(id: NodeId): Content[];
+        getChildrenContents(id: NodeId, indices?: number[]): Content[];
 
         // converts the tree to a NestedList  (up to given depth)
         treeToList(id: NodeId, depth: number): NestedList;
@@ -141,7 +141,7 @@ export declare module LazyTree {
     type ContentFunction = (args?: ContentArgs) => LazyNodeArgs;
 
     // used to compute the children of a node
-    type ChildrenFunction = (args?: ChildrenArgs) => LazyNodeArgs[];
+    type ChildrenFunction = (args?: ChildrenArgs, indices?: number[]) => LazyNodeArgs[];
 
     // arguments passed to ContentFunction to retrieve content of a node
     interface ContentArgs {
@@ -211,7 +211,7 @@ export declare module LazyTree {
 
         // // Tree manipulation (lazy stuff)
         // computes the children of a node (if not ready yet)
-        forceChildren(id: NodeId, refresh?: boolean): NodeId[];
+        forceChildren(id: NodeId, refresh?: boolean, indices?: number[]): NodeId[];
 
         // computes the content of a node (if not ready yet)
         forceContent(id: NodeId, refresh?: boolean): Content;
@@ -240,11 +240,11 @@ export declare module LazyTree {
 
         // if refresh==true and childrenArgs are present, the content is cleared and computed anew
         // forces and retrieves the childrenIds of a node
-        getChildrenIds(id: NodeId, refresh?: boolean): NodeId[]
+        getChildrenIds(id: NodeId, indices?: number[], refresh?: boolean): NodeId[]
 
         // if refresh==true, the entire children list is refreshed if possible, else only the childrenContents (if possible)
         // forces and gets the contents of the children of a node
-        getChildrenContents(id: NodeId, refresh?: boolean): Content[];
+        getChildrenContents(id: NodeId, indices?: number[], refresh?: boolean): Content[];
 
         // converts the tree to a NestedList  (up to given depth)
         // refreshes contents/children if requested
