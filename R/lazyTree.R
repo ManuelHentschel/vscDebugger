@@ -32,29 +32,35 @@ LazyTree <- function(
     # methods
 
     ### construction
-    getNewNodeId <- function(parentId=0L){
+    getNewNodeId <- function(parentId=0L, count=1L){
       # id <- findFirstNull()
-      id <- length(this$nodes)+1
-      this$nodes[[id]] <- getEmptyNode(id, parentId)
-      if(parentId>0){
-        this$nodes[[parentId]]$childrenIds <- c(this$nodes[[parentId]]$childrenIds, id)
+      if(count <= 0){
+        return(integer(0))
       }
-      return(id)
+      id0 <- length(this$nodes)+1
+      id1 <- as.integer(id0 + count - 1L)
+      ids <- id0:id1
+      emptyNodes <-  getEmptyNode(ids, parentId)
+      this$nodes[ids] <- emptyNodes
+      if(parentId>0){
+        this$nodes[[parentId]]$childrenIds <- c(this$nodes[[parentId]]$childrenIds, ids)
+      }
+      return(ids)
     }
 
-    getEmptyNode <- function(nodeId=0L, parentId=0L){
-      return(list(
-        nodeId = nodeId,
-        parentId = parentId,
+    getEmptyNode <- function(nodeIds=c(0L), parentId=0L){
+      lapply(nodeIds, function(nodeId) list(
+          nodeId = nodeId,
+          parentId = parentId,
 
-        childrenIds = integer(0),
-        childrenReady = TRUE,
-        childrenArgs = NULL,
+          childrenIds = integer(0),
+          childrenReady = TRUE,
+          childrenArgs = NULL,
 
-        contentContent = NULL,
-        contentReady = TRUE,
-        contentProducesChildren = FALSE,
-        contentArgs = NULL
+          contentContent = NULL,
+          contentReady = TRUE,
+          contentProducesChildren = FALSE,
+          contentArgs = NULL
       ))
     }
 
@@ -129,7 +135,8 @@ LazyTree <- function(
         }
       } else{ # store children
         children <- args$childrenChildren
-        ids <- sapply(children, storeToNewNode, id)
+        # ids <- sapply(children, storeToNewNode, id)
+        ids <- storeToNewNodes(children, id)
         this$nodes[[id]]$childrenIds <- ids
         this$nodes[[id]]$childrenReady <- TRUE
         if(keepArgs && !is.null(childrenArgs)){
@@ -147,6 +154,14 @@ LazyTree <- function(
       return(id)
     }
 
+    storeToNewNodes <- function(argses, parentId=0L, preserve=NULL){
+      count <- length(argses)
+      ids <- getNewNodeId(parentId, count)
+# print(system.time(
+      mapply(storeToNode, argses, ids, MoreArgs = list(preserve))
+# ))
+      return(ids)
+    }
 
     ### Tree Manipulation (non-lazy stuff)
 
@@ -346,10 +361,11 @@ LazyTree <- function(
     getContent <- function(id, refresh=FALSE){
       if(id>0){
         forceContent(id, refresh)
-        lget(this$nodes[[id]], 'contentContent', NULL)
+        ret <- lget(this$nodes[[id]], 'contentContent', NULL)
       } else{
-        NULL
+        ret <- NULL
       }
+      ret
     }
 
     getChildrenIds <- function(id, refresh=FALSE){
