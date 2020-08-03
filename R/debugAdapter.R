@@ -170,6 +170,18 @@ sendOutputEvent <- function(
   ))
 }
 
+makeCustomEvent <- function(reason=NULL, body=list()){
+  event <- makeEvent("custom")
+  if(!is.null(reason)){
+    body$reason <- reason
+  }
+  event$body <- body
+  event
+}
+sendCustomEvent <- function(reason=NULL, body=list()){
+  sendEvent(makeCustomEvent(reason, body))
+}
+
 
 makeStoppedEvent <- function(reason="breakpoint", description=NULL, text=NULL){
   event <- makeEvent("stopped")
