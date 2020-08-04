@@ -46,10 +46,10 @@ export declare module LazyTree {
         )
 
         // create an empty node with parent specified by parentId
-        getNewNodeId(parentId: NodeId): NodeId;
+        getNewNodeId(parentId: NodeId, count?: number): NodeId[];
 
         // create an empty node (is not stored to nodelist yet)
-        getEmptyNode(nodeId: NodeId, parentId: NodeId): Node;
+        getEmptyNode(nodeId: NodeId[], parentId: NodeId): Node[];
 
 
         // // Node assignment
@@ -59,6 +59,9 @@ export declare module LazyTree {
 
         // store node to new node with parent specified by parentId
         storeToNewNode(args: NodeArgs, parentId: NodeId): NodeId;
+
+        // store nodes to new nodes with parent specified by parentId
+        storeToNewNodes(argses: NodeArgs[], parentId: NodeId): NodeId[];
 
 
         // // Tree manipulation
@@ -249,8 +252,10 @@ export declare module LazyTree {
 
 
         // // Trivial Overloads (Node->LazyNode, NodeArgs->LazyNodeArgs)
-        getEmptyNode(nodeId: NodeId, parentId: NodeId): LazyNode;
+        getEmptyNode(nodeId: NodeId[], parentId: NodeId): LazyNode[];
         storeToNode(args: LazyNodeArgs, id: NodeId): void;
         storeToNewNode(args: LazyNodeArgs, parentId: NodeId): NodeId;
+        storeToNewNodes(argses: LazyNodeArgs[], parentId: NodeId): NodeId[];
+
     }
 }

@@ -8,7 +8,7 @@ getDefaultVarInfos <- function() {
       name = 'NULL',
       doesApply = is.null,
       childVars = list(),
-      hasChildren = FALSE,
+      nChildVars = 0,
       shortType = '',
       longType = 'NULL',
       toString = 'NULL'
@@ -18,6 +18,7 @@ getDefaultVarInfos <- function() {
       name = 'Promise',
       doesApply = function(v) inherits(v, '.vsc.promise'),
       childVars = list(),
+      nChildVars = 0,
       shortType = '',
       longType = 'promise',
       toString = function(v) paste0(format(v$code), collapse = "; "),
@@ -36,18 +37,14 @@ getDefaultVarInfos <- function() {
             )
           ))
         }
-      },
-      hasChildren = TRUE,
-      includeAttributes = FALSE
+      }
     ),
     # Active binding
     list(
       name = 'ActiveBinding',
       doesApply = function(v) inherits(v, '.vsc.activeBinding'),
       longType = 'active binding',
-      hasChildren = TRUE,
       toString = 'Active binding',
-      includeAttributes = FALSE, # TODO: Can active bindings have non-active attributes?
       internalAttributes = list(),
       childVars = function(v) {
         list(
@@ -56,7 +53,8 @@ getDefaultVarInfos <- function() {
             rValue = v$bindingFunction
           )
         )
-      }
+      },
+      nChildVars = 1
     ),
     # Ellipsis (custom type)
     list(
@@ -64,7 +62,6 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) inherits(v, '.vsc.ellipsis'),
       longType = 'ellipsis',
       toString = '<Ellipsis Arguments>',
-      includeAttributes = FALSE,
       internalAttributes = list()
     ),
     # info variable (info by the debugger if there was an error etc.)
@@ -72,18 +69,17 @@ getDefaultVarInfos <- function() {
       name = 'InfoVar',
       doesApply = function(v) inherits(v, '.vsc.infoVar'),
       childVars = list(),
+      nChildVars = 0,
       shortType = '',
       longType = function(v) v$type,
-      hasChildren = FALSE,
-      toString = function(v) v$text,
-      includeAttributes = FALSE
+      toString = function(v) v$text
     ),
     # .Random.seed (TEMPORARY FIX)
     list(
       name = '.Random.seed',
       doesApply = function(v) !is.null(v) && identical(v, get0(".Random.seed", globalenv())),
       childVars = list(),
-      hasChildren = FALSE
+      nChildVars = 0
       # toString = 'c(KW:$%&...)'
     ),
     # environment
@@ -104,8 +100,10 @@ getDefaultVarInfos <- function() {
         })
         ret
       },
-      toString = format,
-      hasChildren = function(v) length(ls(v, all.names = TRUE)) > 0
+      nChildVars = function(v){
+        length(ls(v, all.names = TRUE))
+      },
+      toString = format
     ),
     # data.frame
     list(
@@ -141,12 +139,8 @@ getDefaultVarInfos <- function() {
           USE.NAMES = FALSE
         )
       },
-      hasChildren = function(v) {
-        if( length(v) > 1 || getOption('vsc.showAttributes', TRUE)){
-          TRUE
-        } else{
-          NULL
-        }
+      nChildVars = function(v){
+        length(v)
       },
       shortType = 'factor',
       longType = 'factor'
@@ -155,7 +149,6 @@ getDefaultVarInfos <- function() {
     list(
       name = 'MatrixRow',
       doesApply = function(v) inherits(v, '.vsc.matrixRow'),
-      includeAttributes = FALSE,
       internalAttributes = list(),
       customAttributes = list(),
       toString = function(v) {
@@ -219,7 +212,17 @@ getDefaultVarInfos <- function() {
           setter = setters
         ))
       },
-      hasChildren = TRUE,
+      nChildVars = function(v){
+        byRow <- (
+          is.matrix(v) && getOption('vsc.matricesByRow', TRUE) || 
+          is.data.frame(v) && getOption('vsc.dataFramesByRow', FALSE) 
+        )
+        if(byRow){
+          nrow(v)
+        } else{
+          ncol(v)
+        }
+      },
       shortType = function(v) {
         paste0('matrix[', nrow(v), ',', ncol(v), ']')
       },
@@ -244,7 +247,9 @@ getDefaultVarInfos <- function() {
           )
         })
       },
-      hasChildren = TRUE,
+      nChildVars = function(v){
+        length(v)
+      },
       shortType = 'list',
       longType = 'list'
     ),
@@ -275,7 +280,9 @@ getDefaultVarInfos <- function() {
           )
         })
       },
-      hasChildren = TRUE,
+      nChildVars = function(v){
+        length(v)
+      },
       shortType = 'c',
       longType = 'vector'
     ),
@@ -293,7 +300,13 @@ getDefaultVarInfos <- function() {
           )))
         }
       },
-      hasChildren = function(v) !(is.name(v) || is.symbol(v)),
+      nChildVars = function(v){
+        if(is.name(v) || is.symbol(v)){
+          0
+        } else{
+          length(as.list(v))
+        }
+      },
       shortType = '',
       longType = 'language',
       toString = function(v) {
@@ -314,10 +327,11 @@ getDefaultVarInfos <- function() {
         values <- lapply(names, function(s) slot(v, s))
         unsummarizeLists(list(rValue = values, name = names))
       },
-      hasChildren = TRUE,
+      nChildVars = function(v){
+        length(slotNames(v))
+      },
       shortType = 'S4',
       longType = 'S4',
-      includeAttributes = FALSE,
       internalAttributes = function(v) {
         attrs <- attributes(v)
         slots <- slotNames(v)
@@ -344,13 +358,6 @@ getDefaultVarInfos <- function() {
           ),
           error = function(e) list()
         )
-      },
-      hasChildren = function(v){
-        if(getOption('vsc.showCustomAttributes')){
-          TRUE
-        } else{
-          NULL
-        }
       }
     ),
     # function
@@ -365,13 +372,6 @@ getDefaultVarInfos <- function() {
           )
         )
       },
-      hasChildren = function(v){
-        if(getOption('vsc.showCustomAttributes', TRUE)){
-          TRUE
-        } else{
-          getOption('vsc.showAttributes', TRUE) && !is.null(attributes(v))
-        }
-      },
       shortType = '',
       longType = 'function',
       toString = function(v) {
@@ -382,13 +382,14 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Scalar',
       doesApply = function(v) is.atomic(v) && length(v) == 1 && is.null(attributes(v)),
-      hasChildren = FALSE,
       toString = function(v) {
         if(is.numeric(v) || is.logical(v) || is.character(v)){
           names(v) <- NULL
         }
         paste(deparse(v), collapse = '\n', sep = ';')
-      }
+      },
+      childVars = list(),
+      nChildVars = 0
     ),
     # named scalar
     list(
@@ -407,10 +408,10 @@ getDefaultVarInfos <- function() {
       name = 'Default',
       doesApply = function(v) TRUE,
       childVars = list(),
+      nChildVars = 0,
       shortType = '',
       longType = function(v) typeof(v),
       type = function(v) typeof(v),
-      includeAttributes = TRUE,
       internalAttributes = function(v) {
         attr <- attributes(v)
         names <- names(attr)
@@ -429,24 +430,6 @@ getDefaultVarInfos <- function() {
         )
       },
       customAttributes = list(),
-      hasChildren = function(v) {
-        if(length(v)>1){
-          return(TRUE)
-        } else if(getOption('vsc.showAttributes') && !is.null(attributes(v))){
-          return(TRUE)
-        } else {
-          childVars <- .vsc.applyVarInfos(v, infos='childVars')[[1]]
-          if(length(childVars)>0){
-            return(TRUE)
-          } else if(getOption('vsc.showCustomAttributes')){
-            customAttributes <- .vsc.applyVarInfos(v, stackingInfos = 'customAttributes')[[1]]
-            customAttributes <- unlist(customAttributes, recursive = FALSE)
-            return(length(customAttributes)>0)
-          } else{
-            return(FALSE)
-          }
-        }
-      },
       toString = function(v) {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
       },

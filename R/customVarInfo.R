@@ -6,7 +6,7 @@
   v,
   infos = character(0),
   stackingInfos = character(0),
-  verbose = FALSE
+  verbose = getOption('vsc.verboseVarInfos', FALSE)
 ) {
   # check args
   if(is.null(stackingInfos)) {
