@@ -48,7 +48,11 @@ printToVsc <- function(ret, skipCalls=0){
   lineAndFile <- getSource(sys.call(-skipCalls))
   line <- lineAndFile$line
   file <- lineAndFile$path
-  source <- list(path=file, name=basename(file))
+  if(!identical(file, "")){
+    source <- list(path=file, name=basename(file))
+  } else{
+    source <- NULL
+  }
 
   sendOutputEvent(category="stdout", output = output, line=line, source=source)
 }
