@@ -4,14 +4,10 @@
 \alias{.vsc.makeStringForVsc}
 \title{Prepare a message as string for vsc}
 \usage{
-.vsc.makeStringForVsc(message, body = "", id = 0)
+.vsc.makeStringForVsc(body = "")
 }
 \arguments{
-\item{message}{A string identifying the type of message}
-
 \item{body}{The body of the message. Must be convertible to JSON. Usually named lists.}
-
-\item{id}{The message id. Is usually provided in the function call from vsc.}
 }
 \value{
 A (json) string that can be interpreted by vsc

@@ -1,5 +1,105 @@
+# Sent as very first request
+# Contains info about the debug session itself, not the specific file/function etc.
+initializeRequest <- function(response, args, request){
+  body <- list()
+  # support restart
+  body$supportsRestartRequest <- TRUE
+
+  # the adapter implements the configurationDoneRequest.
+  body$supportsConfigurationDoneRequest <- TRUE
+
+  # make VS Code to use 'evaluate' when hovering over source
+  body$supportsEvaluateForHovers <- FALSE
+
+  # make VS Code to show a 'step back' button
+  body$supportsStepBack <- FALSE
+
+  # make VS Code to support data breakpoints
+  body$supportsDataBreakpoints <- FALSE
+
+  # make VS Code to support completion in REPL
+  body$supportsCompletionsRequest <- TRUE
+  body$completionTriggerCharacters <- list("[", "$", ":", "@" )
+
+  # make VS Code to send cancelRequests
+  body$supportsCancelRequest <- FALSE
+
+  # make VS Code send the breakpointLocations request
+  body$supportsBreakpointLocationsRequest <- FALSE
+
+  # enable exception-info (not working???)
+  body$supportsExceptionInfoRequest <- FALSE
+  body$supportsExceptionOptions <- TRUE
+  body$exceptionBreakpointFilters <- list(
+    list(
+      filter = 'fromFile',
+      label = 'Errors from R file',
+      default = TRUE
+    ),
+    list(
+      filter = 'fromEval',
+      label = 'Errors from debug console',
+      default = FALSE
+    )
+  )
+  
+  # 
+  body$supportsClipboardContext <- TRUE
+  body$supportsSetVariable <- TRUE
+
+  # assign to session
+  session$isInitialized <- TRUE
+  session$isConfigurationDone <- FALSE
+
+  rStrings <- lget(args, 'rStrings', list())
+  lapply(names(rStrings), function(name){
+    session$rStrings[[name]] <- rStrings[[name]]
+  })
+
+  options(prompt = paste0(session$rStrings$prompt, '\n'))
+  options(continue = paste0(session$rStrings$continue, '\n'))
+  options(browserNLdisabled = TRUE)
+
+  session$useJsonServer <- lget(args, 'useJsonServer', FALSE)
+  if(session$useJsonServer){
+    session$jsonPort <- lget(args, 'jsonPort', 0)
+    session$jsonHost <- lget(args, 'jsonHost', '127.0.0.1')
+    session$jsonServerConnection <- socketConnection(
+      host = session$jsonHost,
+      port = session$jsonPort,
+      server = FALSE,
+      blocking = FALSE,
+      open = "r+b"
+    )
+  }
+
+  session$useSinkServer <- lget(args, 'useSinkServer', FALSE)
+  if(session$useSinkServer){
+    session$sinkPort <- lget(args, 'sinkPort', 0)
+    session$sinkHost <- lget(args, 'sinkHost', 'localhost')
+    session$sinkServerConnection <- socketConnection(
+      host = session$sinkHost,
+      port = session$sinkPort,
+      server = FALSE,
+      blocking = FALSE,
+      open = "r+b"
+    )
+    sink(session$sinkServerConnection)
+  }
+
+  session$threadId <- lget(args, 'threadId', 1)
+
+  response$body <- body
+  sendResponse(response)
+
+  initializedEvent <- makeEvent("initialized")
+  sendEvent(initializedEvent)
+
+}
 
 
+# Sent as second request
+# Contains info about the file/function debugged and file-specifig settings
 launchRequest <- function(response, args, request){
   ## args
   session$debugMode <- lget(
@@ -63,6 +163,8 @@ launchRequest <- function(response, args, request){
 }
 
 
+# Sent at the end of the launch sequence
+# Indicates that all configuration is done and that debugging can start
 configurationDoneRequest <- function(response, args, request){
   # no args
 
@@ -98,11 +200,15 @@ configurationDoneRequest <- function(response, args, request){
 
   # do stuff
   if(session$debugMode == 'file'){
+    registerLaunchFrame()
     setErrorHandler(session$breakOnErrorFromFile)
     .vsc.debugSource(session[['file']])
+    unregisterLaunchFrame()
   } else if (session$debugMode == 'function'){
+    registerLaunchFrame(skipCalls=2)
     setErrorHandler(session$breakOnErrorFromFile)
     eval(call(session$mainFunction), globalenv())
+    unregisterLaunchFrame()
   } else{
     setErrorHandler(session$breakOnErrorFromConsole)
   }
@@ -115,76 +221,4 @@ configurationDoneRequest <- function(response, args, request){
     sendTerminatedEvent()
     sendExitedEvent()
   }
-}
-
-initializeRequest <- function(response, args, request){
-  body <- list()
-  # support restart
-  body$supportsRestartRequest <- TRUE
-
-  # the adapter implements the configurationDoneRequest.
-  body$supportsConfigurationDoneRequest <- TRUE
-
-  # make VS Code to use 'evaluate' when hovering over source
-  body$supportsEvaluateForHovers <- FALSE
-
-  # make VS Code to show a 'step back' button
-  body$supportsStepBack <- FALSE
-
-  # make VS Code to support data breakpoints
-  body$supportsDataBreakpoints <- FALSE
-
-  # make VS Code to support completion in REPL
-  body$supportsCompletionsRequest <- TRUE
-  body$completionTriggerCharacters <- list("[", "$", ":", "@" )
-
-  # make VS Code to send cancelRequests
-  body$supportsCancelRequest <- FALSE
-
-  # make VS Code send the breakpointLocations request
-  body$supportsBreakpointLocationsRequest <- FALSE
-
-  # enable exception-info (not working???)
-  body$supportsExceptionInfoRequest <- FALSE
-  body$supportsExceptionOptions <- TRUE
-  exceptionBreakpointFilters <- list(
-    list(
-      filter = 'fromFile',
-      label = 'Errors from R file',
-      default = TRUE
-    ),
-    list(
-      filter = 'fromEval',
-      label = 'Errors from debug console',
-      default = FALSE
-    )
-  )
-  body$exceptionBreakpointFilters <- exceptionBreakpointFilters
-  
-  # 
-  body$supportsClipboardContext <- TRUE
-  body$supportsSetVariable <- FALSE
-  body$supportsSetExpression <- FALSE
-
-  # assign to session
-  session$isInitialized <- TRUE
-  session$isConfigurationDone <- FALSE
-
-  rStrings <- lget(args, 'rStrings', list())
-  lapply(names(rStrings), function(name){
-    session$rStrings[[name]] <- rStrings[[name]]
-  })
-
-  options(prompt = paste0(session$rStrings$prompt, '\n'))
-  options(continue = paste0(session$rStrings$continue, '\n'))
-  options(browserNLdisabled = TRUE)
-
-  session$threadId <- lget(args, 'threadId', 1)
-
-  response$body <- body
-  sendResponse(response)
-
-  initializedEvent <- makeEvent("initialized")
-  sendEvent(initializedEvent)
-
 }

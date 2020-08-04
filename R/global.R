@@ -1,5 +1,51 @@
 # create environment for global data used by package functions
 session <- local({
+  setBreakpointsInPackages <- FALSE
+  allowGlobalDebugging <- FALSE
+  breakOnErrorFromConsole <- FALSE
+  breakOnErrorFromFile <- TRUE
+  assignToAns <- TRUE
+
+  overwritePrint <- TRUE
+  overwriteCat <- TRUE
+  overwriteSource <- TRUE
+
+  rStrings <- list(
+    delimiter0 = '<v\\s\\c>',
+    delimiter1 = '</v\\s\\c>',
+    prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+    continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+    append = ' ### <v\\s\\c\\COMMAND>'
+  )
+
+  threadId <- 1
+
+  useJsonServer <- FALSE
+  jsonPort <- 0
+  jsonHost <- 'localhost'
+  jsonServerConnection <- NULL
+
+  useSinkServer <- FALSE
+  sinkPort <- 0
+  sinkHost <- 'localhost'
+  sinkServerConnection <- NULL
+
+  noDebug <- FALSE # currently not used
+  debugMode <- NULL
+  workingDirectory <- NULL
+  file <- NULL
+  mainFunction <- NULL
+  includePackageScopes <- NULL
+
+  isInitialized <- FALSE
+  isConfigurationDone <- FALSE
+  isEvaluating <- FALSE
+  isError <- FALSE;
+  entryFrames <- c()
+  launchFrames <- c()
+  ignoreNextCallback <- FALSE
+
+  tree <- NULL
   stackNode <- 0
   frameIds <- list(
     vsc = list(),
@@ -11,57 +57,26 @@ session <- local({
     node = list()
   )
   varRef <- 1
-  tree <- NULL
-  setBreakpointsInPackages <- FALSE
   breakpointId <- 1
   fileBreakpoints <- list()
-  threadId <- 1
-
-  overwritePrint <- TRUE
-  overwriteCat <- TRUE
-  overwriteSource <- TRUE
-
-  ignoreNextCallback <- FALSE
-  isError <- FALSE
-
-  noDebug <- FALSE
-
-  varLists <- list()
-  varListArgs <- list()
-  varListPersistent <- list()
-  isRunningDebugSession <- FALSE
-  isEvaluating <- FALSE
-  frameIdsR <- list()
-  frameIdsVsc <- list()
-  breakpoints <- list()
-  varInfos <- list()
-  allowGlobalDebugging <- FALSE
-  srcBreakpoints <- list()
-  breakOnErrorFromConsole <- FALSE
-  breakOnErrorFromFile <- TRUE
-  assignToAns <- TRUE
-
-  rStrings <- list(
-    delimiter0 = '<v\\s\\c>',
-    delimiter1 = '</v\\s\\c>',
-    prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    append = ' ### <v\\s\\c\\COMMAND>'
-  )
-
-  time <- Sys.time()
 
   environment()
 })
 
 .onLoad <- function(...) {
   options(error = traceback)
-  setOptionIfNull('vsc.previewPromises', FALSE)
   setOptionIfNull('vsc.trySilent', TRUE)
-  setOptionIfNull('vsc.matricesByRow', TRUE)
-  setOptionIfNull('vsc.evaluateActiveBindings', FALSE)
-  setOptionIfNull('vsc.defaultIncludePackageScopes', FALSE)
 
+  setOptionIfNull('vsc.evaluateActiveBindings', FALSE)
+  setOptionIfNull('vsc.previewPromises', FALSE)
+  setOptionIfNull('vsc.matricesByRow', TRUE)
+  setOptionIfNull('vsc.dataFramesByRow', FALSE)
+  setOptionIfNull('vsc.convertFactorEntries', FALSE)
+  setOptionIfNull('vsc.showAttributes', TRUE)
+  setOptionIfNull('vsc.showCustomAttributes', TRUE)
+
+
+  setOptionIfNull('vsc.defaultIncludePackageScopes', FALSE)
   setOptionIfNull('vsc.includePackageScopes', FALSE)
   setOptionIfNull('vsc.setBreakpointsInPackages', FALSE)
   setOptionIfNull('vsc.assignToAns', TRUE)

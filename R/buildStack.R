@@ -1,17 +1,19 @@
 
 
 
-#' @export
-.vsc.buildNewStack <- function(topFrame = parent.frame()){
-
+.vsc.buildNewStack <- function(){ 
   id0 <- session$rootNode
   tree <- session$tree
 
+  topFrameId <- getTopFrameId()
+
+  skipFromBottom <- getSkipFromBottom()
+
   stackArgs <- list(
     nodeType = 'Stack',
-    topFrame = topFrame,
+    topFrameId = topFrameId,
     skipFromTop = 0,
-    skipFromBottom = 0,
+    skipFromBottom = skipFromBottom,
     isError = FALSE,
     forceDummyStack = FALSE,
     dummyFile = '',
@@ -87,6 +89,12 @@ contentFunction <- function(args){
   if(!is.null(ret$childrenArgs)){
     ret$childrenArgs$nodeType <- childType
   }
+  for (i in seq_along(ret$childrenChildren)) {
+    if (!is.null(ret$childrenChildren[[i]]$contentArgs)) {
+      ret$childrenChildren[[i]]$contentArgs$nodeType <- childType
+    }
+  }
+
   # cat('\nResult:\n')
   # print(ret)
   # cat('\n')
@@ -99,14 +107,7 @@ contentFunction <- function(args){
 # interface stackArgs extends ContentArgs {
 # }
 buildStack <- function(args){
-  # read args
-  topFrame <- lget(args, 'topFrame', globalenv())
-  skipFromTop <- lget(args, 'skipFromTop', 0)
-  skipFromBottom <- lget(args, 'skipFromBottom', 0)
-  isError <- lget(args, 'isError', FALSE)
-  forceDummyStack <- lget(args, 'forceDummyStack', FALSE)
-  dummyFile <- lget(args, "dummyFile", '')
-
+  # no args relevant
   # nothing to do
 
   # return
@@ -169,7 +170,9 @@ buildFrame <- function(args){
     presentationHint = presentationHint,
     frameIdR = frameIdR
   )
-  frame$source <- source
+  if(lget(source, "isFile", FALSE)){
+    frame$source <- source
+  }
   frame$line <- line
   frame$column <- column
   frame$endLine <- endLine
@@ -200,19 +203,81 @@ buildVariable <- function(args){
   setter <- lget(minVar, 'setter', NULL)
   setInfo <- lget(minVar, 'setInfo', NULL)
 
+  computeChildVars <- getOption('vsc.eagerlyComputeChildVars', FALSE)
+
   # do stuff
+  # specify VarInfos
+  infos <- c(
+    'toString',
+    'type',
+    'evaluateName'
+  )
+  if (computeChildVars) {
+    infos <- c(infos, 'childVars')
+  } else {
+    infos <- c(infos, 'nChildVars')
+  }
+
+  if(getOption('vsc.showAttributes', TRUE)){
+    infos <- c(infos, 'internalAttributes')
+  }
+
+  stackingInfos <- c()
+  if(getOption('vsc.showCustomAttributes', TRUE)){
+    stackingInfos <- c('customAttributes')
+  }
+
+  # get VarInfos
   infos <- .vsc.applyVarInfos(
     rValue,
-    c(
-      'toString',
-      'type',
-      'evaluateName',
-      'hasChildren'
-    )
+    infos = infos,
+    stackingInfos = stackingInfos
   )
 
-  hasChildren <- infos$hasChildren
+  # switch to computeChildVars==TRUE, if nChildVars not provided!
+  nChildVars <- lget(infos, 'nChildVars', NULL)
+  if(!computeChildVars && is.null(nChildVars)){
+    computeChildVars <- TRUE
+    tmpInfos <- .vsc.applyVarInfos(
+      rValue,
+      infos = c('childVars')
+    )
+    childVars <- lget(tmpInfos, 'childVars', NULL)
+    infos$childVars <- childVars
+    infos$nChildVars <- length(childVars)
+  }
 
+  # handle attributes
+  internalAttributes <- lget(infos, 'internalAttributes', list())
+  customAttributes <- lget(infos, 'customAttributes', list(list()))
+  customAttributes <- unlist(customAttributes, recursive = FALSE)
+  attrVars <- c(internalAttributes, customAttributes)
+  namedVariables <- length(attrVars)
+
+  # handle childVars
+  if(computeChildVars){
+    childVars <- lget(infos, "childVars", list())
+    nChildVars <- length(childVars)
+    allVars <- c(childVars, attrVars)
+    allVars <- fixNames(allVars)
+    nodeArgs <- lapply(allVars, function(v) {
+      list(contentArgs = list(minVar = v))
+    })
+    ret <- list(
+      childrenChildren = nodeArgs
+    )
+  } else{
+    nChildVars <- lget(infos, 'nChildVars', NULL)
+    ret <- list(
+      childrenArgs = list(
+        rValue = rValue
+      )
+    )
+  }
+
+  indexedVariables <- nChildVars
+
+  hasChildren <- (namedVariables + indexedVariables > 0)
   if(hasChildren){
     variablesReference <- getNewVarRef()
   } else{
@@ -227,74 +292,47 @@ buildVariable <- function(args){
     value = infos$toString,
     type = infos$type,
     evaluateName = infos$evaluateName,
-    hasChildren = infos$hasChildren,
+    hasChildren = hasChildren,
 
     setter = setter,
     setInfo = setInfo,
 
     rValue = rValue,
-    variablesReference = variablesReference # is later matched with nodeId
+    variablesReference = variablesReference, # is later matched with nodeId
+
+    namedVariables = namedVariables,
+    indexedVariables = indexedVariables,
+    expensive = TRUE
   )
 
-  variablesArgs = list(
-    rValue = rValue
-  )
+  ret$contentContent <- variable
 
-  list(
-    contentContent = variable,
-    childrenArgs = variablesArgs
-  )
+
+  return(ret)
 }
 
 
-# declare function gatherFrames(args: FramesArgs): {
-#     contentArgs: FrameArgs
-#     childrenArgs: ScopesArgs
-# }[]
-# interface FramesArgs extends ChildrenArgs {
-#     topFrame: REnvironment;
-#     skipFromTop?: number;
-#     skipFromBottom?: number;
-#     isError: boolean;
-#     forceDummyStack?: boolean;
-#     dummyFile?: string;
-# }
-# interface FrameArgs extends ContentArgs {
-#     frameIdR: number;
-#     frameIdVsc: number;
-#     firstenv: REnvironment;
-#     dummyFile?: string;
-# }
-# interface ScopesArgs extends ChildrenArgs {
-#     firstenv: REnvironment;
-#     lastenv: REnvironment;
-# }
 gatherFrames <- function(args){
 
   # read args
-  topFrame <- lget(args, 'topFrame', globalenv())
+  topFrameId <- lget(args, 'topFrameId', sys.nframe()-1)
   skipFromTop <- lget(args, 'skipFromTop', 0)
   skipFromBottom <- lget(args, 'skipFromBottom', 0)
-  isError <- lget(args, 'isError', FALSE)
   forceDummyStack <- lget(args, 'forceDummyStack', FALSE)
   dummyFile <- lget(args, 'dummyFile', '')
 
-  isError <- lget(session, 'isError', FALSE)
 
   # do stuff
-  if (isError) {
-    skipFromTop = skipFromTop + 1
-  }
 
-  nFrames <- getNFrames(topFrame)
-  if(nFrames == 0 || forceDummyStack){
+  if(topFrameId <= 0 || forceDummyStack){
     forceDummyStack <- TRUE
     frameIdsR <- c(0)
     frameIdsVsc <- c(0)
   } else{
-    frameIdsR <- seq2((nFrames - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
-    frameIdsVsc <- seq2(length(frameIdsR)) - 1
+    frameIdsR <- seq2((topFrameId - skipFromTop), (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
+    frameIdsVsc <- seq_along(frameIdsR) - 1
   }
+
 
   # return
   makeNodeArgs <- function(frameIdR, frameIdVsc){
@@ -318,13 +356,6 @@ gatherFrames <- function(args){
   )
 }
 
-# declare function gatherScopes(args: ScopesArgs): {
-#     contentArgs: ScopeArgs[];
-# }
-# interface ScopesArgs extends ChildrenArgs {
-#     firstenv: REnvironment;
-#     lastenv: REnvironment;
-# }
 gatherScopes <- function(args){
   # read args
   firstenv <- lget(args, 'firstenv', globalenv())
@@ -347,19 +378,26 @@ gatherScopes <- function(args){
   })
 }
 
-# declare function gatherVariables(args: VariablesArgs): {
-#     contentArgs: VariableArgs;
-# }[]
 gatherVariables <- function(args){
   # print('gathering variables...')
   # read args
   rValue <- lget(args, 'rValue', NULL)
 
   # do stuff
+  infos <- c('childVars')
+  if(getOption('vsc.showAttributes', TRUE)){
+    infos <- c(infos, 'internalAttributes')
+  }
+
+  stackingInfos <- c()
+  if(getOption('vsc.showCustomAttributes', TRUE)){
+    stackingInfos <- c('customAttributes')
+  }
+
   infos <- .vsc.applyVarInfos(
     rValue,
-    infos = c('childVars', 'internalAttributes'),
-    stackingInfos = 'customAttributes'
+    infos = infos,
+    stackingInfos = stackingInfos
   )
 
   childVariables <- c(

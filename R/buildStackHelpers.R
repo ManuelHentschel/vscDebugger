@@ -15,8 +15,9 @@ getSource <- function(call, frameIdR = 0) {
   srcfile <- attr(srcref, 'srcfile')
 
   originalSrcfile <- srcfile$original
+  filename <- lget(srcfile, 'filename', '')
 
-  if(!is.null(originalSrcfile)){
+  if(filename == '' && !is.null(originalSrcfile)){
     srcfile <- originalSrcfile
   }
 
@@ -27,9 +28,11 @@ getSource <- function(call, frameIdR = 0) {
   wd <- srcfile$wd
   path <- srcfile$filename
   name <- basename(path)
-  path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
+  if(path != ''){
+    path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
+  }
 
-  srcbody <- paste0(srcfile$lines, '## end of source body', collapse='\n')
+  srcbody <- paste0(srcfile$lines, collapse='\n')
   isFile <- file.exists(path)
 
   if(isFile){
@@ -97,6 +100,20 @@ getFrameName <- function(call) {
   return(name)
 }
 
+varToStringWithCaptureOutput <- function(v) {
+  # dirty way to convert anything to string
+  # should be avoided!
+  # TODO: replace with proper use of format(...)?
+  ret <- try({
+    paste0(capture.output(v), collapse = '\n')
+  }, silent = getOption('vsc.trySilent', default=TRUE))
+  if (inherits(ret, 'try-error')) {
+    ret <- '???'
+  }
+  return(ret)
+}
+
+
 
 
 getNewVarRef <- function(){
@@ -135,3 +152,16 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
 }
 
 
+fixNames <- function(childVars){
+  names <- lapply(childVars, function(var) var$name)
+  inds <- which(duplicated(names) | names == "")
+  while(length(inds)>0){
+    for(ind in inds){
+      newName <- paste0(names[[ind]], "<", ind, ">")
+      childVars[[ind]]$name <- newName
+      names[[ind]] <- newName
+    }
+    inds <- which(duplicated(names))
+  }
+  return(childVars)
+}

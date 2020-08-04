@@ -25,7 +25,18 @@ export declare module Session {
       append: string;
     }
 
-    threadId: number; //dummy
+    threadId: number; //dummy, but must match the one used in the DAP host
+
+    // server
+    useJsonServer?: boolean;
+    jsonPort?: number;
+    jsonHost?: string;
+    jsonServerConnection?: RValue; // only if useJsonServer==TRUE
+
+    useSinkServer?: boolean;
+    sinkPort?: number;
+    sinkHost?: string;
+    sinkServerConnection?: RValue; // only if useSinkServer==TRUE
 
     // debugSession:
     noDebug: boolean; // todo
@@ -38,8 +49,11 @@ export declare module Session {
     // state:
     isInitialized: boolean;
     isConfigurationDone: boolean;
-    isRunningDebugSession: boolean;
     isEvaluating: boolean;
+    isError: boolean;
+    entryFrames: number[];
+    launchFrames: number;
+    ignoreNextCallback: boolean;
 
     // data:
     tree?: LazyTree.LazyTree;
@@ -56,17 +70,5 @@ export declare module Session {
     varRef: number;
     breakpointId: number;
     fileBreakpoints: Breakpoints.FileBreakpoints[];
-
-
-    // (deprecated)
-    varLists: any; // deprecated
-    varListArgs: any; // deprecated
-    varListPersistent: any; // deprecated
-
-    frameIdsR: any; // deprecated
-    frameIdsVsc: any; // deprecated
-    breakpoints: any; // deprecated
-    varInfos: any; // deprecated
-    srcBreakpoints: any; // deprecated
   }
 }

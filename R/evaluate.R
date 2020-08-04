@@ -11,9 +11,14 @@ evaluateRequest <- function(response, args, request){
     return(invisible(NULL))
   }
 
+  if(getOption("vsc.ignoreCrInEval", TRUE)){
+    expr <- gsub("\r", "", expr)
+  }
+
   silent <- (context == 'watch')
   assignToAns <- session$assignToAns
   catchErrors <- !(session$breakOnErrorFromConsole)
+  deactivateTracing <- isCalledFromBrowser() || silent
 
   valueAndVisible <- .vsc.evalInFrame(
     expr,
@@ -21,7 +26,8 @@ evaluateRequest <- function(response, args, request){
     silent = silent,
     id = 0,
     assignToAns = assignToAns,
-    catchErrors = catchErrors
+    catchErrors = catchErrors,
+    deactivateTracing = deactivateTracing
   )
 
   if(valueAndVisible$visible || context == 'watch'){
@@ -60,15 +66,15 @@ evaluateRequest <- function(response, args, request){
 #'
 #' Evaluates an expression in a given frameId and sends the result to vsc
 #'
-#' @export
 #' @param expr The espression to be evaluated
 #' @param frameId The Id of the frame (as given by vsc)
 #' @param id The Id of the message sent to vsc
 #' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
 #' @param catchErrors Whether to catch errors or let them be handled by `options(error = ...)`
-.vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE) {
+.vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE, deactivateTracing = silent) {
+  registerEntryFrame()
   # evaluate calls that were made from top level cmd line in the .GlobalEnv
-  if (session$allowGlobalDebugging && calledFromGlobal()) {
+  if (!isCalledFromBrowser()) {
     env <- .GlobalEnv
   } else {
     frameIdR <- convertFrameId(vsc = frameId)
@@ -79,15 +85,18 @@ evaluateRequest <- function(response, args, request){
     }
   }
 
-  # prepare settings
-  tmpallowGlobalDebugging <- session$allowGlobalDebugging
-  session$allowGlobalDebugging <- FALSE
+  registerLaunchFrame(8)
+
+  if(deactivateTracing){
+    ts <- eval(quote(tracingState(FALSE)), envir=env)
+    # ts <- tracingState(FALSE)
+    sendCustomEvent('continueOnBrowserPrompt', list(value=TRUE))
+  }
 
   if(silent){
     # prepare settings
     setErrorHandler(FALSE)
     session$isEvaluating <- TRUE
-    ts <- tracingState(FALSE)
 
     # eval
     valueAndVisible <- list(value=NULL, visible=FALSE)
@@ -107,7 +116,6 @@ evaluateRequest <- function(response, args, request){
     }
 
     # reset settings
-    tracingState(ts)
     session$isEvaluating <- FALSE
     setErrorHandler(session$breakOnErrorFromConsole)
   } else{
@@ -138,14 +146,18 @@ evaluateRequest <- function(response, args, request){
     }
   }
 
-  # reset settings
-  session$allowGlobalDebugging <- tmpallowGlobalDebugging
-  setErrorHandler(session$breakOnErrorFromConsole)
+  if(deactivateTracing){
+    tracingState(ts)
+    sendCustomEvent('continueOnBrowserPrompt', list(value=FALSE))
+  }
+
+  unregisterLaunchFrame()
 
   # assign to .ans
   if(assignToAns && !silent){
     .GlobalEnv$.ans <- valueAndVisible$value
   }
   
+  unregisterEntryFrame()
   return(valueAndVisible)
 }

@@ -5,6 +5,7 @@
 # remove.packages('vscDebugger')
 
 devtools::document()
-# devtools::install()
+devtools::install(dependencies = FALSE)
 # devtools::install(args = c('--no-lock'), reload = FALSE, quick = TRUE)
-devtools::install(args = c('--no-staged-install', '--with-keep.source', '--no-exec'))
+# devtools::install(args = c('--no-staged-install', '--with-keep.source', '--no-exec'))
+# devtools::install(args = c('--no-staged-install', '--with-keep.source', '--no-exec', '--no-byte-compile', '--no-lib', '--no-inst', '--no-lock'))

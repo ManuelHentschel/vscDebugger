@@ -4,12 +4,12 @@
 \alias{.vsc.sendToVsc}
 \title{Send a message to vsc}
 \usage{
-.vsc.sendToVsc(message, body = "", id = 0)
+.vsc.sendToVsc(body = "")
 }
 \arguments{
-\item{message}{A string identifying the type of message}
-
 \item{body}{The body of the message. Must be convertible to JSON. Usually named lists.}
+
+\item{message}{A string identifying the type of message}
 
 \item{id}{The message id. Is usually provided in the function call from vsc.}
 }

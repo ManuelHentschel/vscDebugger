@@ -3,7 +3,6 @@
 #'
 #' Set breakpoints in a file, and sends a confirmation message to vsc
 #'
-#' @export
 #' @param srcfile The file in which to set breakpoints
 #' @param lines A list of lines in which to set breakpoints
 #' @param ids A list of numbers, specifying the id of each breakpoint. Same length as `lines`
@@ -28,11 +27,10 @@
   linesInFile <- length(readLines(file))
 
   refList <- list()
-  # for(i in seq2(lines)) {
-  for (i in seq2(bps)) {
+  for (i in seq_along(bps)) {
     bp <- bps[[i]]
     line <- bp$requestedLine
-    maxOffset <- bp$maxOffset
+    maxOffset <- lget(bp, 'maxOffset', 0)
     maxLine <- min(line + maxOffset, linesInFile)
 
     # find line numbers in functions
@@ -76,8 +74,6 @@
     )
   }
 
-  smBps <- summarizeLists(bps)
-
   # send breakpoints to vsc
   sendBreakpoints(bps, id = id)
 
@@ -115,12 +111,7 @@ fixSrcrefOnTracedFunction <- function(what, at, where){
 
 sendBreakpoints <- function(bps = list(), acknowledge = TRUE, id = 0) {
   for (bp in bps) {
-    .vsc.sendToVsc(message = 'breakpointVerification', body = bp, id = 0)
     sendBreakpointEvent("changed", bp)
-  }
-  # send separate acknowledge message to make sure that all breakpoints are received first
-  if(acknowledge){
-    .vsc.sendToVsc(message = 'acknowledge', id = id)
   }
 }
 
@@ -143,7 +134,7 @@ summarizeRefs <- function(refList) {
   summarizedRefs <- list()
   for (ref in refList) {
     found <- FALSE
-    for (j in seq2(summarizedRefs)) {
+    for (j in seq_along(summarizedRefs)) {
       sRef <- summarizedRefs[[j]]
       if (identical(ref$name, sRef$name) && identical(ref$env, sRef$env)) {
         found <- TRUE
