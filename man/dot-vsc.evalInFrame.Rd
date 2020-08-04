@@ -10,7 +10,8 @@
   silent = TRUE,
   id = 0,
   assignToAns = TRUE,
-  catchErrors = TRUE
+  catchErrors = TRUE,
+  deactivateTracing = silent
 )
 }
 \arguments{
