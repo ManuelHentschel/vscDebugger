@@ -143,7 +143,7 @@ buildFrame <- function(args){
 
   if(isDummyFrame){
     firstenv <- globalenv()
-    name <- "Global Workspace"
+    name <- 'Global Workspace'
     presentationHint <- 'label'
     source <- NULL
     line <- 0
