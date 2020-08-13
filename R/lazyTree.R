@@ -129,7 +129,7 @@ LazyTree <- function(
         this$nodes[[id]]$childrenIds <- integer(0)
         this$nodes[[id]]$contentProducesChildren <- FALSE
 
-        lazy <- lget(args$childrenArgs, 'lazy', defaultArgs$defaultPreserve)
+        lazy <- lget(args$childrenArgs, 'lazy', defaultArgs$defaultLazy)
         if(!lazy){
           forceChildren(id)
         }
@@ -178,6 +178,7 @@ LazyTree <- function(
     deleteNode <- function(id){
       parentId <- orphanNode(id)
       deletedNodes <- internalDeleteNode(id)
+      trimTree()
       invisible(deletedNodes)
     }
     internalDeleteNode <- function(id){
@@ -192,6 +193,7 @@ LazyTree <- function(
         deletedNodes <- sapply(this$nodes[[id]]$childrenIds, internalDeleteNode)
         this$nodes[[id]]$childrenIds <- integer(0)
         this$nodes[[id]]$childrenReady <- FALSE
+        trimTree()
         # this$nodes[[id]]$childrenReady <- (
         #   !is.null(this$nodes[[id]]$childrenArgs) ||
         #   !is.null(this$nodes[[id]]$contentArgs) && this$nodes[[id]]$contentProducesChildren
@@ -222,15 +224,18 @@ LazyTree <- function(
     }
 
     trimTree <- function(){
-      ind <- 0
+      len0 <- length(this$nodes)
+      lastInd <- 0
       for(ind in rev(seq_along(this$nodes))){
-        if(is.null(this$nodes[[ind]])){
-          this$nodes[[ind]] <- NULL
-        } else{
+        if(!is.null(this$nodes[[ind]])){
+          lastInd <- ind
           break
         }
       }
-      invisible(ind)
+      if(lastInd < len0){
+        this$nodes[(lastInd+1):len0] <- NULL
+      }
+      invisible(lastInd + 1)
     }
 
     moveNode <- function(id0, id1){

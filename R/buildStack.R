@@ -203,14 +203,21 @@ buildVariable <- function(args){
   setter <- lget(minVar, 'setter', NULL)
   setInfo <- lget(minVar, 'setInfo', NULL)
 
+  computeChildVars <- getOption('vsc.eagerlyComputeChildVars', FALSE)
+
   # do stuff
+  # specify VarInfos
   infos <- c(
     'toString',
     'type',
-    'evaluateName',
-    'hasChildren',
-    'childVars'
+    'evaluateName'
   )
+  if (computeChildVars) {
+    infos <- c(infos, 'childVars')
+  } else {
+    infos <- c(infos, 'nChildVars')
+  }
+
   if(getOption('vsc.showAttributes', TRUE)){
     infos <- c(infos, 'internalAttributes')
   }
@@ -220,22 +227,55 @@ buildVariable <- function(args){
     stackingInfos <- c('customAttributes')
   }
 
-
+  # get VarInfos
   infos <- .vsc.applyVarInfos(
     rValue,
     infos = infos,
     stackingInfos = stackingInfos
   )
 
-  childVars <- lget(infos, 'childVars', list())
+  # switch to computeChildVars==TRUE, if nChildVars not provided!
+  nChildVars <- lget(infos, 'nChildVars', NULL)
+  if(!computeChildVars && is.null(nChildVars)){
+    computeChildVars <- TRUE
+    tmpInfos <- .vsc.applyVarInfos(
+      rValue,
+      infos = c('childVars')
+    )
+    childVars <- lget(tmpInfos, 'childVars', NULL)
+    infos$childVars <- childVars
+    infos$nChildVars <- length(childVars)
+  }
+
+  # handle attributes
   internalAttributes <- lget(infos, 'internalAttributes', list())
   customAttributes <- lget(infos, 'customAttributes', list(list()))
-  customAttributes <- unlist(infos$customAttributes, recursive = FALSE)
-
+  customAttributes <- unlist(customAttributes, recursive = FALSE)
   attrVars <- c(internalAttributes, customAttributes)
-
   namedVariables <- length(attrVars)
-  indexedVariables <- length(childVars)
+
+  # handle childVars
+  if(computeChildVars){
+    childVars <- lget(infos, "childVars", list())
+    nChildVars <- length(childVars)
+    allVars <- c(childVars, attrVars)
+    allVars <- fixNames(allVars)
+    nodeArgs <- lapply(allVars, function(v) {
+      list(contentArgs = list(minVar = v))
+    })
+    ret <- list(
+      childrenChildren = nodeArgs
+    )
+  } else{
+    nChildVars <- lget(infos, 'nChildVars', NULL)
+    ret <- list(
+      childrenArgs = list(
+        rValue = rValue
+      )
+    )
+  }
+
+  indexedVariables <- nChildVars
 
   hasChildren <- (namedVariables + indexedVariables > 0)
   if(hasChildren){
@@ -262,20 +302,13 @@ buildVariable <- function(args){
 
     namedVariables = namedVariables,
     indexedVariables = indexedVariables,
-    expensive = FALSE
+    expensive = TRUE
   )
 
-  allVars <- c(childVars, attrVars)
-  allVars <- fixNames(allVars)
+  ret$contentContent <- variable
 
-  nodeArgs <- lapply(allVars, function(v){
-    list(contentArgs = list(minVar = v))
-  })
 
-  list(
-    contentContent = variable,
-    childrenChildren = nodeArgs
-  )
+  return(ret)
 }
 
 

@@ -69,7 +69,7 @@ variablesRequest <- function(response, args, request){
   tree <- session$tree
   nodeId <- getNodeId(varRef = varRef)
 
-  variableNodes <- tree$getChildrenIds(nodeId, refresh=TRUE)
+  variableNodes <- tree$getChildrenIds(nodeId)
   variable <- tree$getContent(nodeId)
   namedVariables <- lget(variable, 'namedVariables', 0)
   indexedVariables <- lget(variable, 'indexedVariables', 0)

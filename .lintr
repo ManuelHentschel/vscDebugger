@@ -1,0 +1,40 @@
+linters: with_defaults(
+    object_name_linter = NULL, # 631
+    single_quotes_linter = NULL, # 452
+    # paren_brace_linter = NULL, # 350
+    spaces_left_parentheses_linter = NULL, # 211
+    infix_spaces_linter = NULL, # 111
+    line_length_linter = NULL, # 87
+    trailing_whitespace_linter = NULL, # 40
+    commented_code_linter = NULL, # 34
+    object_usage_linter = NULL, # 13
+    # spaces_inside_linter = NULL, # 9
+    trailing_blank_lines_linter = NULL, # 8
+    cyclocomp_linter = NULL, # 7
+    # open_curly_linter = NULL, # 6
+    commas_linter = NULL, # 4
+    # object_length_linter = NULL, # 3
+    assignment_linter = NULL, # 2
+    dummy_linter = NULL
+  )
+exclusions: list(
+    "man/convertFrameId.Rd",
+    "man/dot-vsc.cat.Rd",
+    "man/dot-vsc.evalInFrame.Rd",
+    "man/dot-vsc.isEvaluating.Rd",
+    "man/dot-vsc.makeStringForVsc.Rd",
+    "man/dot-vsc.onError.Rd",
+    "man/dot-vsc.print.Rd",
+    "man/dot-vsc.sendToVsc.Rd",
+    "man/dot-vsc.setBreakpoints.Rd",
+    "man/getDotVars.Rd",
+    "man/getFrameName.Rd",
+    "man/getNFrames.Rd",
+    "man/getPromiseInfo.Rd",
+    "man/getPromiseVar.Rd",
+    "man/getScopeEnvs.Rd",
+    "man/getSource.Rd",
+    "man/getVarInEnv.Rd",
+    "man/isPromise.Rd",
+    "man/seq2.Rd"
+  )
