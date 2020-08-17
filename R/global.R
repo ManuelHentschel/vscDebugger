@@ -1,6 +1,5 @@
 # create environment for global data used by package functions
 session <- local({
-  setBreakpointsInPackages <- FALSE
   allowGlobalDebugging <- FALSE
   breakOnErrorFromConsole <- FALSE
   breakOnErrorFromFile <- TRUE
@@ -20,6 +19,8 @@ session <- local({
 
   threadId <- 1
 
+  varInfos <- NULL
+
   useJsonServer <- FALSE
   jsonPort <- 0
   jsonHost <- 'localhost'
@@ -36,6 +37,7 @@ session <- local({
   file <- NULL
   mainFunction <- NULL
   includePackageScopes <- NULL
+  setBreakpointsInPackages <- FALSE
 
   isInitialized <- FALSE
   isConfigurationDone <- FALSE
@@ -45,21 +47,23 @@ session <- local({
   launchFrames <- c()
   ignoreNextCallback <- FALSE
 
-  tree <- NULL
-  stackNode <- 0
-  frameIds <- list(
-    vsc = list(),
-    R = list(),
-    node = list()
-  )
-  varRefs <- list(
-    varRef = list(),
-    node = list()
-  )
-  varRef <- 1
+  # tree <- NULL
+  rootNode <- NULL
+  # stackNodeId <- 0
+  # frameIds <- list(
+  #   vsc = list(),
+  #   R = list(),
+  #   node = list()
+  # )
+  # varRefs <- list(
+  #   varRef = list(),
+  #   node = list()
+  # )
+  # varRef <- 1
   breakpointId <- 1
   fileBreakpoints <- list()
 
+  lockEnvironment(environment())
   environment()
 })
 
@@ -89,12 +93,10 @@ session <- local({
   setOptionIfNull('vsc.defaultFile', 'main.R')
 
   session$varInfos <- getDefaultVarInfos()
-
-  session$tree <- LazyTree(
-    childrenFunction = childrenFunction,
-    contentFunction = contentFunction,
-    defaultContentProducesChildren = TRUE
-  )
-  session$rootNode <- session$tree$getNewNodeId()
+  session$rootNode <- RootNode$new()
 }
 
+#' @export
+.vsc.getSession <- function(){
+  return(session)
+}

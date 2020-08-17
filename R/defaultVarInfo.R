@@ -257,7 +257,9 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Vector',
       doesApply = function(v) {
-        if(is.factor(v)){
+        if(is.environment(v)){
+          FALSE
+        } else if(is.factor(v)){
           FALSE
         } else{
           attributes(v) <- NULL

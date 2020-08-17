@@ -1,6 +1,6 @@
 
 
-// These types have no meaning typescript
+// These types have no meaning in typescript
 // Can be used to specify types that are only used within R
 
 export type RValue = any

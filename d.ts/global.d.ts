@@ -1,7 +1,6 @@
 
 
 import { Breakpoints } from './breakpointManagement';
-import { LazyTree } from './lazyTree';
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
 
 export declare module Session {
@@ -56,18 +55,6 @@ export declare module Session {
     ignoreNextCallback: boolean;
 
     // data:
-    tree?: LazyTree.LazyTree;
-    stackNode: LazyTree.NodeId;
-    frameIds: {
-      vsc: number[];
-      R: number[];
-      node: number[]
-    }
-    varRefs: {
-      varRef: number[];
-      node: number[];
-    }
-    varRef: number;
     breakpointId: number;
     fileBreakpoints: Breakpoints.FileBreakpoints[];
   }
