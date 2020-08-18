@@ -90,7 +90,7 @@ getRequestedBreakpointLines <- function(path){
     file <- lget(fbp$source, 'path', '')
     if(file != ''){
       bps <- lget(fbp, 'breakpoints', list())
-      includePackageScopes <- lget(session, 'includePackageScopes', FALSE)
+      includePackageScopes <- lget(session, 'setBreakpointsInPackages', FALSE)
       .vsc.setBreakpoints(file, bps, includePackageScopes = includePackageScopes)
     }
   }

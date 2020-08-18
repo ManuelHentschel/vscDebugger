@@ -119,7 +119,7 @@ launchRequest <- function(response, args, request){
   )
   session$setBreakpointsInPackages <- lget(
     args,
-    'includePackageScopes',
+    'setBreakpointsInPackages',
     getOption('vsc.setBreakpointsInPackages')
   )
   session$overwriteCat <- lget(
