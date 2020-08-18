@@ -116,9 +116,12 @@ varToStringWithCaptureOutput <- function(v) {
 
 
 
-getNewVarRef <- function(){
-  session$varRef <- session$varRef + 1
-}
+# getNewVarRef <- function(increment=TRUE){
+#   if(increment){
+#     session$varRef <- session$varRef + 1
+#   }
+#   session$varRef
+# }
 
 
 #' Get the number of frames
