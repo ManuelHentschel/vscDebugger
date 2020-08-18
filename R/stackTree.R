@@ -42,7 +42,7 @@
 
 # The StackNode is computed anew after every step/breakpoint
 # The FrameNodes correspond to active frames
-# By default, 'internal' frames are omitted
+# By default, 'internal' frames of the debugger are omitted
 # Since Scopes are basically the same as environments (-> possible variables),
 # they are not implemented separately
 # Attributes are represented by VariableNodes (just like list entries etc.)
@@ -52,7 +52,7 @@
 
 # In general, nodes are only computed if/when they are requested
 # In theory, the tree can be nested infinitely deeply
-# Nodes that are not longer needed are deleted by the garbage collector
+# Nodes that are no longer needed are deleted by the garbage collector
 
 
 
@@ -354,6 +354,10 @@ FrameNode <- R6::R6Class(
                 self$endColumn <- source$endColumn + 1
             }
             self$id <- self$frameIdVsc
+
+            if(!getOption('vsc.includeFrameColumn', TRUE)){
+                self$endColumn <- NULL
+            }
             
             if (lget(source, "isFile", FALSE)) {
                 self$source <- source
