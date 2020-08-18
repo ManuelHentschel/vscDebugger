@@ -1,15 +1,69 @@
 
-library(R6)
 
-options(vsc.showAttributes = FALSE)
-options(vsc.showCustomAttributes = FALSE)
+# This file defines the R6 classes used to internally represent the stack tree
+# The general structure of the tree is as follows:
+
+#     RootNode
+#     |
+#     +-StackNode
+#     | |
+#     | +FrameNode1
+#     | | |
+#     | | +-ScopeNode1
+#     | | | |
+#     | | | +-VariableNode1
+#     | | | |
+#     | | | +-VariableNode2
+#     | | |   |
+#     | | |   +-VariableNode2a
+#     | | |   +-VariableNode2b
+#     | | |   +-VariableNode2...
+#     | | |
+#     | | +-ScopeNode2
+#     | | +-ScopeNode3
+#     | | +-ScopeNode...
+#     | |
+#     | |
+#     | +-FrameNode...
+#     |   |
+#     |   +ScopeNode...
+#     |
+#     +-EvalRootNode
+#       |
+#       +-VariableNode1
+#       | |
+#       | +-VariableNode1a
+#       | +-VariableNode1b
+#       | +-VariableNode1..
+#       |
+#       +-VariableNode...
+
+# The RootNode is produced once per debug session and only has two children
+
+# The StackNode is computed anew after every step/breakpoint
+# The FrameNodes correspond to active frames
+# By default, 'internal' frames are omitted
+# Since Scopes are basically the same as environments (-> possible variables),
+# they are not implemented separately
+# Attributes are represented by VariableNodes (just like list entries etc.)
+
+# The EvalRootNode is used to store the variables produced as the result of
+# eval requests. These are persistent for the entire debug session.
+
+# In general, nodes are only computed if/when they are requested
+# In theory, the tree can be nested infinitely deeply
+# Nodes that are not longer needed are deleted by the garbage collector
 
 
-Node <- R6Class(
+
+# Base class for all nodes
+Node <- R6::R6Class(
     classname = "Node",
     public = list(
         nodeType = "Node",
+        # Get the parent of a node
         getParent = function() private$parent,
+        # Find the ancestors of a node. Should always terminate with the RootNode
         getAncestors = function(includeStartingNode = FALSE) {
             if(is.null(private$parent)){
                 ancestors <- list()
@@ -21,13 +75,21 @@ Node <- R6Class(
             }
             return(ancestors)
         },
+        # Get the childNodes of a node
+        # Meant to be overloaded
+        # Should return all children if no arguments are supplied
+        # Should not cause extra computation if args$lazy==TRUE
         getChildren = function(args=list()) private$children,
+        # Get the content of a node
+        # Meant to be overloaded
         getContent = function(args=list()) private$content,
+        # Initialize a node
         initialize = function(args=list(), parent=NULL) {
             if(!is.null(parent)){
                 private$parent <- parent
             }
         },
+        # Recursively find a child node, by different properties
         findChildNode = function(args=list()) {
             findBy <- lget(args, 'findBy', '')
             if(findBy == 'varRef'){
@@ -72,6 +134,8 @@ Node <- R6Class(
             }
             return(NULL)
         },
+        # Get a new VarRef, unique within the tree
+        # (Recursively) delegates to the parent node if present (-> RootNode)
         getNewVarRef = function(){
             if(is.null(private$parent)){
                 private$newVarRef <- private$newVarRef + 1
@@ -92,7 +156,8 @@ Node <- R6Class(
     )
 )
 
-MetaNode <- R6Class(
+# Nodes that are used only for 'organization'
+MetaNode <- R6::R6Class(
     classname = "MetaNode",
     public = list(
         initialize = function(args=list(), parent=NULL){
@@ -103,7 +168,8 @@ MetaNode <- R6Class(
     inherit = Node
 )
 
-RootNode <- R6Class(
+# Unique root node of a tree
+RootNode <- R6::R6Class(
     classname = "RootNode",
     public = list(
         getStackNode = function(args=list()) {
@@ -118,9 +184,6 @@ RootNode <- R6Class(
             }
             return(private$children$evalRootNode)
         },
-        getChildren = function(args=list()){
-            return(private$children)
-        },
 
         initialize = function(args=list(), parent=NULL){
             super$initialize(args, parent)
@@ -131,7 +194,8 @@ RootNode <- R6Class(
     inherit = MetaNode
 )
 
-EvalRootNode <- R6Class(
+# Used as root for variable nodes produced by eval requests
+EvalRootNode <- R6::R6Class(
     classname = "EvalRootNode",
     public = list(
         addChild = function(args=list()){
@@ -148,7 +212,8 @@ EvalRootNode <- R6Class(
     inherit = MetaNode
 )
 
-StackNode <- R6Class(
+# Unique root of the stack
+StackNode <- R6::R6Class(
     classname = "StackNode",
     public = list(
         # from DebugProtocol.StackTraceResponse
@@ -227,7 +292,7 @@ StackNode <- R6Class(
     inherit = Node
 )
 
-FrameNode <- R6Class(
+FrameNode <- R6::R6Class(
     classname = "FrameNode",
     public = list(
         # from DebugProtocol.StackFrame
@@ -247,7 +312,6 @@ FrameNode <- R6Class(
         frameIdVsc = NULL,
         dummyFile = NULL,
         isDummyFrame = NULL,
-        parent = NULL,
         firstenv = NULL,
         lastenv = NULL,
         call = NULL,
@@ -257,8 +321,8 @@ FrameNode <- R6Class(
             super$initialize(args, parent)
 
             # read args
-            self$frameIdR <- lget(args, "frameIdR", list(0))
-            self$frameIdVsc <- lget(args, "frameIdVsc", list(0))
+            self$frameIdR <- lget(args, "frameIdR", 0)
+            self$frameIdVsc <- lget(args, "frameIdVsc", 0)
             self$dummyFile <- lget(args, "dummyFile", "")
             self$isDummyFrame <- lget(args, "isDummyFrame", FALSE)
             
@@ -330,13 +394,13 @@ FrameNode <- R6Class(
     inherit = Node
 )
 
-VariableNode <- R6Class(
+VariableNode <- R6::R6Class(
     classname = "VariableNode",
     public = list(
         # from DebugProtocol.Variable
         name = '',
-        value = NULL,
-        type = NULL,
+        value = '',
+        type = '',
         presentationHint = NULL,
         evaluateName = NULL,
         variablesReference = NULL,
@@ -352,8 +416,6 @@ VariableNode <- R6Class(
         customAttributes = NULL,
         attrVars = NULL,
         childVars = NULL,
-        childIndex = NULL, # as used by parent
-        childFilter = NULL, # 'indexed'|'named' as used by parent
 
         updateValue = function(newValue) {
             args <- list(
@@ -362,7 +424,7 @@ VariableNode <- R6Class(
                 setter = self$setter,
                 setInfo = self$setInfo
             )
-            self$initialize(args, parent=self$parent)
+            self$initialize(args, parent=private$parent)
         },
         initialize = function(args=list(), parent=NULL){
             super$initialize(args, parent)
@@ -372,7 +434,6 @@ VariableNode <- R6Class(
             self$rValue <- lget(args, "rValue", NULL)
             self$setter <- lget(args, "setter", NULL)
             self$setInfo <- lget(args, "setInfo", NULL)
-            self$childIndex <- lget(args, "childIndex", NULL)
 
             self$childVars <- NULL
             self$attrVars <- NULL
@@ -487,7 +548,7 @@ VariableNode <- R6Class(
     inherit = Node
 )
 
-ScopeNode <- R6Class(
+ScopeNode <- R6::R6Class(
     classname = "ScopeNode",
     public = list(
         # from DebugProtocol.Scope
@@ -505,11 +566,6 @@ ScopeNode <- R6Class(
     private = list(),
     inherit = VariableNode
 )
-
-
-
-
-
 
 
 

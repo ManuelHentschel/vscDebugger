@@ -16,7 +16,7 @@ evaluateRequest <- function(response, args, request){
   }
 
   silent <- (context == 'watch')
-  assignToAns <- session$assignToAns
+  assignToAns <- getOption('vsc.assignToAns', TRUE)
   catchErrors <- !(session$breakOnErrorFromConsole)
   deactivateTracing <- isCalledFromBrowser() || silent
 
@@ -31,17 +31,6 @@ evaluateRequest <- function(response, args, request){
   )
 
   if(valueAndVisible$visible || context == 'watch'){
-    # variableArgs <- list(
-    #   nodeType = 'Variable',
-    #   minVar = list(
-    #     name = 'evalResult',
-    #     rValue = valueAndVisible$value
-    #   )
-    # )
-    # nodeId <- session$tree$storeToNewNode(list(contentArgs = variableArgs), session$rootNodeId)
-    # variable <- session$tree$getContent(nodeId)
-    # storeVarRef(node = nodeId, varRef = variable$variablesReference)
-
     args <- list(
       name = 'evalResult',
       rValue = valueAndVisible$value

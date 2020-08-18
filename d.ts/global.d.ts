@@ -2,31 +2,33 @@
 
 import { Breakpoints } from './breakpointManagement';
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
+import { VarInfo } from './customVarInfo';
+import { StackTree } from './stackTree';
 
 export declare module Session {
   interface Session {
     // settings:
-    setBreakpointsInPackages: boolean;
-    allowGlobalDebugging: boolean;
-    breakOnErrorFromConsole: boolean;
-    breakOnErrorFromFile: boolean;
-    assignToAns: boolean;
+    // (usually changed globally, persisting across debug sessions)
+    varInfos: VarInfo[];
 
+    // debugSession:
+    // (set for this debug session)
+    allowGlobalDebugging: boolean;
     overwritePrint: boolean;
     overwriteCat: boolean;
     overwriteSource: boolean;
 
-    rStrings: {
-      delimiter0: string;
-      delimiter1: string;
-      prompt: string;
-      continue: string;
-      append: string;
-    }
+    noDebug: boolean; // currently not used
+    debugMode: ("function" | "file" | "workspace")
+    workingDirectory: string;
+    file: string;
+    mainFunction: string;
+    includePackageScopes: boolean;
+    setBreakpointsInPackages: boolean;
 
-    threadId: number; //dummy, but must match the one used in the DAP host
-
-    // server
+    // server/communication:
+    // (set for this debug session)
+    // (should not influence the behaviour of the "R facing part" of the debugger)
     useJsonServer?: boolean;
     jsonPort?: number;
     jsonHost?: string;
@@ -37,15 +39,27 @@ export declare module Session {
     sinkHost?: string;
     sinkServerConnection?: RValue; // only if useSinkServer==TRUE
 
-    // debugSession:
-    noDebug: boolean; // todo
-    debugMode: ("function" | "file" | "workspace")
-    workingDirectory: string;
-    file: string;
-    mainFunction: string;
-    includePackageScopes: boolean;
+    rString: {
+      delimiter0: string;
+      delimiter1: string;
+      prompt: string;
+      continue: string;
+      append: string;
+    }
+    threadId: number; //dummy, but must match the one used in the DAP host
+
+    rStrings: {
+      delimiter0: string;
+      delimiter1: string;
+      prompt: string;
+      continue: string;
+      append: string;
+    }
 
     // state:
+    // (is managed by the debugger itself and might change frequently)
+    breakOnErrorFromConsole: boolean;
+    breakOnErrorFromFile: boolean;
     isInitialized: boolean;
     isConfigurationDone: boolean;
     isEvaluating: boolean;
@@ -53,9 +67,11 @@ export declare module Session {
     entryFrames: number[];
     launchFrames: number;
     ignoreNextCallback: boolean;
+    breakpointId: number;
 
     // data:
-    breakpointId: number;
+    // (like 'state', but contains longer lists etc.)
+    rootNode: StackTree.RootNode;
     fileBreakpoints: Breakpoints.FileBreakpoints[];
   }
 }

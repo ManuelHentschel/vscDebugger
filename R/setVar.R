@@ -8,10 +8,6 @@ setVariableRequest <- function(response, args, request){
   if(value == ""){
     response$success <- FALSE
   } else{
-    # nodeId <- getNodeIdByVarRefAndName(varRef, name)
-    # ancestorIds <- session$tree$getAncestorIds(nodeId)
-    # variables <- session$tree$getContents(c(nodeId, ancestorIds))
-
     args$findBy <- 'nameAndVarRef'
 
     node <- session$rootNode$findChildNode(args)
@@ -39,7 +35,6 @@ setVariableRequest <- function(response, args, request){
     successAndRValue <- setVar(setInfos, value)
 
     if(successAndRValue$success){
-      # newVariable <- updateVariableValue(nodeId, successAndRValue$rValue)
       node$updateValue(successAndRValue$rValue)
       response$body <- node$getContent()
     } else{

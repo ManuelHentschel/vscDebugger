@@ -9,8 +9,7 @@ getDefaultVarInfos <- function() {
       doesApply = is.null,
       childVars = list(),
       nChildVars = 0,
-      shortType = '',
-      longType = 'NULL',
+      type = 'NULL',
       toString = 'NULL'
     ),
     # promise (custom type)
@@ -19,8 +18,7 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) inherits(v, '.vsc.promise'),
       childVars = list(),
       nChildVars = 0,
-      shortType = '',
-      longType = 'promise',
+      type = 'promise',
       toString = function(v) paste0(format(v$code), collapse = "; "),
       internalAttributes = function(v) {
         ret <- list(
@@ -43,7 +41,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'ActiveBinding',
       doesApply = function(v) inherits(v, '.vsc.activeBinding'),
-      longType = 'active binding',
+      type = 'active binding',
       toString = 'Active binding',
       internalAttributes = list(),
       childVars = function(v) {
@@ -60,7 +58,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Ellipsis',
       doesApply = function(v) inherits(v, '.vsc.ellipsis'),
-      longType = 'ellipsis',
+      type = 'ellipsis',
       toString = '<Ellipsis Arguments>',
       internalAttributes = list()
     ),
@@ -70,8 +68,7 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) inherits(v, '.vsc.infoVar'),
       childVars = list(),
       nChildVars = 0,
-      shortType = '',
-      longType = function(v) v$type,
+      type = function(v) v$type,
       toString = function(v) v$text
     ),
     # .Random.seed (TEMPORARY FIX)
@@ -80,11 +77,11 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) !is.null(v) && identical(v, get0(".Random.seed", globalenv())),
       childVars = list(),
       nChildVars = 0
-      # toString = 'c(KW:$%&...)'
     ),
     # environment
     list(
       name = 'Environment',
+      type = 'environment',
       doesApply = is.environment,
       childVars = function(v) {
         vars <- getVarsInEnv(v)
@@ -109,8 +106,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Data.frame',
       doesApply = is.data.frame,
-      shortType = 'data.frame',
-      longType = 'data.frame'
+      type = 'data.frame'
       # rest is handled by 'Matrix'
     ),
     # factor
@@ -142,8 +138,7 @@ getDefaultVarInfos <- function() {
       nChildVars = function(v){
         length(v)
       },
-      shortType = 'factor',
-      longType = 'factor'
+      type = 'factor'
     ),
     # matrix row
     list(
@@ -223,11 +218,7 @@ getDefaultVarInfos <- function() {
           ncol(v)
         }
       },
-      shortType = function(v) {
-        paste0('matrix[', nrow(v), ',', ncol(v), ']')
-      },
-      'matrix',
-      longType = 'matrix'
+      type = 'matrix'
     ),
     # list
     list(
@@ -250,8 +241,7 @@ getDefaultVarInfos <- function() {
       nChildVars = function(v){
         length(v)
       },
-      shortType = 'list',
-      longType = 'list'
+      type = 'list'
     ),
     # vector
     list(
@@ -285,8 +275,7 @@ getDefaultVarInfos <- function() {
       nChildVars = function(v){
         length(v)
       },
-      shortType = 'c',
-      longType = 'vector'
+      type = 'vector'
     ),
     # language: name, call, expression, name
     list(
@@ -309,8 +298,7 @@ getDefaultVarInfos <- function() {
           length(as.list(v))
         }
       },
-      shortType = '',
-      longType = 'language',
+      type = 'language',
       toString = function(v) {
         if (is.symbol(v)) {
           ret <- toString(v)
@@ -332,8 +320,7 @@ getDefaultVarInfos <- function() {
       nChildVars = function(v){
         length(slotNames(v))
       },
-      shortType = 'S4',
-      longType = 'S4',
+      type = 'S4',
       internalAttributes = function(v) {
         attrs <- attributes(v)
         slots <- slotNames(v)
@@ -374,8 +361,7 @@ getDefaultVarInfos <- function() {
           )
         )
       },
-      shortType = '',
-      longType = 'function',
+      type = 'function',
       toString = function(v) {
         paste0(format(v), collapse = '\n')
       }
@@ -411,8 +397,6 @@ getDefaultVarInfos <- function() {
       doesApply = function(v) TRUE,
       childVars = list(),
       nChildVars = 0,
-      shortType = '',
-      longType = function(v) typeof(v),
       type = function(v) typeof(v),
       internalAttributes = function(v) {
         attr <- attributes(v)
