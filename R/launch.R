@@ -137,6 +137,12 @@ launchRequest <- function(response, args, request){
     'overwriteSource',
     getOption('vsc.overwriteSource')
   )
+  session$packagesBeforeLaunch <- lget(
+    args,
+    'packagesBeforeLaunch',
+    character(0)
+  )
+
 
   session$mainFunction <- lget(args, 'mainFunction', 'main')
 
@@ -188,8 +194,20 @@ configurationDoneRequest <- function(response, args, request){
     attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
   }
 
+  # load packages
+  if(length(session$packagesBeforeLaunch)>0){
+    for(pkg in session$packagesBeforeLaunch){
+      try(
+        library(package=pkg, character.only=TRUE)
+      )
+    }
+  }
+
   # set breakpoints
-  if(session$debugMode == 'function'){
+  if(
+    session$debugMode == 'function' ||
+    (session$setBreakpointsInPackages && length(session$packagesBeforeLaunch)>0)
+  ){
     .vsc.setStoredBreakpoints()
   }
 

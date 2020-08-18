@@ -25,6 +25,7 @@ export declare module Session {
     mainFunction: string;
     includePackageScopes: boolean;
     setBreakpointsInPackages: boolean;
+    packagesBeforeLaunch: string[];
 
     // server/communication:
     // (set for this debug session)
