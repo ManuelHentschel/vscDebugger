@@ -18,6 +18,7 @@ session <- local({
   mainFunction <- NULL
   includePackageScopes <- NULL
   setBreakpointsInPackages <- FALSE
+  packagesBeforeLaunch <- character(0)
 
   # server/communication:
   # (set for this debug session)
