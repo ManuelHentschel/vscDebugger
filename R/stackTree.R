@@ -345,7 +345,7 @@ FrameNode <- R6::R6Class(
       } else {
         self$call <- sys.call(self$frameIdR)
         self$firstenv <- sys.frame(self$frameIdR)
-        self$name <- getFrameName(call)
+        self$name <- getFrameName(self$call)
         self$presentationHint <- "normal"
         source <- getSource(sys.call(self$frameIdR + 1), self$frameIdR + 1)
         self$line <- source$line
