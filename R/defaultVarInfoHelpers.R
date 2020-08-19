@@ -33,6 +33,15 @@ getIndices <- function(v, row = NULL, col = NULL) {
   }
 }
 
+getIndices2 <- function(rows='', cols=''){
+  names <- mapply(
+    function(row, col) paste0('[', row, ',', col, ']'),
+    rows,
+    cols
+  )
+  return(names)
+}
+
 
 
 
@@ -77,8 +86,11 @@ getActiveBinding <- function(name, env){
   structure(list(bindingFunction = ret), class = c('.vsc.activeBinding', '.vsc.internalClass'))
 }
 
-getVarsInEnv <- function(env, all.names = TRUE) {
+getVarsInEnv <- function(env, ind=NULL, all.names = TRUE) {
   names <- ls(env, all.names = all.names)
+  if(!is.null(ind)){
+    names <- names[ind]
+  }
   lapply(names, function(name) {
     list(
       value = getVarInEnv(name, env),

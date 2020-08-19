@@ -44,7 +44,7 @@ getDefaultVarInfos <- function() {
       type = 'active binding',
       toString = 'Active binding',
       internalAttributes = list(),
-      childVars = function(v) {
+      childVars = function(v, ind=NULL) {
         list(
           list(
             name = 'bindingFunction',
@@ -83,8 +83,8 @@ getDefaultVarInfos <- function() {
       name = 'Environment',
       type = 'environment',
       doesApply = is.environment,
-      childVars = function(v) {
-        vars <- getVarsInEnv(v)
+      childVars = function(v, ind=NULL) {
+        vars <- getVarsInEnv(v, ind)
         ret <- lapply(vars, function(var){
           name <- var$name
           setter <- substitute(env[[name]], list(name=name))
@@ -113,15 +113,21 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Factor',
       doesApply = is.factor,
-      childVars = function(v) {
+      childVars = function(v, ind=NULL) {
+        len0 <- length(v)
+        if(is.null(ind)){
+          ind <- seq_along(v)
+        } else{
+          v <- v[ind]
+        }
         if (is.null(names(v))) {
-          names <- paste0('[', seq_along(v), ']')
+          names <- paste0('[', ind, ']')
         } else{
           names <- names(ret$value)
         }
         if(getOption('vsc.convertFactorEntries', FALSE)){
           rValues <- as.list(format(v))
-        } else if(length(v)>1){
+        } else if(len0>1){
           rValues <- as.list(v)
         } else{
           rValues <- list()
@@ -155,12 +161,15 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Matrix',
       doesApply = function(v) is.matrix(v) || is.data.frame(v), # data.frame specific info is handled above
-      childVars = function(v) {
+      childVars = function(v, ind=NULL) {
         byRow <- (
           is.matrix(v) && getOption('vsc.matricesByRow', TRUE) || 
           is.data.frame(v) && getOption('vsc.dataFramesByRow', FALSE) 
         )
         if (byRow) {
+          if(is.null(ind)){
+            ind <- seq_len(nrow(v))
+          }
           if (ncol(v) == 1) {
             vars <- as.list(v)
             names <- rownames(v)
@@ -181,6 +190,9 @@ getDefaultVarInfos <- function() {
             })
           }
         } else { # by column
+          if(is.null(ind)){
+            ind <- seq_len(ncol(v))
+          }
           if (nrow(v) == 1) {
             vars <- as.list(v)
             names <- colnames(v)
@@ -201,11 +213,14 @@ getDefaultVarInfos <- function() {
             })
           }
         }
-        unsummarizeLists(list(
+        ret <- unsummarizeLists(list(
           name = names,
           rValue = vars,
           setter = setters
         ))
+        if(!is.null(ind)){
+          ret <- ret[ind]
+        }
       },
       nChildVars = function(v){
         byRow <- (
@@ -224,17 +239,23 @@ getDefaultVarInfos <- function() {
     list(
       name = 'List',
       doesApply = is.list,
-      childVars = function(v) {
+      childVars = function(v, ind=NULL) {
+        if(is.null(ind)){
+          ind <- seq_along(v)
+        } else{
+          v <- v[ind]
+        }
         names <- names(v)
         lapply(seq_along(v), function(s){
           name <- names[s]
+          index <- ind[s]
           if(is.null(name)){
-            name <- paste0('[[', s, ']]')
+            name <- paste0('[[', index, ']]')
           }
           list(
             rValue = v[[s]],
             name = name,
-            setter = substitute(parent[[s]], list(s=s))
+            setter = substitute(parent[[s]], list(s=index))
           )
         })
       },
@@ -256,19 +277,25 @@ getDefaultVarInfos <- function() {
           is.vector(v) && length(v) > 1
         }
       },
-      childVars = function(v) {
+      childVars = function(v, ind=NULL) {
+        if(is.null(ind)){
+          ind <- seq_along(v)
+        } else{
+          v <- v[ind]
+        }
         names <- names(v)
         lapply(seq_along(v), function(s){
           name <- names[s]
+          index <- ind[s]
           if(is.null(name)){
-            name <- paste0('[', s, ']')
+            name <- paste0('[', index, ']')
           }
           rValue <- v[s]
           attributes(rValue) <- NULL
           list(
             rValue = rValue,
             name = name,
-            setter = substitute(parent[s], list(s=s))
+            setter = substitute(parent[s], list(s=index))
           )
         })
       },
@@ -281,7 +308,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'Language',
       doesApply = function(v) is.language(v),
-      childVars = function(v) {
+      childVars = function(v, ind=NULL) {
         if (is.name(v) || is.symbol(v)) {
           return(list())
         } else {
@@ -312,7 +339,7 @@ getDefaultVarInfos <- function() {
     list(
       name = 'S4',
       doesApply = isS4,
-      childVars = function(v) {
+      childVars = function(v, ind=NULL) {
         names <- slotNames(v)
         values <- lapply(names, function(s) slot(v, s))
         unsummarizeLists(list(rValue = values, name = names))
