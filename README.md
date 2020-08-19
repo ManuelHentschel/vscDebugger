@@ -1,13 +1,11 @@
 # vscDebugger
 
-This package provides support for the VS Code Extension \"R Debugger\".
+This package provides support for the VS Code Extension
+**[R Debugger](https://github.com/ManuelHentschel/VSCode-R-Debugger)**
+.
 
-For details on the debugger, see <https://github.com/ManuelHentschel/VSCode-R-Debugger>.
+## Installation, Usage, etc.
 
-## Installation
-
-Run the following code in R to install the latest development version from GitHub:
-
-```r
-devtools::install_github("ManuelHentschel/vscDebugger", ref = "develop")
-```
+Detailed information can be found in the readme of the 
+[R Debugger](https://github.com/ManuelHentschel/VSCode-R-Debugger)
+.
