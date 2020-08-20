@@ -208,3 +208,134 @@ unsummarizeLists <- function(items, repeatItems = list(), names = NULL) {
   names(ret) <- names
   return(ret)
 }
+
+
+
+
+getDimOrder <- function(nDims=2, dimOrder=NULL, isDataFrame=FALSE){
+  if(is.null(dimOrder)){
+    if(isDataFrame){
+      dimOrder <- getOption('vsc.dataFrameDimOrder', NULL)
+    }
+    if(!isDataFrame || is.null(dimOrder)){
+      dimOrder <- getOption('vsc.arrayDimOrder', c(3,1,2))
+    }
+  }
+  if(is.list(dimOrder)){
+    lens <- sapply(dimOrder, length)
+    if(nDims %in% lens){
+      dimOrder <- dimOrder[[match(nDims, lens)]]
+    } else if(nDims > max(lens)){
+      dimOrder <- dimOrder[[which.max(lens)]]
+    } else{
+      dimOrder <- dimOrder[nDims < lens]
+      lens <- lapply(dimOrder, length)
+      dimOrder <- dimOrder[[which.min(lens)]]
+    }
+  }
+  len <- length(dimOrder)
+  if(len>nDims){
+    dimOrder <- dimOrder[dimOrder <= nDims]
+  } else if(len<nDims){
+    missing <- (len+1):nDims
+    if(dimOrder[1]==length(dimOrder)){
+      dimOrder <- c(rev(missing), dimOrder)
+    } else{
+      dimOrder <- c(dimOrder, missing)
+    }
+  }
+  return(dimOrder)
+}
+
+getNextDim <- function(dimOrder, prevIndices, dims=NULL){
+  dimOrder[match(0,prevIndices[dimOrder])]
+}
+
+
+arrayDimToList <- function(
+  arr,
+  dimension=NULL,
+  ind=NULL,
+  onlyNChildVars=FALSE
+){
+  if(inherits(arr, '.vsc.subArray')){
+    arr0 <- arr
+    arr <- attr(arr, '.vsc.undroppedArray')
+    nDim <- length(dim(arr))
+  } else{
+    nDim <- length(dim(arr))
+    arr0 <- arr
+    attr(arr, '.vsc.prevIndices') <- rep_len(0, nDim)
+    attr(arr, '.vsc.dimOrder') <- getDimOrder(nDim, isDataFrame=is.data.frame(arr))
+  }
+  prevIndices <- attr(arr, '.vsc.prevIndices')
+  if(is.null(dimension)){
+    dimension <- getNextDim(attr(arr, '.vsc.dimOrder'), prevIndices)
+  }
+  if(onlyNChildVars){
+    ret <- dim(arr)[dimension]
+    if(length(ret)==0 || is.na(ret)){
+      ret <- 0
+    }
+    return(ret)
+  }
+  if(is.null(ind)){
+    ind <- seq_len(dim(arr)[dimension])
+  }
+  r <- replicate(nDim, substitute(), simplify=FALSE) # used to get all entries using `[`
+  names <- dimnames(arr)[[dimension]]
+  subArrays <- lapply(
+    ind,
+    function(k){
+      # extract subArray
+      r[[dimension]] <- k
+      subArray <- do.call('[', c(list(arr, drop=FALSE), r))
+      attr(subArray, '.vsc.dimOrder') <- attr(arr, '.vsc.dimOrder')
+
+      # update previous indices of subArray
+      newIndices <- prevIndices
+      newIndices[dimension] <- k
+      attr(subArray, '.vsc.prevIndices') <- newIndices
+
+      # find name of subArray
+      if(is.null(names)){
+        name <- makeNameFromIndex(newIndices)
+      } else{
+        name <- names[k]
+      }
+      attr(subArray, '.vsc.name') <- name
+
+      # construct setter-call
+      r <- r[prevIndices==0]
+      setCall <- as.call(c(
+        list(
+          as.symbol('['),
+          quote(parent)
+        ),
+        r
+      ))
+      attr(subArray, '.vsc.setter') <- setCall
+
+      # save undropped array
+      attr(subArray, '.vsc.undroppedArray') <- subArray
+      # then drop dimensions that are already handled
+      prevDims <- which(prevIndices>0)
+      newDim <-  dim(subArray)[-c(prevDims, dimension)]
+      if(length(newDim)==0){
+        newDim <- NULL
+      }
+      dim(subArray) <- newDim
+
+      # assign class
+      class(subArray) <- c('.vsc.subArray', '.vsc.internalClass')
+      return(subArray)
+    }
+  )
+  return(subArrays)
+}
+
+makeNameFromIndex <- function(ind){
+  ind <- gsub('^0', '', ind)
+  name <- paste(ind, collapse=',', sep='')
+  name <- paste('[', name, ']', collapse=',', sep='')
+}

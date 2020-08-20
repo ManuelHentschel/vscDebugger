@@ -35,6 +35,7 @@ getDefaultVarInfos <- function() {
             )
           ))
         }
+        ret
       }
     ),
     # Active binding
@@ -67,6 +68,7 @@ getDefaultVarInfos <- function() {
       name = 'InfoVar',
       doesApply = function(v) inherits(v, '.vsc.infoVar'),
       childVars = list(),
+      internalAttributes = list(),
       nChildVars = 0,
       type = function(v) v$type,
       toString = function(v) v$text
@@ -101,13 +103,6 @@ getDefaultVarInfos <- function() {
         length(ls(v, all.names = TRUE))
       },
       toString = format
-    ),
-    # data.frame
-    list(
-      name = 'Data.frame',
-      doesApply = is.data.frame,
-      type = 'data.frame'
-      # rest is handled by 'Matrix'
     ),
     # factor
     list(
@@ -145,6 +140,67 @@ getDefaultVarInfos <- function() {
         length(v)
       },
       type = 'factor'
+    ),
+    # data.frame
+    list(
+      name = 'Data.frame',
+      doesApply = is.data.frame,
+      type = 'data.frame'
+      # rest is handled by 'Array'
+    ),
+    # matrix
+    list(
+      name = 'Matrix',
+      doesApply = is.matrix,
+      type = 'matrix'
+      # rest is handled by 'Array'
+    ),
+    # array
+    list(
+      name = 'Array',
+      doesApply = function(v) is.array(v) || is.data.frame(v),
+      childVars = function(v, ind=NULL){
+        subArrays <- arrayDimToList(v, ind=ind)
+        childVars <- lapply(subArrays, function(sa){
+          list(
+            rValue = sa,
+            name = attr(sa, '.vsc.name'),
+            setter = attr(sa, '.vsc.setter')
+          )
+        })
+      },
+      nChildVars = function(v){
+        arrayDimToList(v, onlyNChildVars = TRUE)
+      },
+      type = 'array'
+    ),
+    # subArray
+    list(
+      name = 'SubArray',
+      doesApply = function(v) inherits(v, '.vsc.subArray'),
+      childVars = function(v, ind=NULL){
+        subArrays <- arrayDimToList(v)
+        childVars <- lapply(subArrays, function(sa){
+          list(
+            rValue = sa,
+            name = attr(sa, '.vsc.name'),
+            setter = attr(sa, '.vsc.setter')
+          )
+        })
+      },
+      nChildVars = function(v){
+        arrayDimToList(v, onlyNChildVars = TRUE)
+      },
+      internalAttributes = list(),
+      toString = function(v) {
+        if(is.null(dim(v))){
+          toString(v)
+        } else{
+          attributes(v) <- list()
+          paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
+        }
+      },
+      type = 'subArray'
     ),
     # matrix row
     list(

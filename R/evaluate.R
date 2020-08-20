@@ -30,7 +30,10 @@ evaluateRequest <- function(response, args, request){
     deactivateTracing = deactivateTracing
   )
 
-  if(class(valueAndVisible$value) == 'help_files_with_topic'){
+  if(
+    valueAndVisible$visible
+    && identical(class(valueAndVisible$value), 'help_files_with_topic')
+  ){
     valueAndVisible$visible <- FALSE
     print(valueAndVisible$value)
   }
