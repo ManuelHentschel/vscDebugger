@@ -24,7 +24,7 @@
     lastenv <- .GlobalEnv # searches only through 'user'-envs
   }
 
-  linesInFile <- length(readLines(file))
+  linesInFile <- length(readLines(file, warn=FALSE))
 
   refList <- list()
   for (i in seq_along(bps)) {
