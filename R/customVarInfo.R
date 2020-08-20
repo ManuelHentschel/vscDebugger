@@ -28,7 +28,9 @@
   ret <- list()
 
   if(verbose){
-    cat("Missing Infos:\n")
+    cat('\n\n\nApplying VarInfos to:\n')
+    print(v)
+    cat("\nMissing Infos:\n")
     print(missingInfos)
     cat("IsStacking:\n")
     print(isStacking)
@@ -50,10 +52,16 @@
               value = tmp(v),
               isError = FALSE
             ),
-            error = function(e) list(
-              value = NULL,
-              isError = TRUE
-            )
+            error = function(e) {
+              if(verbose){
+                print('error:')
+                print(e)
+              }
+              list(
+                value = NULL,
+                isError = TRUE
+              )
+            }
           )
           if(valueAndError$isError){
             next
