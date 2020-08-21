@@ -141,6 +141,36 @@ getDefaultVarInfos <- function() {
       },
       type = 'factor'
     ),
+    # subArray
+    list(
+      name = 'SubArray',
+      doesApply = function(v) inherits(v, '.vsc.subArray'),
+      childVars = function(v, ind=NULL){
+        subArrays <- arrayDimToList(v)
+        childVars <- lapply(subArrays, function(sa){
+          list(
+            rValue = sa,
+            name = attr(sa, '.vsc.name'),
+            setter = attr(sa, '.vsc.setter')
+          )
+        })
+      },
+      nChildVars = function(v){
+        arrayDimToList(v, onlyNChildVars = TRUE)
+      },
+      internalAttributes = list(),
+      toString = function(v) {
+        if(is.null(dim(v))){
+          toString(v)
+        } else{
+          dimV <- dim(v)
+          attributes(v) <- list()
+          dim(v) <- dimV
+          paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
+        }
+      },
+      type = 'subArray'
+    ),
     # data.frame
     list(
       name = 'Data.frame',
@@ -172,124 +202,17 @@ getDefaultVarInfos <- function() {
       nChildVars = function(v){
         arrayDimToList(v, onlyNChildVars = TRUE)
       },
-      type = 'array'
-    ),
-    # subArray
-    list(
-      name = 'SubArray',
-      doesApply = function(v) inherits(v, '.vsc.subArray'),
-      childVars = function(v, ind=NULL){
-        subArrays <- arrayDimToList(v)
-        childVars <- lapply(subArrays, function(sa){
-          list(
-            rValue = sa,
-            name = attr(sa, '.vsc.name'),
-            setter = attr(sa, '.vsc.setter')
-          )
-        })
-      },
-      nChildVars = function(v){
-        arrayDimToList(v, onlyNChildVars = TRUE)
-      },
-      internalAttributes = list(),
-      toString = function(v) {
+      toString = function(v){
         if(is.null(dim(v))){
           toString(v)
         } else{
+          dimV <- dim(v)
           attributes(v) <- list()
+          dim(v) <- dimV
           paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
         }
       },
-      type = 'subArray'
-    ),
-    # matrix row
-    list(
-      name = 'MatrixRow',
-      doesApply = function(v) inherits(v, '.vsc.matrixRow'),
-      internalAttributes = list(),
-      customAttributes = list(),
-      toString = function(v) {
-        attributes(v) <- list()
-        paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
-      }
-    ),
-    # matrix
-    list(
-      name = 'Matrix',
-      doesApply = function(v) is.matrix(v) || is.data.frame(v), # data.frame specific info is handled above
-      childVars = function(v, ind=NULL) {
-        byRow <- (
-          is.matrix(v) && getOption('vsc.matricesByRow', TRUE) || 
-          is.data.frame(v) && getOption('vsc.dataFramesByRow', FALSE) 
-        )
-        if (byRow) {
-          if(is.null(ind)){
-            ind <- seq_len(nrow(v))
-          }
-          if (ncol(v) == 1) {
-            vars <- as.list(v)
-            names <- rownames(v)
-            if (is.null(names)) {
-              names <- getIndices(v, col = 1)
-            }
-            setters <- lapply(seq_along(vars), function(s){
-              substitute(parent[s,1], list(s=s))
-            })
-          } else {
-            vars <- lapply(seq2(nrow(v)), getRow, v = v)
-            names <- rownames(v)
-            if (is.null(names)) {
-              names <- getIndices(v, col = '')
-            }
-            setters <- lapply(seq_along(vars), function(s){
-              substitute(parent[s,], list(s=s))
-            })
-          }
-        } else { # by column
-          if(is.null(ind)){
-            ind <- seq_len(ncol(v))
-          }
-          if (nrow(v) == 1) {
-            vars <- as.list(v)
-            names <- colnames(v)
-            if (is.null(names)) {
-              names <- getIndices(v, row = 1)
-            }
-            setters <- lapply(seq_along(vars), function(s){
-              substitute(parent[1,s], list(s=s))
-            })
-          } else {
-            vars <- lapply(seq2(ncol(v)), getCol, v = v)
-            names <- colnames(v)
-            if (is.null(names)) {
-              names <- getIndices(v, row = '')
-            }
-            setters <- lapply(seq_along(vars), function(s){
-              substitute(parent[,s], list(s=s))
-            })
-          }
-        }
-        ret <- unsummarizeLists(list(
-          name = names,
-          rValue = vars,
-          setter = setters
-        ))
-        if(!is.null(ind)){
-          ret <- ret[ind]
-        }
-      },
-      nChildVars = function(v){
-        byRow <- (
-          is.matrix(v) && getOption('vsc.matricesByRow', TRUE) || 
-          is.data.frame(v) && getOption('vsc.dataFramesByRow', FALSE) 
-        )
-        if(byRow){
-          nrow(v)
-        } else{
-          ncol(v)
-        }
-      },
-      type = 'matrix'
+      type = 'array'
     ),
     # list
     list(

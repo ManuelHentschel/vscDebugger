@@ -175,15 +175,28 @@ export declare module StackTree {
     public setInfo: SetInfo;
     public internalAttributes: MinimalVariable[];
     public customAttributes: MinimalVariable[];
-    public attrVars: MinimalVariable[];
-    public childVars: MinimalVariable[];
+    // public attrVars: MinimalVariable[];
+    // public childVars: MinimalVariable[];
 
     public initialize(args: VariableArgs): void;
     public getChildren(args: GetVariablesArgs): VariableNode[];
     public getContent(args: GetVariableArgs): Variable | Scope;
 
     protected parent: ScopeNode | VariableNode | EvalRootNode;
-    protected children: VariableNode[];
+    protected children: [];
+
+    protected attrVars: {
+      filter: 'named';
+      index: number;
+      minVar?: MinimalVariable;
+      node?: VariableNode;
+    }[];
+    protected childVars: {
+      filter: 'indexed';
+      index: number;
+      minVar?: MinimalVariable;
+      node?: VariableNode;
+    }[];
   }
 
   class ScopeNode extends VariableNode {
