@@ -6,7 +6,8 @@
   v,
   infos = character(0),
   stackingInfos = character(0),
-  verbose = getOption('vsc.verboseVarInfos', FALSE)
+  verbose = getOption('vsc.verboseVarInfos', FALSE),
+  ind = NULL
 ) {
   # check args
   if(is.null(stackingInfos)) {
@@ -28,7 +29,9 @@
   ret <- list()
 
   if(verbose){
-    cat("Missing Infos:\n")
+    cat('\n\n\nApplying VarInfos to:\n')
+    print(v)
+    cat("\nMissing Infos:\n")
     print(missingInfos)
     cat("IsStacking:\n")
     print(isStacking)
@@ -46,14 +49,27 @@
         tmp <- varInfo[[info]]
         if(is.function(tmp)){
           valueAndError <- tryCatch(
-            list(
-              value = tmp(v),
-              isError = FALSE
-            ),
-            error = function(e) list(
-              value = NULL,
-              isError = TRUE
-            )
+            if(info=='childVars'){
+              list(
+                value = tmp(v, ind),
+                isError = FALSE
+              )
+            } else{
+              list(
+                value = tmp(v),
+                isError = FALSE
+              )
+            },
+            error = function(e) {
+              if(verbose){
+                print('error:')
+                print(e)
+              }
+              list(
+                value = NULL,
+                isError = TRUE
+              )
+            }
           )
           if(valueAndError$isError){
             next

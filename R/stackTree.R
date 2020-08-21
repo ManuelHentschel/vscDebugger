@@ -101,7 +101,7 @@ Node <- R6::R6Class(
           return(self)
         }
         if(varRef %in% private$childrenVarRefs){
-          for(child in private$children){
+          for(child in self$getChildren(list(lazy=TRUE))){
             node <- child$findChildNode(args)
             if(!is.null(node)){
               return(node)
@@ -416,10 +416,12 @@ VariableNode <- R6::R6Class(
     rValue = NULL,
     setter = NULL,
     setInfo = NULL,
-    internalAttributes = NULL,
-    customAttributes = NULL,
     attrVars = NULL,
     childVars = NULL,
+    attrNodes = NULL,
+    childNodes = NULL,
+    storedAttrIndices = NULL,
+    storedChildIndices = NULL,
 
     updateValue = function(newValue) {
       args <- list(
@@ -439,17 +441,20 @@ VariableNode <- R6::R6Class(
       self$setter <- lget(args, "setter", NULL)
       self$setInfo <- lget(args, "setInfo", NULL)
 
-      self$childVars <- NULL
-      self$attrVars <- NULL
-      private$children <- NULL
+      self$childVars <- list()
+      self$attrVars <- list()
+      private$children <- list()
 
       # do stuff
       infos <- c(
         "toString",
         "type",
-        "evaluateName",
         "nChildVars"
       )
+
+      if(getOption('vsc.showEvaluateName', TRUE)){
+        infos <- c(infos, "evaluateName")
+      }
       
       if (getOption("vsc.showAttributes", TRUE)) {
         infos <- c(infos, "internalAttributes")
@@ -468,10 +473,17 @@ VariableNode <- R6::R6Class(
       )
       
       # handle attributes
-      self$internalAttributes <- lget(infos, "internalAttributes", list())
-      customAttributes <- lget(infos, "customAttributes", list(list()))
-      self$customAttributes <- unlist(customAttributes, recursive = FALSE)
-      self$attrVars <- c(self$internalAttributes, self$customAttributes)
+      internalAttributes <- lget(infos, "internalAttributes", list())
+      nestedCustomAttributes <- lget(infos, "customAttributes", list(list()))
+      customAttributes <- unlist(nestedCustomAttributes, recursive = FALSE)
+      allAttributes <- c(internalAttributes, customAttributes)
+      self$attrVars <- lapply(seq_along(allAttributes), function(i){
+        list(
+          filter = 'named',
+          index = i,
+          minVar = allAttributes[[i]]
+        )
+      })
       self$namedVariables <- length(self$attrVars)
       
       # handle other
@@ -502,6 +514,60 @@ VariableNode <- R6::R6Class(
       }
       return(content)
     },
+    getIndices = function(indices, filter){
+      if(length(indices)==0){
+        return(list())
+      }
+      if(filter=='indexed'){
+        vars <- self$childVars
+      } else{
+        vars <- self$attrVars
+      }
+      savedIndices <- lapply(vars, function(v) v$index)
+      missingIndices <- setdiff(indices, savedIndices)
+
+
+      # get childVars from VarInfos
+      infos <- .vsc.applyVarInfos(
+        self$rValue,
+        infos = c('childVars'),
+        ind = missingIndices
+      )
+
+
+      # combine with old vars
+      newVars <- lapply(seq_along(missingIndices), function(i){
+        list(
+          index=missingIndices[i],
+          minVar=infos[['childVars']][[i]],
+          node=NULL
+        )
+      })
+      vars <- c(vars, newVars)
+      savedIndices <- c(savedIndices, missingIndices)
+
+      indPositions <- match(indices, savedIndices)
+      vars <- vars[indPositions]
+
+      nodes <- replicate(length(indices), NULL)
+      # compute/retrieve nodes
+      for(i in seq_along(vars)){
+        var <- vars[[i]]
+        if(is.null(var$node)){
+          var$node <- VariableNode$new(parent=self, args=var$minVar)
+        }
+        nodes[[i]] <- var$node
+        vars[[i]] <- var
+      }
+
+      # save vars
+      if(filter=='indexed'){
+        self$childVars <- vars
+      } else{
+        self$attrVars <- vars
+      }
+      return(nodes)
+    },
     getChildren = function(args=list()){
       lazy <- lget(args, 'lazy', FALSE)
       filter <- lget(args, 'filter', '')
@@ -509,43 +575,40 @@ VariableNode <- R6::R6Class(
       count <- lget(args, 'count', 0)
 
       if(lazy){
-        return(private$children)
+        childNodes <- lapply(self$childVars, function(v) v$node)
+        attrNodes <- lapply(self$attrVars, function(v) v$node)
+        nodes <- c(childNodes, attrNodes)
+        nullIndices <- sapply(nodes, is.null)
+        nodes <- nodes[!nullIndices]
+        return(nodes)
       }
 
-      if(is.null(self$childVars)){
-        infos <- .vsc.applyVarInfos(
-          self$rValue,
-          infos = c('childVars')
-        )
-        self$childVars <- lget(infos, 'childVars', list())
-
-        allVars <- c(self$attrVars, self$childVars)
-        allVars <- fixNames(allVars)
-        nAttr <- length(self$attrVars)
-        if(nAttr>0){
-          self$attrVars <- allVars[1:nAttr]
+      # determine requested indices
+      if(filter=='indexed'){
+        attrIndices <- integer(0)
+        if(count==0){
+          childIndices <- seq_len(self$indexedVariables)
+        } else{
+          childIndices <- (start+1):(start+count)
         }
-        if(nAttr<length(allVars)){
-          self$childVars <- allVars[(nAttr+1):length(allVars)]
+      } else if(filter=='named'){
+        childIndices <- integer(0)
+        if(count==0){
+          attrIndices <- seq_len(self$namedVariables)
+        } else{
+          attrIndices <- (start+1):(start+count)
         }
+      } else {
+        attrIndices <- seq_len(self$namedVariables)
+        childIndices <- seq_len(self$indexedVariables)
       }
 
-      if(filter == 'named'){
-        children <- self$attrVars
-      } else if(filter == 'indexed'){
-        children <- self$childVars
-        if(count > 0){
-          children <- children[(start+1):(start+count)]
-        }
-      } else{
-        children <- c(self$attrVars, self$childVars)
-      }
+      nodes <- c(
+        self$getIndices(attrIndices, 'named'),
+        self$getIndices(childIndices, 'indexed')
+      )
 
-      newChildNodes <- lapply(children, function(child){
-        VariableNode$new(parent=self, args=child)
-      })
-      private$children <- c(private$children, newChildNodes)
-      return(newChildNodes)
+      return(nodes)
     }
   ),
   private = list(),

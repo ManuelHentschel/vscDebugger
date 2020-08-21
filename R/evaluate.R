@@ -30,6 +30,14 @@ evaluateRequest <- function(response, args, request){
     deactivateTracing = deactivateTracing
   )
 
+  if(
+    valueAndVisible$visible
+    && identical(class(valueAndVisible$value), 'help_files_with_topic')
+  ){
+    valueAndVisible$visible <- FALSE
+    print(valueAndVisible$value)
+  }
+
   if(valueAndVisible$visible || context == 'watch'){
     args <- list(
       name = 'evalResult',

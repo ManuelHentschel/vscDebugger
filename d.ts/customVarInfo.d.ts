@@ -4,8 +4,6 @@ import { StackTree } from './stackTree';
 
 type MinimalVariable = StackTree.MinimalVariable;
     
-type ChildVarFunction = (rValue: RValue) => MinimalVariable[];
-
 type ValueOrFunction<T> = ((v: RValue) => T) | T;
 
 interface VarInfo {
@@ -14,7 +12,7 @@ interface VarInfo {
   // Function that determines if the entry is to be used for a given variable
   doesApply: ((v: RValue) => boolean);
   // The child variables (typically entries of a list etc.)
-  childVars?: ValueOrFunction<MinimalVariable[]>;
+  childVars?: ((rValue: RValue, ind?: number[]) => MinimalVariable[]) | MinimalVariable[];
   // Number of childVars
   nChildVars?: ValueOrFunction<number>;
   // Informative attributes. Meant to be added by the user. Names should be preceded by '__'
