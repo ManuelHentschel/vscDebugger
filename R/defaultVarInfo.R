@@ -405,6 +405,9 @@ getDefaultVarInfos <- function() {
       nChildVars = 0,
       type = function(v) typeof(v),
       internalAttributes = function(v) {
+        if(getOption('vsc.groupAttributes', FALSE)){
+          return(list())
+        }
         attr <- attributes(v)
         names <- names(attr)
         mapply(
@@ -421,7 +424,20 @@ getDefaultVarInfos <- function() {
           USE.NAMES = FALSE
         )
       },
-      customAttributes = list(),
+      customAttributes = function(v){
+        if(getOption('vsc.groupAttributes', FALSE) && !inherits(v, '.vsc.internalClass')){
+          rValue <- attributes(v)
+          class(rValue) <- c('.vsc.attributeList', '.vsc.internalClass')
+          ret <- list(
+            name = "__attributes()",
+            rValue = rValue,
+            setter = quote(attributes(parent))
+          )
+          list(ret)
+        } else{
+          list()
+        }
+      },
       toString = function(v) {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
       },
