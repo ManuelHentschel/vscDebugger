@@ -265,8 +265,12 @@ arrayDimToList <- function(
   } else{
     nDim <- length(dim(arr))
     arr0 <- arr
-    attr(arr, '.vsc.prevIndices') <- rep_len(0, nDim)
     attr(arr, '.vsc.dimOrder') <- getDimOrder(nDim, isDataFrame=is.data.frame(arr))
+    prevIndices <-  rep_len(0, nDim)
+    if(getOption('vsc.dropArrays',TRUE)){
+      prevIndices[dim(arr)==1] <- 1
+    }
+    attr(arr, '.vsc.prevIndices') <- prevIndices
   }
   prevIndices <- attr(arr, '.vsc.prevIndices')
   if(is.null(dimension)){
