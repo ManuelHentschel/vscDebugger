@@ -101,7 +101,7 @@ Node <- R6::R6Class(
           return(self)
         }
         if(varRef %in% private$childrenVarRefs){
-          for(child in private$children){
+          for(child in self$getChildren(list(lazy=TRUE))){
             node <- child$findChildNode(args)
             if(!is.null(node)){
               return(node)

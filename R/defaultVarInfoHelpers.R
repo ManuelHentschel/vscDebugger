@@ -126,6 +126,7 @@ getDotVars <- function(env) {
   ## Note: substitute(...()) is officially not supported, but it 
   ## works as intended for all relevant R versions (at least from R 3.0.0)
   dots <- substitute(...(), env = env)
+  if(is.null(dots)) dots <- list()
   structure(dots, class = c(".vsc.ellipsis", ".vsc.internalClass"))
 } 
 
