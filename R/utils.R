@@ -38,7 +38,9 @@ lgetSafe <- function(list, entry, default=NULL){
 
 lget <- function(list, entry, default=NULL){
   ret <- list[[entry]]
-  if(is.null(ret)){
+  if(missing(ret)){
+    substitute()
+  } else if(is.null(ret)){
     default
   } else{
     ret

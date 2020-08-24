@@ -23,9 +23,6 @@
             "label": "Build and install package for testing",
             "type": "shell",
             "command": "Rscript build.R",
-            "windows": {
-                "command": ".\\build.bat"
-            },
             "problemMatcher": [],
             "group": {
                 "kind": "build",

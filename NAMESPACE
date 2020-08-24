@@ -3,6 +3,7 @@
 export(.vsc.cat)
 export(.vsc.debugSource)
 export(.vsc.dispatchRequest)
+export(.vsc.getSession)
 export(.vsc.handleJson)
 export(.vsc.listenOnPort)
 export(.vsc.onError)

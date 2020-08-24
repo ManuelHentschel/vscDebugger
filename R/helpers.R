@@ -193,3 +193,24 @@ isPackageFrame <- function(env = parent.frame()) {
   }
   return(TRUE)
 }
+
+
+#' Converts the frame id
+#'
+#' Converts the frame id form R to vsc or viceversa
+#'
+#' @param vsc The frame id as used by vsc
+#' @param R The frame id as used by R
+#' @return The frame id as used by the other program
+convertFrameId <- function(vsc = NULL, R = NULL) {
+  if (is.null(vsc) && is.null(R)) {
+    return(NULL)
+  } else if (is.null(vsc)) {
+    frame <- session$rootNode$getStackNode()$getChildren(list(frameIdR=R))
+    return(frame$frameIdVsc)
+  } else {
+    frame <- session$rootNode$getStackNode()$getChildren(list(frameId=vsc))
+    return(frame$frameIdR)
+  }
+}
+

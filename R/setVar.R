@@ -8,9 +8,21 @@ setVariableRequest <- function(response, args, request){
   if(value == ""){
     response$success <- FALSE
   } else{
-    nodeId <- getNodeIdByVarRefAndName(varRef, name)
-    ancestorIds <- session$tree$getAncestorIds(nodeId)
-    variables <- session$tree$getContents(c(nodeId, ancestorIds))
+    args$findBy <- 'nameAndVarRef'
+
+    node <- session$rootNode$findChildNode(args)
+    if(is.null(node)){
+      cat("<did not find node>", file=stderr())
+      response$success <- FALSE
+      sendResponse(response)
+      return(NULL)
+    }
+    ancestorNodes <- node$getAncestors(TRUE)
+
+    variables <- lapply(
+      ancestorNodes,
+      function(node) node$getContent(list(includeSetInfo=TRUE))
+    )
 
     setInfos <- lapply(variables, function(variable) {
       setInfo <- variable$setInfo
@@ -23,8 +35,8 @@ setVariableRequest <- function(response, args, request){
     successAndRValue <- setVar(setInfos, value)
 
     if(successAndRValue$success){
-      newVariable <- updateVariableValue(nodeId, successAndRValue$rValue)
-      response$body <- newVariable
+      node$updateValue(successAndRValue$rValue)
+      response$body <- node$getContent()
     } else{
       response$success <- FALSE
       if(is.null(successAndRValue$reason)){

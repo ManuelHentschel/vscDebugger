@@ -1,25 +1,28 @@
 # create environment for global data used by package functions
 session <- local({
-  setBreakpointsInPackages <- FALSE
-  allowGlobalDebugging <- FALSE
-  breakOnErrorFromConsole <- FALSE
-  breakOnErrorFromFile <- TRUE
-  assignToAns <- TRUE
+  # settings:
+  # (usually changed globally, persisting across debug sessions)
+  varInfos <- NULL
 
+  # debugSession:
+  # (set for this debug session)
+  allowGlobalDebugging <- FALSE
   overwritePrint <- TRUE
   overwriteCat <- TRUE
   overwriteSource <- TRUE
 
-  rStrings <- list(
-    delimiter0 = '<v\\s\\c>',
-    delimiter1 = '</v\\s\\c>',
-    prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    append = ' ### <v\\s\\c\\COMMAND>'
-  )
+  noDebug <- FALSE # currently not used
+  debugMode <- NULL
+  workingDirectory <- NULL
+  file <- NULL
+  mainFunction <- NULL
+  includePackageScopes <- NULL
+  setBreakpointsInPackages <- FALSE
+  packagesBeforeLaunch <- character(0)
 
-  threadId <- 1
-
+  # server/communication:
+  # (set for this debug session)
+  # (should not influence the behaviour of the "R facing part" of the debugger)
   useJsonServer <- FALSE
   jsonPort <- 0
   jsonHost <- 'localhost'
@@ -30,13 +33,19 @@ session <- local({
   sinkHost <- 'localhost'
   sinkServerConnection <- NULL
 
-  noDebug <- FALSE # currently not used
-  debugMode <- NULL
-  workingDirectory <- NULL
-  file <- NULL
-  mainFunction <- NULL
-  includePackageScopes <- NULL
+  rStrings <- list(
+    delimiter0 = '<v\\s\\c>',
+    delimiter1 = '</v\\s\\c>',
+    prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+    continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+    append = ' ### <v\\s\\c\\COMMAND>'
+  )
+  threadId <- 1
 
+  # state:
+  # (is managed by the debugger itself and might change frequently)
+  breakOnErrorFromConsole <- FALSE
+  breakOnErrorFromFile <- TRUE
   isInitialized <- FALSE
   isConfigurationDone <- FALSE
   isEvaluating <- FALSE
@@ -44,22 +53,16 @@ session <- local({
   entryFrames <- c()
   launchFrames <- c()
   ignoreNextCallback <- FALSE
-
-  tree <- NULL
-  stackNode <- 0
-  frameIds <- list(
-    vsc = list(),
-    R = list(),
-    node = list()
-  )
-  varRefs <- list(
-    varRef = list(),
-    node = list()
-  )
-  varRef <- 1
   breakpointId <- 1
+
+  # data:
+  # (like 'state', but contains longer lists etc.)
+  rootNode <- NULL
   fileBreakpoints <- list()
 
+
+  # lock and return the environment:
+  lockEnvironment(environment())
   environment()
 })
 
@@ -79,7 +82,6 @@ session <- local({
   setOptionIfNull('vsc.defaultIncludePackageScopes', FALSE)
   setOptionIfNull('vsc.includePackageScopes', FALSE)
   setOptionIfNull('vsc.setBreakpointsInPackages', FALSE)
-  setOptionIfNull('vsc.assignToAns', TRUE)
   setOptionIfNull('vsc.overwritePrint', TRUE)
   setOptionIfNull('vsc.overwriteCat', TRUE)
   setOptionIfNull('vsc.overwriteSource', TRUE)
@@ -89,12 +91,10 @@ session <- local({
   setOptionIfNull('vsc.defaultFile', 'main.R')
 
   session$varInfos <- getDefaultVarInfos()
-
-  session$tree <- LazyTree(
-    childrenFunction = childrenFunction,
-    contentFunction = contentFunction,
-    defaultContentProducesChildren = TRUE
-  )
-  session$rootNode <- session$tree$getNewNodeId()
+  session$rootNode <- RootNode$new()
 }
 
+#' @export
+.vsc.getSession <- function(){
+  return(session)
+}

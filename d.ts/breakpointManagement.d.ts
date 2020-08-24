@@ -4,7 +4,6 @@ import { DebugProtocol } from './debugProtocol';
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
 
 export declare module Breakpoints {
-
   interface InternalBreakpoint extends DebugProtocol.SourceBreakpoint, DebugProtocol.Breakpoint {
     /** The source line of the breakpoint or logpoint. */
     line: number;
@@ -39,5 +38,4 @@ export declare module Breakpoints {
   function getBreakpointLines(path: string): number[];
 
   function getRequestedBreakpointLines(path: string): number[];
-
 }
