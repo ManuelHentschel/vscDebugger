@@ -42,16 +42,16 @@ getCompletionsFromUtils <- function(text, column, line){
   # get (non-exported) completion environment from utils package
   env <- utils:::.CompletionEnv
 
-  # assign current text and cursor position to env
-  env$linebuffer <- text
-  env$end <- column-1
+  # assign current text and cursor position to (utils:::.CompletionEnv)
+  utils:::.assignLinebuffer(text)
+  utils:::.assignEnd(column)
 
   # call completion functions
   # arguments were assigned to env beforehand
-  utils:::.guessTokenFromLine()
+  token <- utils:::.guessTokenFromLine()
   utils:::.completeToken()
-  completions <- env$comps
-  token <- env$token
+  completions <- utils:::.retrieveCompletions()
+
 
   # return
   # (moving function parameters, e.g. 'a=' to the top of the sorted list)
