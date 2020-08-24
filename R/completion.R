@@ -13,14 +13,19 @@ completionsRequest <- function(response, args, request) {
 
   # do stuff
   targets <- list()
-  if(getOption('vsc.completionsFromUtils', TRUE)){
-    # use the completion tools from package utils
-    targets <- c(targets, getCompletionsFromUtils(text, column, line))
-  }
   if(getOption('vsc.completionsFromVscDebugger', TRUE)){
     # use our completion tools
     targets <- c(targets, .vsc.getCompletion(frameIdVsc, text, column, line))
   }
+  if(getOption('vsc.completionsFromUtils', TRUE)){
+    # use the completion tools from package utils
+    targets <- c(targets, getCompletionsFromUtils(text, column, line))
+  }
+
+  # use only unique labels
+  labels <- sapply(targets, function(target) target$label)
+  uniqueInd <- !duplicated(labels)
+  targets <- targets[uniqueInd]
 
   # return
   response$body <- list(
@@ -39,8 +44,9 @@ getCompletionsFromUtils <- function(text, column, line){
   lines <- strsplit2(text, '\n') # split into lines
   text <- lines[line] # select correct line
 
-  # get (non-exported) completion environment from utils package
-  env <- utils:::.CompletionEnv
+  if(column>1){
+    text <- substr(text, 1, column-1)
+  }
 
   # assign current text and cursor position to (utils:::.CompletionEnv)
   utils:::.assignLinebuffer(text)
@@ -52,6 +58,7 @@ getCompletionsFromUtils <- function(text, column, line){
   utils:::.completeToken()
   completions <- utils:::.retrieveCompletions()
 
+  # cat('Token: ', token, ' - end: ', column, ' - text: ', text, ' - completions:', length(completions), '\n', sep='')
 
   # return
   # (moving function parameters, e.g. 'a=' to the top of the sorted list)
