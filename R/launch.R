@@ -19,7 +19,7 @@ initializeRequest <- function(response, args, request){
 
   # make VS Code to support completion in REPL
   body$supportsCompletionsRequest <- TRUE
-  body$completionTriggerCharacters <- list("[", "$", ":", "@" )
+  body$completionTriggerCharacters <- list("[", "$", ":", "@", "(", ")")
 
   # make VS Code to send cancelRequests
   body$supportsCancelRequest <- FALSE
