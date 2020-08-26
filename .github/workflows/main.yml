@@ -1,68 +1,81 @@
-name: build
+name: RPackage
 
 on: [push, pull_request]
 
 jobs:
-  linux:
-    if: contains(github.event.head_commit.message, '[ci skip]') == false
+  build:
+    timeout-minutes: 30
     strategy:
+      fail-fast: false # continue if one os fails
       matrix:
-        r: [latest]
-    runs-on: ubuntu-latest
-    container:
-      image: rocker/tidyverse:${{ matrix.r }}
+        include:
+          - os: windows-latest
+            extension_out: .*\.zip
+            r_cmd: Rcmd
+          - os: ubuntu-latest
+            extension_out: .*\.tar\.gz
+            r_cmd: R CMD
+          - os: macos-latest
+            extension_out: .*\.tgz
+            r_cmd: R CMD
+    runs-on: ${{ matrix.os }}
     env:
-      NOT_CRAN: true
+      EXTENSION_IN: "*.tar.gz" # wildcards as used by R CMD
+      EXTENSION_OUT: ${{ matrix.extension_out }} # wildcards as used by grep
+      RCMD: ${{ matrix.r_cmd }}
+      PKG_NAME: vscDebugger
+    defaults:
+      run:
+        shell: bash
     steps:
-    - uses: actions/checkout@v1
-    - name: Install apt-get dependencies
+    - name: Checkout repo
+      uses: actions/checkout@v1
+    - name: Setup R
+      uses: r-lib/actions/setup-r@master
+    - name: Install Dependencies
       run: |
-        apt-get update
-        apt-get install git ssh curl bzip2 libffi-dev -y
-    - name: Install vscDebugger
+        Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
+        Rscript -e "remotes::install_deps(dependencies = TRUE)"
+    - name: Build Package
+      run: $RCMD build .
+    - name: Compile Code
+      run: $RCMD INSTALL $PKG_NAME$EXTENSION_IN --build
+    - name: Identify output file # can be retrieved as steps.filenames.outputs.file_out
+      id: filenames
+      run: echo "::set-output name=file_out::$(ls | grep $PKG_NAME$EXTENSION_OUT | head -1)"
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ steps.filenames.outputs.file_out }}
+        path: ${{ steps.filenames.outputs.file_out }}
+
+  rcmdcheck:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v1
+    - name: Setup R
+      uses: r-lib/actions/setup-r@master
+    - name: Install packages
       run: |
         Rscript -e "install.packages(c('remotes', 'rcmdcheck'), repos = 'https://cloud.r-project.org')"
         Rscript -e "remotes::install_deps(dependencies = TRUE)"
-    - name: Running Tests
-      run: |
-        Rscript -e "rcmdcheck::rcmdcheck(args = c('--as-cran', '--no-manual', '--timings'), error_on = 'error')"
-
-  macos:
-    if: contains(github.event.head_commit.message, '[ci skip]') == false
-    strategy:
-      matrix:
-        r: [latest]
-    runs-on: macos-latest
-    env:
-      NOT_CRAN: true
-    steps:
-    - uses: actions/checkout@v1
-    - uses: r-lib/actions/setup-r@v1
-      with:
-        r-version: ${{ matrix.r }}
-    - name: Install vscDebugger
-      run: |
-        Rscript -e "install.packages(c('remotes', 'rcmdcheck'), repos = 'https://cloud.r-project.org', type = 'mac.binary')"
-        Rscript -e "remotes::install_deps(dependencies = TRUE, type = 'mac.binary')"
-    - name: Running Tests
+    - name: Run R CMD check
       run: Rscript -e "rcmdcheck::rcmdcheck(args = c('--as-cran', '--no-manual', '--timings'), error_on = 'error')"
 
-  # windows:
-  #   if: contains(github.event.head_commit.message, '[ci skip]') == false
-  #   strategy:
-  #     matrix:
-  #       r: [latest]
-  #   runs-on: windows-latest
-  #   env:
-  #     NOT_CRAN: true
-  #   steps:
-  #   - uses: actions/checkout@v1
-  #   - uses: r-lib/actions/setup-r@v1
-  #     with:
-  #       r-version: ${{ matrix.r }}
-  #   - name: Install dependencies
-  #     run: |
-  #       Rscript -e "install.packages(c('remotes', 'devtools'), repos = 'https://cloud.r-project.org', type = 'win.binary')"
-  #       Rscript -e "remotes::install_deps(dependencies = TRUE, type = 'win.binary')"
-  #   - name: Running Tests
-  #     run: Rscript -e "rcmdcheck::rcmdcheck(args = c('--as-cran', '--no-manual', '--timings'), error_on = 'error')"
+  lint:
+    if: contains(github.event.head_commit.message, '[lint]') # disabled by default
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v1
+    - name: Setup R
+      uses: r-lib/actions/setup-r@master
+    - name: Install libcurl # required to install lintr
+      run: sudo apt-get install libcurl4-openssl-dev
+    - name: Install packages
+      run: Rscript -e "install.packages('lintr', repos = 'https://cloud.r-project.org')"
+    - name: Run lintr
+      run: Rscript -e "lintr::lint_package()"
