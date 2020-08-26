@@ -1,5 +1,13 @@
 name: RPackage
 
+# installs/builds the R package on windows, ubuntu, macOs
+# produces package archives for each os
+#  - do not require compilation by windows and macOs users (not tested on mac)
+#  - are output as artifacts
+# runs `R CMD check` on the package
+# if the last commit message includes "[lint]", runs `lintr::lint_package()`
+
+
 on: [push, pull_request]
 
 jobs:
