@@ -8,3 +8,8 @@ src/*.o
 src-i386/
 src-x64/
 .lintr
+
+*.temp
+*.tmp
+tmp.*
+temp.*
