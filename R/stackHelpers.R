@@ -55,7 +55,7 @@ getSource <- function(call, frameIdR = 0) {
   )
 }
 
-normalizePathInWd <- function(path, winslash="\\", mustWork=NA, wd=NULL){
+normalizePathInWd <- function(path, winslash="\\", mustWork=FALSE, wd=NULL){
   if(is.null(wd)){
     ret <- normalizePath(path, winslash, mustWork)
   } else{

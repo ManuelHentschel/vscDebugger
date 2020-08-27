@@ -17,7 +17,7 @@ setBreakpointsRequest <- function(response, args, request){
 
 requestArgsToFileBreakpoints <- function(args){
   # not supported: args$lines
-  path <- normalizePath(lget(args$source, 'path', ''))
+  path <- normalizePath(lget(args$source, 'path', ''), mustWork=FALSE)
   args$source$path <- path
   args$breakpoints <- lapply(args$breakpoints, sourceBreakpointToInternalBreakpoint, args$source)
   return(args)
@@ -88,7 +88,7 @@ getRequestedBreakpointLines <- function(path){
 .vsc.setStoredBreakpoints <- function() {
   for (fbp in session$fileBreakpoints){
     file <- lget(fbp$source, 'path', '')
-    if(file != ''){
+    if(file.exists(file)){
       bps <- lget(fbp, 'breakpoints', list())
       includePackageScopes <- lget(session, 'setBreakpointsInPackages', FALSE)
       .vsc.setBreakpoints(file, bps, includePackageScopes = includePackageScopes)
