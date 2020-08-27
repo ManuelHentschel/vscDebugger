@@ -181,13 +181,12 @@ getPromiseInfo <- function(name, env) {
 
 #' Test if in object is a promise
 #' 
-#' @param name [character(1L)] the name of the object
+#' @param name `character(1L)` the name of the object
 #' @param env [environment] the environment of the object 
-#' @param strict [logical(1L)] if \code{strict} is \code{TRUE} 
+#' @param strict `logical(1L)` if \code{strict} is \code{TRUE} 
 #'   (the default), evaluated promises return with \code{FALSE}
 #' @useDynLib vscDebugger c_is_promise
 #' @keywords internal
-#' @seealso \code{\link{getPromiseVar}}
 #' @return \code{TRUE} or \code{FALSE}
 isPromise <- function(name, env, strict = TRUE) {
   sym <- as.name(name)

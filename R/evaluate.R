@@ -72,9 +72,11 @@ evaluateRequest <- function(response, args, request){
 #'
 #' @param expr The espression to be evaluated
 #' @param frameId The Id of the frame (as given by vsc)
-#' @param id The Id of the message sent to vsc
+#' @param silent Whether to ommit output
+#' @param id Deprecated
 #' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
 #' @param catchErrors Whether to catch errors or let them be handled by `options(error = ...)`
+#' @param deactivateTracing Whether to deactivate tracing (=breakpoints) while evaluating
 .vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE, deactivateTracing = silent) {
   registerEntryFrame()
   # evaluate calls that were made from top level cmd line in the .GlobalEnv

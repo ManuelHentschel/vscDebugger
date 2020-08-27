@@ -7,11 +7,11 @@
 isPromise(name, env, strict = TRUE)
 }
 \arguments{
-\item{name}{\link{character(1L)} the name of the object}
+\item{name}{\code{character(1L)} the name of the object}
 
 \item{env}{\link{environment} the environment of the object}
 
-\item{strict}{\link{logical(1L)} if \code{strict} is \code{TRUE}
+\item{strict}{\code{logical(1L)} if \code{strict} is \code{TRUE}
 (the default), evaluated promises return with \code{FALSE}}
 }
 \value{
@@ -19,8 +19,5 @@ isPromise(name, env, strict = TRUE)
 }
 \description{
 Test if in object is a promise
-}
-\seealso{
-\code{\link{getPromiseVar}}
 }
 \keyword{internal}

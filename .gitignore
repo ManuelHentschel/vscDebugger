@@ -13,3 +13,5 @@ src-x64/
 *.tmp
 tmp.*
 temp.*
+tmp
+temp
