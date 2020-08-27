@@ -19,11 +19,15 @@
 
 \item{frameId}{The Id of the frame (as given by vsc)}
 
-\item{id}{The Id of the message sent to vsc}
+\item{silent}{Whether to ommit output}
+
+\item{id}{Deprecated}
 
 \item{assignToAns}{Whether to assign the result of the evaluation to .GlobalEnv$.ans}
 
 \item{catchErrors}{Whether to catch errors or let them be handled by \code{options(error = ...)}}
+
+\item{deactivateTracing}{Whether to deactivate tracing (=breakpoints) while evaluating}
 }
 \description{
 Evaluates an expression in a given frameId and sends the result to vsc
