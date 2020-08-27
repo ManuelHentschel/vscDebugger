@@ -2,6 +2,7 @@
 #'
 #' Modified version of `base::seq`
 #' @usage seq2(from, to, by=1)
+#' @usage seq2(from, to)
 #' @usage seq2(from)
 #'
 #' @param from Can be the starting value of the sequence, or the end value of the sequence, or a vector of length>1, or a list
@@ -10,10 +11,7 @@
 #' @return A vector containing a sequence of numbers
 #'
 #' @details
-#' If `from, to, by} are supplied, the function returns the same as \code{base::seq`.
-#' If `from, to} are supplied the function returns \code{NULL} if \code{from>to`,
-#' else the same as `base::seq`.
-#' If `from} is a number, the same as \code{seq2(1,from)` is returned.
+#' Basically the same as `base::seq`, but returns an empty vector if `(to-from)*by<0`.
 seq2 <- function(from, to = NULL, by = 1) {
   if (is.null(to)) {
     to <- from

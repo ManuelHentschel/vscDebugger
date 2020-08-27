@@ -6,6 +6,8 @@
 \usage{
 seq2(from, to, by=1)
 
+seq2(from, to)
+
 seq2(from)
 }
 \arguments{
@@ -22,8 +24,5 @@ A vector containing a sequence of numbers
 Modified version of \code{base::seq}
 }
 \details{
-If \verb{from, to, by\} are supplied, the function returns the same as \code{base::seq`.
-If `from, to} are supplied the function returns \code{NULL} if \code{from>to`,
-else the same as `base::seq`.
-If `from} is a number, the same as \code\{seq2(1,from)} is returned.
+Basically the same as \code{base::seq}, but returns an empty vector if \code{(to-from)*by<0}.
 }
