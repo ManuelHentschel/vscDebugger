@@ -150,8 +150,13 @@ launchRequest <- function(response, args, request){
   setwd(session$workingDirectory)
 
   file <- lget(args, 'file', 'main.R')
-  file <- normalizePath(file) # make sure to setwd() first!
+  file <- normalizePath(file, mustWork=FALSE) # make sure to setwd() first!
   session$file <- file
+
+  if(!file.exists(file) && session[['debugMode']] %in% c('function', 'file')){
+    response$success <- FALSE
+    response$message <- paste0("The file ", file, " could not be found!")
+  }
 
   ## do stuff
   # check debugMode
