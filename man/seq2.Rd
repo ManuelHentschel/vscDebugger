@@ -4,18 +4,14 @@
 \alias{seq2}
 \title{Modified version of base::seq}
 \usage{
-seq2(from, to, by=1)
-
-seq2(from, to)
-
-seq2(from)
+seq2(from, to=NULL, by=1)
 }
 \arguments{
 \item{from}{Can be the starting value of the sequence, or the end value of the sequence, or a vector of length>1, or a list}
 
-\item{to}{The ending value of the sequence}
+\item{to=NULL}{The ending value of the sequence}
 
-\item{by}{The step size (as in \code{base::seq})}
+\item{by=1}{The step size (as in \code{base::seq})}
 }
 \value{
 A vector containing a sequence of numbers
