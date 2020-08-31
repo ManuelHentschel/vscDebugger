@@ -62,7 +62,7 @@
     # use generic trace function -> does not preserve source info
     trace(
       what = sRef$name,
-      tracer = .vsc.browser,
+      tracer = quote({.vsc.preBreakpoint(); browser()}),
       at = sRef$at,
       where = sRef$env
     )
