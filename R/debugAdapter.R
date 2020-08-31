@@ -105,6 +105,8 @@ prepareResponse <- function(request){
     continueRequest(response, args, request)
   } else if(command == 'terminate'){
     terminateRequest(response, args, request)
+  } else if(command == 'custom'){
+    customRequest(response, args, request)
   } else {
     sendResponse(response)
     success <- FALSE
@@ -265,6 +267,11 @@ setExceptionBreakPointsRequest <- function(response, args, request){
   sendResponse(response)
 }
 
+customRequest <- function(response, args, request){
+  if(args$reason == 'showingPrompt'){
+    sendStoppedEvent(reason='breakpoint')
+  }
+}
 
 
 threadsRequest <- function(response, args, request){

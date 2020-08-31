@@ -96,6 +96,7 @@ evaluateRequest <- function(response, args, request){
   if(deactivateTracing){
     ts <- eval(quote(tracingState(FALSE)), envir=env)
     # ts <- tracingState(FALSE)
+    print('continue on browser prompt')
     sendCustomEvent('continueOnBrowserPrompt', list(value=TRUE))
   }
 
@@ -154,6 +155,7 @@ evaluateRequest <- function(response, args, request){
 
   if(deactivateTracing){
     tracingState(ts)
+    print('don\'t continue on browser prompt')
     sendCustomEvent('continueOnBrowserPrompt', list(value=FALSE))
   }
 

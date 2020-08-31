@@ -62,7 +62,7 @@
     # use generic trace function -> does not preserve source info
     trace(
       what = sRef$name,
-      tracer = browser,
+      tracer = .vsc.browser,
       at = sRef$at,
       where = sRef$env
     )
