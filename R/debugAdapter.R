@@ -312,6 +312,9 @@ continueRequest <- function(response, args, request){
   callDebugSource <- lget(args, 'callDebugSource', FALSE)
   path <- lget(args$source, 'path', '')
   if(callDebugSource && !isCalledFromBrowser()){
+    msg <- paste0('.vsc.debugSource("', path, '")')
+    sendOutputEvent(msg, group='startCollapsed')
+    sendOutputEvent('', group='end')
     .vsc.debugSource(path)
   } else{
     sendWriteToStdinEvent('c', expectBrowser = FALSE)
