@@ -80,6 +80,12 @@ getDefaultVarInfos <- function() {
       childVars = list(),
       nChildVars = 0
     ),
+    # R6 (TODO: display public/private properties etc.)
+    list(
+      name = 'R6',
+      doesApply = function(v) inherits(v, 'R6'),
+      type = 'R6'
+    ),
     # environment
     list(
       name = 'Environment',
@@ -314,7 +320,15 @@ getDefaultVarInfos <- function() {
         ret
       }
     ),
-    # S4
+    # S4 class representation
+    list(
+      name = 'S4 class representation',
+      doesApply = function(v) inherits(v, 'classRepresentation') && isS4(v),
+      childVars = list(),
+      nChildVars = 0,
+      type = 'S4 class representation'
+    ),
+    # S4 (instance or class representation. Child vars of S4 class representation handled above.)
     list(
       name = 'S4',
       doesApply = isS4,
