@@ -10,9 +10,6 @@ export enum DebugMode {
 }
 
 
-export type DataSource = "stdout"|"stderr"|"jsonSocket"|"sinkSocket";
-export type OutputMode = "all"|"filtered"|"nothing";
-
 export interface RStartupArguments {
     path: string;
     args: string[];
@@ -20,7 +17,7 @@ export interface RStartupArguments {
     useSinkServer?: boolean;
     jsonPort?: number;
     sinkPort?: number;
-    cwd?: string;
+    cwd: string;
 }
 
 
@@ -73,7 +70,6 @@ export interface RStrings {
     startup?: string;
     libraryNotFound?: string;
     packageName?: string;
-    append?: string;
 }
 
 export interface InitializeRequestArguments extends DebugProtocol.InitializeRequestArguments {
@@ -85,10 +81,20 @@ export interface InitializeRequestArguments extends DebugProtocol.InitializeRequ
     useSinkServer?: boolean;
     sinkPort?: number;
     sinkHost?: string;
+    extensionVersion?: string;
 }
 
 export interface InitializeRequest extends DebugProtocol.InitializeRequest {
     arguments: InitializeRequestArguments;
+}
+
+export interface PackageInfo {
+    Package: string;
+    Version: string;
+};
+
+export interface InitializeResponse extends DebugProtocol.InitializeResponse {
+    packageInfo?: PackageInfo;
 }
 
 export interface ContinueArguments extends DebugProtocol.ContinueArguments {
@@ -118,16 +124,6 @@ export interface CustomEvent extends DebugProtocol.Event {
     event: "custom";
     body: {
         reason: string;
-    }
-}
-
-// Deprecated
-export interface ContinueOnBrowserPromptEvent extends CustomEvent {
-    body: {
-        reason: "continueOnBrowserPrompt";
-        value: boolean;
-        message?: string;
-        repeatMessage?: boolean;
     }
 }
 
