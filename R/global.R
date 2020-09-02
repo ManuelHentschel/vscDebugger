@@ -72,6 +72,10 @@ session <- local({
 }
 
 #' @export
-.vsc.getSession <- function(){
-  return(session)
+.vsc.getSession <- function(entry=NULL, default=NULL){
+  if(is.null(entry)){
+    session
+  } else{
+    lget(session, entry, default)
+  }
 }

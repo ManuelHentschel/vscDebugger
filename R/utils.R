@@ -105,6 +105,9 @@ unregisterFrame <- function(upto=sys.nframe()-1, all=FALSE){
 }
 
 getSkipFromBottom <- function(){
+  if(getOption('vsc.showInternalFrames', FALSE)){
+    return(0)
+  }
   suppressWarnings({
     lf <- min(session$launchFrames)
     ef <- min(session$entryFrames)

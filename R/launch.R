@@ -90,6 +90,7 @@ initializeRequest <- function(response, args, request){
   session$threadId <- lget(args, 'threadId', 1)
 
   response$body <- body
+  response$packageInfo <- packageDescription('vscDebugger')
   sendResponse(response)
 
   initializedEvent <- makeEvent("initialized")
