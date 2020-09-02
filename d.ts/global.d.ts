@@ -40,13 +40,6 @@ export declare module Session {
     sinkHost?: string;
     sinkServerConnection?: RValue; // only if useSinkServer==TRUE
 
-    rString: {
-      delimiter0: string;
-      delimiter1: string;
-      prompt: string;
-      continue: string;
-      append: string;
-    }
     threadId: number; //dummy, but must match the one used in the DAP host
 
     rStrings: {
@@ -54,7 +47,6 @@ export declare module Session {
       delimiter1: string;
       prompt: string;
       continue: string;
-      append: string;
     }
 
     // state:
