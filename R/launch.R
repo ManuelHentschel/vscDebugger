@@ -221,6 +221,8 @@ configurationDoneRequest <- function(response, args, request){
   session$isConfigurationDone <- TRUE
   sendResponse(response)
 
+  launchFromStdin <- FALSE
+
   # do stuff
   if(session$debugMode == 'file'){
     registerLaunchFrame()
@@ -230,7 +232,9 @@ configurationDoneRequest <- function(response, args, request){
   } else if (session$debugMode == 'function'){
     registerLaunchFrame(skipCalls=2)
     setErrorHandler(session$breakOnErrorFromFile)
-    eval(call(session$mainFunction), globalenv())
+    # eval(call(session$mainFunction), globalenv())
+    sendWriteToStdinEvent(format(call(session$mainFunction)))
+    launchFromStdin <- TRUE
     unregisterLaunchFrame()
   } else{
     setErrorHandler(session$breakOnErrorFromConsole)
@@ -241,7 +245,7 @@ configurationDoneRequest <- function(response, args, request){
     setErrorHandler(session$breakOnErrorFromConsole)
     session$ignoreNextCallback <- FALSE
   } else{
-    sendTerminatedEvent()
-    sendExitedEvent()
+    addTaskCallback(terminateSessionCallBack)
+    session$ignoreNextCallback <- launchFromStdin
   }
 }

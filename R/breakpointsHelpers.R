@@ -20,6 +20,16 @@
 
 #' @export
 .vsc.preBreakpoint <- function(){
+  # set some state in session?
+  # print('pre breakpoint!!!')
+  # request `n`
+  sendWriteToStdinEvent('n')
+  # send breakpoint event
+  sendStoppedEvent('breakpoint')
+}
+
+#' @export
+.vsc.preDebugSourceBreakpoint <- function(){
   if(tracingState()){
     # set some state in session?
     # print('pre breakpoint!!!')

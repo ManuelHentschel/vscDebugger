@@ -316,6 +316,7 @@ continueRequest <- function(response, args, request){
     sendOutputEvent(msg, group='startCollapsed')
     sendOutputEvent('', group='end')
     .vsc.debugSource(path)
+    session$ignoreNextCallback <- FALSE
   } else{
     sendWriteToStdinEvent('c', expectBrowser = FALSE)
   }

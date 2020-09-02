@@ -89,7 +89,13 @@ mySetBreakpoint <- function(body, at, finalize = FALSE) {
     # srcref <- list(atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]], atr$srcref[[at]])
     # cat() a dummy tracing statement to indicate to vsc that this breakpoint is set by the debugger (-> sends 1x 'n' immediately)
     # b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step XXX\n')), quote(.doTrace(browser())), body[[at]])
-    callAsList <- list(as.name('{'), quote(base::cat('Tracing debugSourceBreakpoint step XXX\n')), quote(.vsc.preBreakpoint()), quote(.doTrace(browser())), body[[at]])
+    callAsList <- list(
+      as.name('{'),
+      quote(base::cat('Tracing debugSourceBreakpoint step XXX\n')),
+      quote(.vsc.preDebugSourceBreakpoint()),
+      quote(.doTrace(browser())),
+      body[[at]]
+    )
     srcref <- replicate(length(callAsList), atr$srcref[[at]], simplify = FALSE)
     b2 <- as.call(callAsList)
     # b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step XXX\n')), quote(.vsc.preBreakpoint()), quote(.doTrace(browser())), body[[at]])
