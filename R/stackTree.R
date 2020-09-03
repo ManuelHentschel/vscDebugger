@@ -537,11 +537,22 @@ VariableNode <- R6::R6Class(
 
       # combine with old vars
       newVars <- lapply(seq_along(missingIndices), function(i){
-        list(
-          index=missingIndices[i],
-          minVar=infos[['childVars']][[i]],
-          node=NULL
-        )
+        if(i<=length(infos[['childVars']])){
+          list(
+            index=missingIndices[i],
+            minVar=infos[['childVars']][[i]],
+            node=NULL
+          )
+        } else{
+          list(
+            index=missingIndices[i],
+            minVar=list(
+              name="<WARNING>",
+              rValue=getInfoVar("<Some child variables might be missing!>")
+            ),
+            node=NULL
+          )
+        }
       })
       vars <- c(vars, newVars)
       savedIndices <- c(savedIndices, missingIndices)
@@ -566,6 +577,7 @@ VariableNode <- R6::R6Class(
       } else{
         self$attrVars <- vars
       }
+
       return(nodes)
     },
     getChildren = function(args=list()){
