@@ -1,6 +1,6 @@
 
 
-import { Breakpoints } from './breakpointManagement';
+import { Breakpoints } from './breakpoints';
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
 import { VarInfo } from './customVarInfo';
 import { StackTree } from './stackTree';
