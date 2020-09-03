@@ -6,14 +6,14 @@ type MinimalVariable = StackTree.MinimalVariable;
     
 type ValueOrFunction<T> = ((v: RValue) => T) | T;
 
-interface VarInfo {
+export interface VarInfo {
   // Human friendly name of the entry, informative purpose only
   name: string;
   // Function that determines if the entry is to be used for a given variable
   doesApply: ((v: RValue) => boolean);
   // The child variables (typically entries of a list etc.)
   childVars?: ((rValue: RValue, ind?: number[]) => MinimalVariable[]) | MinimalVariable[];
-  // Number of childVars
+  // Number of childVars. Must match the length of the list returned by childVars()
   nChildVars?: ValueOrFunction<number>;
   // Informative attributes. Meant to be added by the user. Names should be preceded by '__'
   customAttributes?: ValueOrFunction<MinimalVariable[]>;
@@ -27,3 +27,10 @@ interface VarInfo {
   evaluateName?: ValueOrFunction<string>;
 }
 
+export function _vsc_applyVarInfo(
+  v: RValue,
+  info?: (keyof VarInfo)[],
+  stackingInfos?: (keyof VarInfo)[],
+  verbose?: boolean,
+  ind?: RVector<number>
+)
