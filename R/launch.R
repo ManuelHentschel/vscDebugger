@@ -8,13 +8,13 @@ initializeRequest <- function(response, args, request){
   # the adapter implements the configurationDoneRequest.
   body$supportsConfigurationDoneRequest <- TRUE
 
-  # make VS Code to use 'evaluate' when hovering over source
+  # make VS Code NOT use 'evaluate' when hovering over source
   body$supportsEvaluateForHovers <- FALSE
 
-  # make VS Code to show a 'step back' button
+  # make VS Code NOT show a 'step back' button
   body$supportsStepBack <- FALSE
 
-  # make VS Code to support data breakpoints
+  # make VS Code NOT support data breakpoints
   body$supportsDataBreakpoints <- FALSE
 
   # make VS Code to support completion in REPL
@@ -45,7 +45,7 @@ initializeRequest <- function(response, args, request){
   
   # 
   body$supportsClipboardContext <- TRUE
-  body$supportsSetVariable <- TRUE
+  body$supportsSetVariable <- getOption('vsc.supportSetVariable', TRUE)
 
   # assign to session
   session$isInitialized <- TRUE
@@ -90,6 +90,7 @@ initializeRequest <- function(response, args, request){
   session$threadId <- lget(args, 'threadId', 1)
 
   response$body <- body
+  response$packageInfo <- packageDescription('vscDebugger')
   sendResponse(response)
 
   initializedEvent <- makeEvent("initialized")
@@ -105,37 +106,37 @@ launchRequest <- function(response, args, request){
   session$debugMode <- lget(
     args,
     'debugMode',
-    getOption('vsc.defaultDebugMode')
+    getOption('vsc.defaultDebugMode', 'workspace')
   )
   session$allowGlobalDebugging <- lget(
     args,
     'allowGlobalDebugging',
-    getOption('vsc.defaultAllowGlobalDebugging')
+    getOption('vsc.defaultAllowGlobalDebugging', TRUE)
   )
   session$includePackageScopes <- lget(
     args,
     'includePackageScopes',
-    getOption('vsc.includePackageScopes')
+    getOption('vsc.includePackageScopes', FALSE)
   )
   session$setBreakpointsInPackages <- lget(
     args,
     'setBreakpointsInPackages',
-    getOption('vsc.setBreakpointsInPackages')
+    getOption('vsc.defaultSetBreakpointsInPackages', FALSE)
   )
   session$overwriteCat <- lget(
     args,
     'overwriteCat',
-    getOption('vsc.overwriteCat')
+    getOption('vsc.defaultOverwriteCat', TRUE)
   )
   session$overwritePrint <- lget(
     args,
     'overwritePrint',
-    getOption('vsc.overwritePrint')
+    getOption('vsc.defaultOverwritePrint', TRUE)
   )
   session$overwriteSource <- lget(
     args,
     'overwriteSource',
-    getOption('vsc.overwriteSource')
+    getOption('vsc.defaultOverwriteSource', TRUE)
   )
   session$packagesBeforeLaunch <- lget(
     args,
@@ -221,6 +222,8 @@ configurationDoneRequest <- function(response, args, request){
   session$isConfigurationDone <- TRUE
   sendResponse(response)
 
+  launchFromStdin <- FALSE
+
   # do stuff
   if(session$debugMode == 'file'){
     registerLaunchFrame()
@@ -230,7 +233,9 @@ configurationDoneRequest <- function(response, args, request){
   } else if (session$debugMode == 'function'){
     registerLaunchFrame(skipCalls=2)
     setErrorHandler(session$breakOnErrorFromFile)
-    eval(call(session$mainFunction), globalenv())
+    # eval(call(session$mainFunction), globalenv())
+    sendWriteToStdinEvent(format(call(session$mainFunction)))
+    launchFromStdin <- TRUE
     unregisterLaunchFrame()
   } else{
     setErrorHandler(session$breakOnErrorFromConsole)
@@ -241,7 +246,7 @@ configurationDoneRequest <- function(response, args, request){
     setErrorHandler(session$breakOnErrorFromConsole)
     session$ignoreNextCallback <- FALSE
   } else{
-    sendTerminatedEvent()
-    sendExitedEvent()
+    addTaskCallback(terminateSessionCallBack)
+    session$ignoreNextCallback <- launchFromStdin
   }
 }

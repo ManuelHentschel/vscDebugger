@@ -103,8 +103,18 @@ prepareResponse <- function(request){
     launchRequest(response, args, request)
   } else if(command == 'continue'){
     continueRequest(response, args, request)
+  } else if(command == 'next'){
+    nextRequest(response, args, request)
+  } else if(command == 'stepIn'){
+    stepInRequest(response, args, request)
+  } else if(command == 'stepOut'){
+    stepOutRequest(response, args, request)
+  } else if(command == 'restart'){
+    restartRequest(response, args, request)
   } else if(command == 'terminate'){
     terminateRequest(response, args, request)
+  } else if(command == 'custom'){
+    customRequest(response, args, request)
   } else {
     sendResponse(response)
     success <- FALSE
@@ -258,6 +268,19 @@ sendTerminatedEvent <- function(restart=NULL){
   sendEvent(makeTerminatedEvent(restart))
 }
 
+makeWriteToStdinEvent <- function(text, when='now', addNewLine=TRUE, expectBrowser=NULL){
+  event <- makeCustomEvent('writeToStdin', list(
+    text = text,
+    when = when,
+    addNewLine = addNewLine,
+    changeExpectBrowser = !is.null(expectBrowser),
+    expectBrowser = expectBrowser
+  ))
+}
+sendWriteToStdinEvent <- function(text, when='now', addNewLine=TRUE, expectBrowser=NULL){
+  sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectBrowser))
+}
+
 setExceptionBreakPointsRequest <- function(response, args, request){
   filters <- lget(args, 'filters', list())
   session$breakOnErrorFromConsole <- ('fromEval' %in% filters)
@@ -265,6 +288,11 @@ setExceptionBreakPointsRequest <- function(response, args, request){
   sendResponse(response)
 }
 
+customRequest <- function(response, args, request){
+  if(args$reason == 'showingPrompt'){
+    sendStoppedEvent(reason='breakpoint')
+  }
+}
 
 
 threadsRequest <- function(response, args, request){
@@ -284,13 +312,41 @@ continueRequest <- function(response, args, request){
   callDebugSource <- lget(args, 'callDebugSource', FALSE)
   path <- lget(args$source, 'path', '')
   if(callDebugSource && !isCalledFromBrowser()){
+    msg <- paste0('.vsc.debugSource("', path, '")')
+    sendOutputEvent(msg, group='startCollapsed')
+    sendOutputEvent('', group='end')
     .vsc.debugSource(path)
+    session$ignoreNextCallback <- FALSE
+  } else{
+    sendWriteToStdinEvent('c', expectBrowser = FALSE)
   }
+  sendResponse(response)
 }
 
-setExpressionRequest <- function(response, args, request){
-    
+nextRequest <- function(response, args, request){
+  sendWriteToStdinEvent('n', expectBrowser = FALSE)
+  sendResponse(response)
 }
+
+stepInRequest <- function(response, args, request){
+  sendWriteToStdinEvent('s', expectBrowser = FALSE)
+  sendResponse(response)
+}
+
+stepOutRequest <- function(response, args, request){
+  sendWriteToStdinEvent('f', expectBrowser = FALSE)
+  sendResponse(response)
+}
+
+restartRequest <- function(response, args, request){
+  if(isCalledFromBrowser() && session$allowGlobalDebugging){
+    sendWriteToStdinEvent('Q')
+    sendStoppedEvent('step')
+  }
+  sendResponse(response)
+}
+
+setExpressionRequest <- function(response, args, request){}
 
 terminateRequest <- function(response, args, request){
   if(lget(session, 'useJsonServer', FALSE)){

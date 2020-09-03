@@ -37,8 +37,7 @@ session <- local({
     delimiter0 = '<v\\s\\c>',
     delimiter1 = '</v\\s\\c>',
     prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    continue = '<##v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    append = ' ### <v\\s\\c\\COMMAND>'
+    continue = '<##v\\s\\c>' #actual prompt is followed by a newline to make easier to identify
   )
   threadId <- 1
 
@@ -68,33 +67,15 @@ session <- local({
 
 .onLoad <- function(...) {
   options(error = traceback)
-  setOptionIfNull('vsc.trySilent', TRUE)
-
-  setOptionIfNull('vsc.evaluateActiveBindings', FALSE)
-  setOptionIfNull('vsc.previewPromises', FALSE)
-  setOptionIfNull('vsc.matricesByRow', TRUE)
-  setOptionIfNull('vsc.dataFramesByRow', FALSE)
-  setOptionIfNull('vsc.convertFactorEntries', FALSE)
-  setOptionIfNull('vsc.showAttributes', TRUE)
-  setOptionIfNull('vsc.showCustomAttributes', TRUE)
-
-
-  setOptionIfNull('vsc.defaultIncludePackageScopes', FALSE)
-  setOptionIfNull('vsc.includePackageScopes', FALSE)
-  setOptionIfNull('vsc.setBreakpointsInPackages', FALSE)
-  setOptionIfNull('vsc.overwritePrint', TRUE)
-  setOptionIfNull('vsc.overwriteCat', TRUE)
-  setOptionIfNull('vsc.overwriteSource', TRUE)
-
-  setOptionIfNull('vsc.defaultDebugMode', 'file')
-  setOptionIfNull('vsc.defaultAllowGlobalDebugging', FALSE)
-  setOptionIfNull('vsc.defaultFile', 'main.R')
-
   session$varInfos <- getDefaultVarInfos()
   session$rootNode <- RootNode$new()
 }
 
 #' @export
-.vsc.getSession <- function(){
-  return(session)
+.vsc.getSession <- function(entry=NULL, default=NULL){
+  if(is.null(entry)){
+    session
+  } else{
+    lget(session, entry, default)
+  }
 }

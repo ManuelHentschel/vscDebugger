@@ -20,14 +20,20 @@
             }
         },
         {
-            "label": "Build and install package for testing",
+            "label": "Build and install package for testing (QUICK)",
             "type": "shell",
-            "command": "Rscript build.R",
+            "command": "Rscript build.R --args quick",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Build and install package for testing (SLOW)",
+            "type": "shell",
+            "command": "Rscript build.R --args slow",
+            "problemMatcher": []
         }
     ]
 }

@@ -14,7 +14,7 @@ export declare module Breakpoints {
 
     maxOffset?: number; // the maximum difference between requested line and actual breakpoint
 
-    rAt?: RVector<number>[]; // the step in the R parse tree that contains the bp
+    rAt?: RVector<number>; // the step in the R parse tree that contains the bp
     rFunction?: RFunction;
 
     source?: DebugProtocol.Source // For compatibility with DebugProtocol.Breakpoint // Must be same as containing FileBreakpoints
@@ -38,4 +38,17 @@ export declare module Breakpoints {
   function getBreakpointLines(path: string): number[];
 
   function getRequestedBreakpointLines(path: string): number[];
+
+  function _vsc_setBreakpoints(
+    file: string,
+    bps: InternalBreakpoint[],
+    includePackageScopes?: boolean,
+    id?: number
+  ): InternalBreakpoint[];
+
+  function setBreakpointsRequest(
+    response: DebugProtocol.SetBreakpointsResponse,
+    args: DebugProtocol.SetBreakpointsArguments,
+    request: DebugProtocol.SetBreakpointsRequest
+  ): void;
 }

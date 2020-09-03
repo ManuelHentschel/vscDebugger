@@ -158,7 +158,7 @@ globalStepCallback <- function(...){
   if(lget(session, 'ignoreNextCallback', FALSE)){
     session$ignoreNextCallback <- FALSE
   } else{
-    if(calledFromGlobal()){
+    if(!isCalledFromBrowser()){
       session$isError <- FALSE
       setErrorHandler(session$breakOnErrorFromConsole)
       sendContinuedEvent()
@@ -172,26 +172,20 @@ globalStepCallback <- function(...){
   TRUE
 }
 
-calledFromGlobal <- function() {
-  # determine if a call was made from the command line (=global) or not
-  # can be used inside other functions from this package
-  # Make sure not to nest this line: (!!!)
-  thisPackageEnv <- parent.env(environment())
-  # check if the first call (stack frame) is to a funcion from this package:
-  if (identical(parent.env(sys.frame(1)), thisPackageEnv)) {
-    return(TRUE)
-  } else {
-    return(FALSE)
-  }
-}
-isPackageFrame <- function(env = parent.frame()) {
-  while (!identical(env, emptyenv())) {
-    if (identical(env, globalenv())) {
-      return(FALSE)
+
+terminateSessionCallBack <- function(...){
+  if(lget(session, 'ignoreNextCallback', FALSE)){
+    session$ignoreNextCallback <- FALSE
+  } else{
+    if(!isCalledFromBrowser()){
+      sendTerminatedEvent()
+      sendExitedEvent()
+      quit(save = 'no')
+    } else{
+      # do nothing?
     }
-    env <- parent.env(env)
   }
-  return(TRUE)
+  TRUE
 }
 
 
