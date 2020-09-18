@@ -113,6 +113,8 @@ prepareResponse <- function(request){
     restartRequest(response, args, request)
   } else if(command == 'terminate'){
     terminateRequest(response, args, request)
+  } else if(command == 'disconnect'){
+    disconnectRequest(response, args, request) # different form terminate?
   } else if(command == 'custom'){
     customRequest(response, args, request)
   } else {
@@ -348,13 +350,33 @@ restartRequest <- function(response, args, request){
 
 setExpressionRequest <- function(response, args, request){}
 
+disconnectRequest <- function(response, args, request){
+  if(isCalledFromBrowser()){
+    sendWriteToStdinEvent('Q')
+  }
+  sendResponse(response)
+  closeConnections()
+  quit(save = 'no')
+}
+
 terminateRequest <- function(response, args, request){
+  if(isCalledFromBrowser()){
+    sendWriteToStdinEvent('Q')
+    sendResponse(response)
+    sendContinuedEvent()
+    sendStoppedEvent('step')
+  } else{
+    sendResponse(response)
+    sendTerminatedEvent()
+  }
+}
+
+closeConnections <- function(){
   if(lget(session, 'useJsonServer', FALSE)){
     close(session$jsonServerConnection)
   }
   if(lget(session, 'useSinkServer', FALSE)){
     close(session$sinkServerConnection)
   }
-  quit(save = 'no')
 }
 

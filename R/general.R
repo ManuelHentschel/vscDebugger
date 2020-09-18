@@ -180,6 +180,7 @@ terminateSessionCallBack <- function(...){
     if(!isCalledFromBrowser()){
       sendTerminatedEvent()
       sendExitedEvent()
+      closeConnections()
       quit(save = 'no')
     } else{
       # do nothing?
