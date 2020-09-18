@@ -2,8 +2,12 @@
 # Contains info about the debug session itself, not the specific file/function etc.
 initializeRequest <- function(response, args, request){
   body <- list()
-  # support restart
-  body$supportsRestartRequest <- TRUE
+  # don't support restart -> automatically termiantes + starts again
+  body$supportsRestartRequest <- FALSE
+
+  # suppoert terminate: can be used to exit function without terminating R session
+  # only works ONCE (!)
+  body$supportsTerminateRequest <- TRUE
 
   # the adapter implements the configurationDoneRequest.
   body$supportsConfigurationDoneRequest <- TRUE
