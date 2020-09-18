@@ -25,28 +25,30 @@
   file <- normalizePath(file)
   body <- parse(file, encoding = encoding, keep.source = TRUE)
 
-  # apply breakpoints stored in session$srcBreakpoints
-  if (applyInternalBreakpoints) {
-    bps <- .vsc.getBreakpoints(file)
-    lines <- .vsc.getBreakpointLines(file)
-  }
+  if(!session$noDebug){
+    # apply breakpoints stored in session$srcBreakpoints
+    if (applyInternalBreakpoints) {
+      bps <- .vsc.getBreakpoints(file)
+      lines <- .vsc.getBreakpointLines(file)
+    }
 
-  # find steps/expressions corresponding to the requested lines:
-  ats <- lapply(lines, lineFind, body)
+    # find steps/expressions corresponding to the requested lines:
+    ats <- lapply(lines, lineFind, body)
 
-  # check if bps were found and confirm breakpoints to vsc
-  for (i in seq_along(bps)) {
-    bps[[i]]$verified <- length(ats[[i]]) > 0
-  }
-  sendBreakpoints(bps)
+    # check if bps were found and confirm breakpoints to vsc
+    for (i in seq_along(bps)) {
+      bps[[i]]$verified <- length(ats[[i]]) > 0
+    }
+    sendBreakpoints(bps)
 
 
-  # set breakpoints:
-  body <- mySetBreakpoints(body, ats)
+    # set breakpoints:
+    body <- mySetBreakpoints(body, ats)
 
-  # store state
-  if(chdir){
-    tmpwd <- setwd(dirname(file))
+    # store state
+    if(chdir){
+      tmpwd <- setwd(dirname(file))
+    }
   }
 
   registerLaunchFrame()

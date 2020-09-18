@@ -147,6 +147,15 @@ launchRequest <- function(response, args, request){
     'packagesBeforeLaunch',
     character(0)
   )
+  session$noDebug <- lget(
+    args,
+    'noDebug',
+    FALSE
+  )
+
+  if(session$noDebug){
+    session$allowGlobalDebugging <- FALSE
+  }
 
 
   session$mainFunction <- lget(args, 'mainFunction', 'main')
