@@ -1,4 +1,7 @@
 {
     "editor.tabSize": 2,
-    "editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",<>/?"
+    "editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",<>/?",
+    "search.exclude": {
+        "man/*": true,
+    }
 }
