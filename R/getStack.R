@@ -58,16 +58,15 @@ variablesRequest <- function(response, args, request){
 
   if(is.null(variableNode)){
     print("Variable not found. This is not supposed to happen.")
-  } else{
-    variable <- variableNode$getContent()
+    response$success <- FALSE
+    sendResponse(response)
+    return(NULL)
   }
 
+  variable <- variableNode$getContent()
   childrenNodes <- variableNode$getChildren(args)
-
   variables <- lapply(childrenNodes, function(node) node$getContent())
-
   response[['body']] <- list(variables = variables)
-
   sendResponse(response)
 }
 
