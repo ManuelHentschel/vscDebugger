@@ -81,6 +81,8 @@ prepareResponse <- function(request){
     scopesRequest(response, args, request)
   } else if(command == 'variables'){
     variablesRequest(response, args, request)
+  } else if(command == 'source'){
+    sourceRequest(response, args, request)
   } else if(command == 'setVariable'){
     setVariableRequest(response, args, request)
   } else if(command == 'setExpression'){

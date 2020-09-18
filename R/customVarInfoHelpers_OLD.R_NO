@@ -1,0 +1,74 @@
+
+
+
+.vsc.resetVarInfo <- function() {
+  session$varInfos <- getDefaultVarInfos()
+}
+
+.vsc.clearVarInfo <- function() {
+  session$varInfos <- list()
+}
+
+.vsc.addVarInfo <- function(
+  varInfo,
+  position = 1
+) {
+  # check if there is a position given in varInfo
+  if (!is.null(varInfo$position)){
+    position <- varInfo$position
+  }
+
+  if (position < 0) {
+    # negative positions count from the end, -1 = last position
+    position <- length(session$varInfos) + 1 + position
+  } else if (position > 0) {
+    position <- position - 1 # position 1 == insert after 0
+  }
+
+  session$varInfos <- append(session$varInfos, list(varInfo), position)
+}
+
+.vsc.removeVarInfo <- function(position = 1) {
+  if (position < 0) {
+    position <- length(session$varInfos) + 1 + position
+  }
+  session$varInfos[position] <- NULL
+}
+
+.vsc.listVarInfo <- function(position = NULL) {
+  if (is.null(position)) {
+    position <- seq_along(session$varInfos)
+  }
+  varInfos <- .vsc.getAllVarInfos()
+  varInfos <- lapply(position, function(pos) varInfos[pos])
+  varInfos <- unlist(varInfos, recursive = FALSE)
+  return(varInfos)
+}
+
+.vsc.getVarInfo <- function(positionOrName = NULL){
+  if(is.null(positionOrName)){
+    return(NULL)
+  } else if(is.list(positionOrName)){
+    return(.vsc.listVarInfo(positionOrName))
+  } else if(is.vector(positionOrName) && length(positionOrName)>1){
+    return(.vsc.listVarInfo(as.list(positionOrName)))
+  }
+
+  varInfos <- .vsc.getAllVarInfos()
+  varInfo <- varInfos[[positionOrName]]
+  return(varInfo)
+}
+
+.vsc.getAllVarInfos <- function(){
+  varInfos <- session$varInfos
+  varInfos <- lapply(seq_along(varInfos), function(i){
+    vI <- varInfos[[i]]
+    vI$position <- i
+    vI
+  })
+  names(varInfos) <- lapply(varInfos, function(vI){
+    vI$name
+  })
+  return(varInfos)
+}
+

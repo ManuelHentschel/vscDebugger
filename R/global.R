@@ -58,6 +58,7 @@ session <- local({
   # (like 'state', but contains longer lists etc.)
   rootNode <- NULL
   fileBreakpoints <- list()
+  sources <- list()
 
 
   # lock and return the environment:

@@ -45,14 +45,16 @@
 printToVsc <- function(ret, skipCalls=0){
   output <- paste0(ret, collapse = "\n")
 
-  lineAndFile <- getSource(sys.call(-skipCalls))
-  line <- lineAndFile$line
-  file <- lineAndFile$path
-  if(!identical(file, "")){
-    source <- list(path=file, name=basename(file))
-  } else{
-    source <- NULL
-  }
+  source <- getSource(sys.call(-skipCalls))
+  line <- source$line
+  # lineAndFile <- getSource(sys.call(-skipCalls))
+  # line <- lineAndFile$line
+  # file <- lineAndFile$path
+  # if(!identical(file, "")){
+  #   source <- list(path=file, name=basename(file))
+  # } else{
+  #   source <- NULL
+  # }
 
   sendOutputEvent(category="stdout", output = output, line=line, source=source)
 }
