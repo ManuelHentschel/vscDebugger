@@ -77,7 +77,7 @@ getSource <- function(call, frameIdR = 0) {
     # src$name <- 'temp'
     src$path <- strsplit(content, ' ')[[1]][1]
     src$name <- strsplit(content, ' ')[[1]][1]
-    print(toString(call[[1]]))
+    # print(toString(call[[1]]))
     src$sourceReference <- storeSource(src)
   }
 
