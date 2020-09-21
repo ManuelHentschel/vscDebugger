@@ -7,7 +7,7 @@ initializeRequest <- function(response, args, request){
 
   # suppoert terminate: can be used to exit function without terminating R session
   # only works ONCE (!)
-  body$supportsTerminateRequest <- TRUE
+  body$supportsTerminateRequest <- getOption('vsc.supportTerminateRequest', TRUE)
 
   # the adapter implements the configurationDoneRequest.
   body$supportsConfigurationDoneRequest <- TRUE
