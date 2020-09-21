@@ -7,7 +7,7 @@ initializeRequest <- function(response, args, request){
 
   # suppoert terminate: can be used to exit function without terminating R session
   # only works ONCE (!)
-  body$supportsTerminateRequest <- TRUE
+  body$supportsTerminateRequest <- getOption('vsc.supportTerminateRequest', TRUE)
 
   # the adapter implements the configurationDoneRequest.
   body$supportsConfigurationDoneRequest <- TRUE
@@ -147,6 +147,15 @@ launchRequest <- function(response, args, request){
     'packagesBeforeLaunch',
     character(0)
   )
+  session$noDebug <- lget(
+    args,
+    'noDebug',
+    FALSE
+  )
+
+  if(session$noDebug){
+    session$allowGlobalDebugging <- FALSE
+  }
 
 
   session$mainFunction <- lget(args, 'mainFunction', 'main')

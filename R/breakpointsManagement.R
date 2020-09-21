@@ -86,6 +86,9 @@ getRequestedBreakpointLines <- function(path){
 
 
 .vsc.setStoredBreakpoints <- function() {
+  if(session$noDebug){
+    return(FALSE)
+  }
   for (fbp in session$fileBreakpoints){
     file <- lget(fbp$source, 'path', '')
     if(file.exists(file)){

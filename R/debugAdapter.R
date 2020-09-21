@@ -361,10 +361,16 @@ setExpressionRequest <- function(response, args, request){}
 disconnectRequest <- function(response, args, request){
   if(isCalledFromBrowser()){
     sendWriteToStdinEvent('Q')
+    sendWriteToStdinEvent(format(quote(
+      quit(save='no')
+    )))
+    sendResponse(response)
+    closeConnections()
+  } else{
+    sendResponse(response)
+    closeConnections()
+    quit(save = 'no')
   }
-  sendResponse(response)
-  closeConnections()
-  quit(save = 'no')
 }
 
 terminateRequest <- function(response, args, request){
