@@ -1,5 +1,26 @@
 
 
+
+sourceRequest <- function(response, args, request){
+  sources <- lget(session, 'sources', list())
+  srcref <- lget(args, 'sourceReference', 0)
+  if(srcref==0){
+    srcref <- lget(args$source, 'sourceReference', 0)
+  }
+  foundSource <- FALSE
+  for(src in sources){
+    if(src$sourceReference == srcref){
+      response$body <- list(
+        content = lget(src, 'content', '<ERROR: Source information not found!>'),
+        mimeType = lget(src, 'mimeType')
+      )
+      foundSource <- TRUE
+    }
+  }
+  response$success <- foundSource
+  sendResponse(response)
+}
+
 #' Gather info about a frame's source code
 #' 
 #' Gathers and returns a named list containing info about the name, path, and content of the source file of a frame
@@ -7,10 +28,12 @@
 #' @param frameIdR A frame id (as used by R) that can be passed to sys.call
 #' @return A named list containing info about the source file
 getSource <- function(call, frameIdR = 0) {
+  # get call if not provided
   if(is.null(call)){
     call <- sys.call(frameIdR)
   }
 
+  # retrieve source information from call
   srcref <- attr(call, 'srcref')
   srcfile <- attr(srcref, 'srcfile')
 
@@ -21,38 +44,55 @@ getSource <- function(call, frameIdR = 0) {
     srcfile <- originalSrcfile
   }
 
+  # return empty source if no source information found
   if(is.null(srcfile)){
     return(getEmptySource())
   }
 
+  # validate path
   wd <- srcfile$wd
   path <- srcfile$filename
-  name <- basename(path)
   if(path != ''){
     path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
   }
-
-  srcbody <- paste0(srcfile$lines, collapse='\n')
   isFile <- file.exists(path)
 
-  if(isFile){
-    sourceReference <- 0
-  } else{
-    sourceReference <- frameIdR + 1
-    path <- ''
-  }
-
-  ret <- list(
-    name = name,
-    path = path,
-    sourceReference = sourceReference,
+  # handle source information
+  src <- list(
     line = srcref[1],
     endLine = srcref[3],
     column = srcref[2],
     endColumn = srcref[4],
-    srcbody = srcbody,
     isFile = isFile
   )
+
+  if(isFile){
+    src$sourceReference <- 0
+    src$name <- basename(path)
+    src$path <- path
+  } else{
+    content <- paste0(srcfile$lines, collapse='\n')
+    src$content <- content
+    # src$path <- 'temp'
+    # src$name <- 'temp'
+    src$path <- strsplit(content, ' ')[[1]][1]
+    src$name <- strsplit(content, ' ')[[1]][1]
+    # print(toString(call[[1]]))
+    src$sourceReference <- storeSource(src)
+  }
+
+  return(src)
+}
+
+storeSource <- function(source, doSave=TRUE){
+  if(doSave){
+    sourceReference <- length(session$sources)+1
+    source$sourceReference <- sourceReference
+    session$sources[[sourceReference]] <- source
+  } else{
+    sourceReference <- 0
+  }
+  return(sourceReference)
 }
 
 normalizePathInWd <- function(path, winslash="\\", mustWork=FALSE, wd=NULL){
@@ -81,7 +121,7 @@ getEmptySource <- function(){
     endLine = 0,
     column = 0,
     endColumn = 0,
-    srcbody = '',
+    content = '',
     isFile = FALSE
   )
 }

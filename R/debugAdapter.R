@@ -81,6 +81,8 @@ prepareResponse <- function(request){
     scopesRequest(response, args, request)
   } else if(command == 'variables'){
     variablesRequest(response, args, request)
+  } else if(command == 'source'){
+    sourceRequest(response, args, request)
   } else if(command == 'setVariable'){
     setVariableRequest(response, args, request)
   } else if(command == 'setExpression'){
@@ -326,17 +328,23 @@ continueRequest <- function(response, args, request){
 }
 
 nextRequest <- function(response, args, request){
-  sendWriteToStdinEvent('n', expectBrowser = FALSE)
+  if(isCalledFromBrowser()){
+    sendWriteToStdinEvent('n', expectBrowser = FALSE)
+  }
   sendResponse(response)
 }
 
 stepInRequest <- function(response, args, request){
-  sendWriteToStdinEvent('s', expectBrowser = FALSE)
+  if(isCalledFromBrowser()){
+    sendWriteToStdinEvent('s', expectBrowser = FALSE)
+  }
   sendResponse(response)
 }
 
 stepOutRequest <- function(response, args, request){
-  sendWriteToStdinEvent('f', expectBrowser = FALSE)
+  if(isCalledFromBrowser()){
+    sendWriteToStdinEvent('f', expectBrowser = FALSE)
+  }
   sendResponse(response)
 }
 

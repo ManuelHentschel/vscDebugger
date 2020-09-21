@@ -4,6 +4,8 @@ import { Breakpoints } from './breakpoints';
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
 import { VarInfo } from './customVarInfo';
 import { StackTree } from './stackTree';
+import { DebugProtocol } from './debugProtocol';
+import { Source } from './debugProtocolModifications';
 
 export declare module Session {
   interface Session {
@@ -66,5 +68,6 @@ export declare module Session {
     // (like 'state', but contains longer lists etc.)
     rootNode: StackTree.RootNode;
     fileBreakpoints: Breakpoints.FileBreakpoints[];
+    sources: Source[];
   }
 }

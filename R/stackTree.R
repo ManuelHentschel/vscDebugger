@@ -348,6 +348,7 @@ FrameNode <- R6::R6Class(
         self$name <- getFrameName(self$call)
         self$presentationHint <- "normal"
         source <- getSource(sys.call(self$frameIdR + 1), self$frameIdR + 1)
+        # source <- getSource(sys.call(self$frameIdR), self$frameIdR)
         self$line <- source$line
         self$column <- source$column
         self$endLine <- source$endLine
@@ -359,11 +360,11 @@ FrameNode <- R6::R6Class(
         self$endColumn <- NULL
       }
       
-      if (lget(source, "isFile", FALSE)) {
+      # if (lget(source, "isFile", FALSE)) {
         self$source <- source
-      } else {
-        self$source <- NULL
-      }
+      # } else {
+      #   self$source <- NULL
+      # }
     },
     getContent = function(args=list()) {
       list(
