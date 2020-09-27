@@ -455,7 +455,16 @@ getDefaultVarInfos <- function() {
       toString = function(v) {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
       },
-      evaluateName = function(v) paste0(deparse(v), collapse = '\n')
+      evaluateName = function(v) {
+        bytes <- object.size(v)
+        maxBytes <- getOption('vsc.deparseMaxBytes', 1e5)
+        if(bytes <= maxBytes){
+          ret <- paste0(deparse(v), collapse = '\n')
+        } else{
+          ret <- '<Object too large>'
+        }
+        return(ret)
+      }
     )
   )
 
