@@ -87,7 +87,7 @@ evaluateRequest <- function(response, args, request){
 }
 
 
-# helper funciton that does the work for eval requests
+# helper function that does the work for eval requests
 evalInEnv <- function(
   expr,
   env,
