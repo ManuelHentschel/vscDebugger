@@ -137,7 +137,7 @@ export interface WriteToStdinBody {
     text: string;
     when?: "now"|"browserPrompt"|"topLevelPrompt"|"prompt";
     addNewLine?: boolean; //=false (in vscode), =true (in R)
-    count?: 1;
+    count?: number; // =1
     stack?: boolean;
 }
 

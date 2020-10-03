@@ -179,6 +179,7 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
 
 
 fixNames <- function(childVars){
+  # used to make sure there are not duplicate variable names in a scope/parent var
   names <- lapply(childVars, function(var) var$name)
   inds <- which(duplicated(names) | names == "")
   while(length(inds)>0){

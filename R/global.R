@@ -33,13 +33,14 @@ session <- local({
   sinkHost <- 'localhost'
   sinkServerConnection <- NULL
 
+  threadId <- 1
+
   rStrings <- list(
     delimiter0 = '<v\\s\\c>',
     delimiter1 = '</v\\s\\c>',
     prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
     continue = '<##v\\s\\c>' #actual prompt is followed by a newline to make easier to identify
   )
-  threadId <- 1
 
   # state:
   # (is managed by the debugger itself and might change frequently)
@@ -47,7 +48,6 @@ session <- local({
   breakOnErrorFromFile <- TRUE
   entryFrames <- c()
   launchFrames <- c()
-  # ignoreNextCallback <- FALSE
   breakpointId <- 1
   stopListeningOnPort <- FALSE
   restOfLine <- ''

@@ -56,10 +56,10 @@ export declare module Session {
     breakOnErrorFromConsole: boolean;
     breakOnErrorFromFile: boolean;
     entryFrames: number[];
-    launchFrames: number;
-    // ignoreNextCallback: boolean;
+    launchFrames: number[];
     breakpointId: number;
     stopListeningOnPort: boolean;
+    restOfLine: string;
 
     state: State;
     pendingEvalResponses: DebugProtocol.EvaluateResponse[];
