@@ -20,7 +20,7 @@ export declare module Session {
     overwriteCat: boolean;
     overwriteSource: boolean;
 
-    noDebug: boolean; // currently not used
+    noDebug: boolean; 
     debugMode: ("function" | "file" | "workspace")
     workingDirectory: string;
     file: string;
@@ -55,14 +55,14 @@ export declare module Session {
     // (is managed by the debugger itself and might change frequently)
     breakOnErrorFromConsole: boolean;
     breakOnErrorFromFile: boolean;
-    isInitialized: boolean;
-    isConfigurationDone: boolean;
-    isEvaluating: boolean;
-    isError: boolean;
     entryFrames: number[];
     launchFrames: number;
-    ignoreNextCallback: boolean;
+    // ignoreNextCallback: boolean;
     breakpointId: number;
+    stopListeningOnPort: boolean;
+
+    state: State;
+    pendingEvalResponses: DebugProtocol.EvaluateResponse[];
 
     // data:
     // (like 'state', but contains longer lists etc.)
@@ -70,4 +70,45 @@ export declare module Session {
     fileBreakpoints: Breakpoints.FileBreakpoints[];
     sources: Source[];
   }
+}
+
+export type BaseState = "starting"|"loadLib"|"sourceMain"|"runMain"|"runFile"|"workspace"|"quitting";
+export type RunningWhat = "loadLib"|"sourceMain"|"file"|"main"|"eval";
+export type PausedOn = "breakpoint"|"browser"|"error"|"toplevel";
+
+export class MinimalState {
+  baseState: ""|BaseState;
+  running: boolean;
+  runningWhat: ""|RunningWhat;
+  evalSilent: boolean;
+  pausedOn: ""|PausedOn;
+  hasHitError: boolean;
+}
+
+export class State extends MinimalState {
+  update(
+    changeBaseState?: boolean,
+    baseState?: BaseState,
+    startRunning?: boolean,
+    runningWhat?: RunningWhat,
+    evalSilent?: boolean,
+    startPaused?: boolean,
+    pausedOn?: PausedOn
+  ): MinimalState;
+
+  changeBaseState(baseState: BaseState, startRunning?: boolean, startPaused?: boolean): MinimalState;
+  startRunning(runningWhat: RunningWhat, evalSilent?: boolean): MinimalState;
+  startPaused(pausedOn: PausedOn): MinimalState;
+
+  export(): MinimalState;
+  revert(state: MinimalState): MinimalState;
+
+  isError(): boolean;
+  isRunning(): boolean;
+  isRunningFile(): boolean;
+  isSourcingMain(): boolean;
+  isRunningMain(): boolean;
+  isRunningFileOrMain(): boolean;
+  isEvaluating(): boolean;
+  isPaused(): boolean;
 }

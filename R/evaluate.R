@@ -1,85 +1,26 @@
 
 evaluateRequest <- function(response, args, request){
+  logPrint('evaluating3!!!!!!!')
   # args
   expr <- lget(args, 'expression', '')
   frameId <- lget(args, 'frameId', 0)
   context <- lget(args, 'context', '')
 
+  # do not evaluate clipboard context
+  # -> uses the already known string representation from the stack tree
   if(context == 'clipboard'){
     response$success <- FALSE
     sendResponse(response)
     return(invisible(NULL))
   }
 
+  # carriage returns are added e.g. by vscode on windows
+  # cause errors in R
   if(getOption("vsc.ignoreCrInEval", TRUE)){
     expr <- gsub("\r", "", expr)
   }
 
-  silent <- (context == 'watch')
-  assignToAns <- getOption('vsc.assignToAns', TRUE)
-  catchErrors <- !(session$breakOnErrorFromConsole)
-  deactivateTracing <- isCalledFromBrowser() || silent
-
-  valueAndVisible <- .vsc.evalInFrame(
-    expr,
-    frameId,
-    silent = silent,
-    id = 0,
-    assignToAns = assignToAns,
-    catchErrors = catchErrors,
-    deactivateTracing = deactivateTracing
-  )
-
-  if(
-    valueAndVisible$visible
-    && identical(class(valueAndVisible$value), 'help_files_with_topic')
-  ){
-    valueAndVisible$visible <- FALSE
-    print(valueAndVisible$value)
-  }
-
-  if(valueAndVisible$visible || context == 'watch'){
-    args <- list(
-      name = 'evalResult',
-      rValue = valueAndVisible$value
-    )
-    node <- session$rootNode$getEvalRootNode()$addChild(args)
-    variable <- node$getContent()
-
-    body <- list(
-      result = variable$value,
-      type = variable$type,
-      variablesReference = variable$variablesReference
-    )
-  } else{
-    body <- list(
-      result = "",
-      type = "",
-      variablesReference = 0
-    )
-  }
-
-  response$body <- body
-
-  sendResponse(response)
-}
-
-
-
-#' Evaluate an expression and send result to vsc
-#'
-#' Evaluates an expression in a given frameId and sends the result to vsc
-#'
-#' @param expr The espression to be evaluated
-#' @param frameId The Id of the frame (as given by vsc)
-#' @param silent Whether to ommit output
-#' @param id Deprecated
-#' @param assignToAns Whether to assign the result of the evaluation to .GlobalEnv$.ans
-#' @param catchErrors Whether to catch errors or let them be handled by `options(error = ...)`
-#' @param deactivateTracing Whether to deactivate tracing (=breakpoints) while evaluating
-.vsc.evalInFrame <- function(expr, frameId, silent = TRUE, id = 0, assignToAns = TRUE, catchErrors = TRUE, deactivateTracing = silent) {
-  registerEntryFrame()
-  # evaluate calls that were made from top level cmd line in the .GlobalEnv
+  # determine the correct environment
   if (!isCalledFromBrowser()) {
     env <- .GlobalEnv
   } else {
@@ -91,26 +32,103 @@ evaluateRequest <- function(response, args, request){
     }
   }
 
-  registerLaunchFrame(8)
+  # store response. is sent if evaluation results in an error
+  session$pendingEvalResponses <- c(list(response), session$pendingEvalResponses)
 
-  if(deactivateTracing){
-    ts <- eval(quote(tracingState(FALSE)), envir=env)
-    # ts <- tracingState(FALSE)
-    # sendCustomEvent('continueOnBrowserPrompt', list(value=TRUE))
-    sendCustomEvent('writeToStdin', list(text='c', when='browserPrompt'))
+  # call actual 'workhorse' function
+  isWatch <- (context == 'watch')
+  valueAndVisible <- evalInEnv(
+    expr = expr,
+    env = env,
+    showParseErrors = !isWatch,
+    showOutput = !isWatch,
+    deactivateTracing = isWatch || session$state$isError(),
+    catchErrors = isWatch || session$state$isError() || !session$breakOnErrorFromConsole,
+    showErrors = !isWatch
+  )
+
+  # remove response
+  session$pendingEvalResponses[1] <- NULL
+
+  # print help files -> opens the help page in browser
+  if(
+    valueAndVisible$visible
+    && context != 'watch'
+    && identical(class(valueAndVisible$value), 'help_files_with_topic')
+  ){
+    valueAndVisible$visible <- FALSE
+    base::print(valueAndVisible$value)
   }
 
-  if(silent){
-    # prepare settings
-    setErrorHandler(FALSE)
-    session$isEvaluating <- TRUE
+  # prepare response body 
+  if(valueAndVisible$visible || context == 'watch'){
+    # store result to stackTree
+    args <- list(
+      name = 'evalResult',
+      rValue = valueAndVisible$value
+    )
+    node <- session$rootNode$getEvalRootNode()$addChild(args)
+    variable <- node$getContent()
 
-    # eval
-    valueAndVisible <- list(value=NULL, visible=FALSE)
+    response$body <- list(
+      result = variable$value,
+      type = variable$type,
+      variablesReference = variable$variablesReference
+    )
+  } else{
+    response$body <- list(
+      result = "",
+      type = "",
+      variablesReference = 0
+    )
+  }
+
+  sendResponse(response)
+}
+
+
+# helper funciton that does the work for eval requests
+evalInEnv <- function(
+  expr,
+  env,
+  showParseErrors,
+  showOutput,
+  deactivateTracing,
+  catchErrors,
+  showErrors
+){
+  # check input
+  if(deactivateTracing && !catchErrors) stop('invalid args')
+  # other invalid combinations are silently ignored/treated unexpectedly
+
+  # parse expr
+  body <- try(
+    parse(text=expr),
+    silent = !showParseErrors
+  )
+  if(inherits(body, 'try-error')){
+    return(list(
+      value = body,
+      visible = FALSE
+    ))
+  }
+
+  # change state
+  prevState <- session$state$startRunning('eval')
+
+  # deactivate tracing
+  if(deactivateTracing){
+    ts <- eval(quote(tracingState(FALSE)), envir=env)
+    sendWriteToStdinEvent('c', when='browserPrompt', count=-1)
+  }
+
+  # eval
+  if(catchErrors && !showOutput){
+    # wrap in try(), withVisible(), capture.output()
+    logPrint(" wrap in try(), withVisible(), capture.output() ")
     valueAndVisible <- try(
       {
-        b <- parse(text=expr)
-        for(exp in b){
+        for(exp in body){
           cl <- call('withVisible', exp)
           capture.output(valueAndVisible <- eval(cl, envir=env))
         }
@@ -118,54 +136,43 @@ evaluateRequest <- function(response, args, request){
       },
       silent = getOption('vsc.trySilent', default=TRUE)
     )
-    if(inherits(valueAndVisible, 'try-error')){
-      valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
-    }
-
-    # reset settings
-    session$isEvaluating <- FALSE
-    setErrorHandler(session$breakOnErrorFromConsole)
+  } else if(catchErrors && showOutput){
+    # wrap in try(), withVisible()
+    logPrint(" wrap in try(), withVisible() ")
+    valueAndVisible <- try(
+      {
+        for(exp in body){
+          cl <- call('withVisible', exp)
+          valueAndVisible <- eval(cl, envir=env)
+        }
+        valueAndVisible
+      },
+      silent = FALSE
+    )
   } else{
-    # eval
-    valueAndVisible <- list(value=NULL, visible=FALSE)
-    if (catchErrors) {
-      valueAndVisible <- try(
-        {
-          b <- parse(text=expr)
-          for(exp in b){
-            cl <- call('withVisible', exp)
-            valueAndVisible <- eval(cl, envir=env)
-          }
-          valueAndVisible
-        },
-        silent = FALSE
-      )
-    } else {
-      setErrorHandler(TRUE)
-      b <- parse(text=expr)
-      for(exp in b){
-        cl <- call('withVisible', exp)
-        valueAndVisible <- eval(cl, envir=env)
-      }
+    # wrap in withVisible()
+    logPrint(" wrap in withVisible() ")
+    registerLaunchFrame(2)
+    for(exp in body){
+      cl <- call('withVisible', exp)
+      valueAndVisible <- eval(cl, envir=env)
     }
-    if(inherits(valueAndVisible, 'try-error')){
-      valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
-    }
+    unregisterLaunchFrame()
   }
 
+  # restore tracing
   if(deactivateTracing){
-    tracingState(ts)
-    # sendCustomEvent('continueOnBrowserPrompt', list(value=FALSE))
-    sendCustomEvent('writeToStdin', list(text='', when='browserPrompt'))
+    eval(substitute(tracingState(ts), list(ts=ts)), envir=env)
+    sendWriteToStdinEvent('', when='browserPrompt', count=0)
   }
 
-  unregisterLaunchFrame()
-
-  # assign to .ans
-  if(assignToAns && !silent){
-    .GlobalEnv$.ans <- valueAndVisible$value
-  }
+  # restore state
+  session$state$revert(prevState)
   
-  unregisterEntryFrame()
+  # handle error caught by try()
+  if(inherits(valueAndVisible, 'try-error')){
+    valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
+  }
+
   return(valueAndVisible)
 }

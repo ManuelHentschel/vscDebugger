@@ -12,7 +12,7 @@ setVariableRequest <- function(response, args, request){
 
     node <- session$rootNode$findChildNode(args)
     if(is.null(node)){
-      cat("<did not find node>", file=stderr())
+      base::cat("<did not find node>", file=stderr())
       response$success <- FALSE
       sendResponse(response)
       return(NULL)
@@ -40,9 +40,9 @@ setVariableRequest <- function(response, args, request){
     } else{
       response$success <- FALSE
       if(is.null(successAndRValue$reason)){
-        cat("<Changing the variable value was unsuccessful>\n", file = stderr())
+        base::cat("<Changing the variable value was unsuccessful>\n", file = stderr())
       } else{
-        cat(successAndRValue$reason, file = stderr())
+        base::cat(successAndRValue$reason, file = stderr())
       }
     }
   }

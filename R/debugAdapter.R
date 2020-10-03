@@ -1,56 +1,7 @@
 
 
+### REQUESTS
 
-
-# Can be used to dispatch requests via tcp socket instead of stdin
-# Is currently not used by the VS-Code extension
-#' @export
-.vsc.listenOnPort <- function(timeout=0){
-  registerEntryFrame()
-  if(!lget(session, 'useJsonServer', FALSE)){
-    return(NULL)
-  }
-  t <- as.numeric(Sys.time())
-  repeat{
-    char <- readChar(session$jsonServerConnection, nchars=1)
-    if(length(char)==0){
-      if(timeout == 0 || (timeout > 0 && as.numeric(Sys.time()) - t > timeout)){
-        break
-      } else{
-        Sys.sleep(0.01)
-      }
-    } else {
-      if(char == '\n'){
-        json <- session$restOfLine
-        cat('Received json: ', json, '\n', sep='')
-        .vsc.handleJson(json)
-        session$restOfLine <- ''
-      } else{
-        session$restOfLine <- paste0(session$restOfLine, char)
-      }
-      t <- as.numeric(Sys.time())
-    }
-  }
-  session$ignoreNextCallback <- FALSE
-  unregisterEntryFrame()
-}
-
-
-
-sendResponse <- function(response){
-  .vsc.sendToVsc(body = response)
-}
-
-prepareResponse <- function(request){
-  response <- list(
-    seq = 0,
-    type = 'response',
-    request_seq = request$seq,
-    command = request$command,
-    success = TRUE
-  )
-  return(response)
-}
 
 #' @export
 .vsc.handleJson <- function(json){
@@ -60,7 +11,7 @@ prepareResponse <- function(request){
     .vsc.dispatchRequest(obj)
     success <- TRUE
   } else{
-    cat('Unknown json: ', json, '\n')
+    logCat('Unknown json: ', json, '\n')
     success <- FALSE
   }
   unregisterEntryFrame()
@@ -70,7 +21,6 @@ prepareResponse <- function(request){
 #' @export
 .vsc.dispatchRequest <- function(request){
   registerEntryFrame()
-  session$ignoreNextCallback <- TRUE
   response <- prepareResponse(request)
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
@@ -120,13 +70,51 @@ prepareResponse <- function(request){
   } else if(command == 'custom'){
     customRequest(response, args, request)
   } else {
-    sendResponse(response)
     success <- FALSE
+    response$success <- FALSE
+    sendResponse(response)
   }
   unregisterEntryFrame()
   invisible(success)
 }
 
+prepareResponse <- function(request){
+  response <- list(
+    seq = 0,
+    type = 'response',
+    request_seq = request$seq,
+    command = request$command,
+    success = TRUE
+  )
+  return(response)
+}
+
+sendResponse <- function(response){
+  sendToVsc(body = response)
+}
+
+customRequest <- function(response, args, request){
+  if(lget(args, 'reason', '') == 'showingPrompt'){
+    showingPromptRequest(response, args, request)
+  }
+}
+
+threadsRequest <- function(response, args, request){
+  # trheadId is currently just a dummy
+  response$body <- list(
+    threads = list(
+      list(
+        id = session$threadId,
+        name = paste0("Thread ", session$threadId)
+      )
+    )
+  )
+  sendResponse(response)
+}
+
+
+
+### EVENTS
 
 makeEvent <- function(eventType, body=NULL){
   list(
@@ -135,6 +123,9 @@ makeEvent <- function(eventType, body=NULL){
     event = eventType,
     body = body
   )
+}
+sendEvent <- function(event){
+  sendToVsc(body=event)
 }
 
 makeOutputEvent <- function(
@@ -238,19 +229,6 @@ sendBreakpointEvent <- function(reason, breakpoint){
   sendEvent(makeBreakpointEvent(reason, breakpoint))
 }
 
-sendEvent <- function(event){
-  .vsc.sendToVsc(body=event)
-}
-
-makeAndSendEvent <- function(eventType, body){
-  sendEvent(
-    makeEvent(
-      eventType = eventType,
-      body = body
-    )
-  )
-}
-
 makeExitEvent <- function(exitCode=0){
   event <- makeEvent("exited")
   event$body <- list(
@@ -272,125 +250,15 @@ sendTerminatedEvent <- function(restart=NULL){
   sendEvent(makeTerminatedEvent(restart))
 }
 
-makeWriteToStdinEvent <- function(text, when='now', addNewLine=TRUE, expectBrowser=NULL){
+makeWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE){
   event <- makeCustomEvent('writeToStdin', list(
     text = text,
     when = when,
     addNewLine = addNewLine,
-    changeExpectBrowser = !is.null(expectBrowser),
-    expectBrowser = expectBrowser
+    count = count,
+    stack = stack
   ))
 }
-sendWriteToStdinEvent <- function(text, when='now', addNewLine=TRUE, expectBrowser=NULL){
-  sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectBrowser))
+sendWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE){
+  sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectPrompt, count, stack))
 }
-
-setExceptionBreakPointsRequest <- function(response, args, request){
-  filters <- lget(args, 'filters', list())
-  session$breakOnErrorFromConsole <- ('fromEval' %in% filters)
-  session$breakOnErrorFromFile <- ('fromFile' %in% filters)
-  sendResponse(response)
-}
-
-customRequest <- function(response, args, request){
-  if(args$reason == 'showingPrompt'){
-    sendStoppedEvent(reason='breakpoint')
-  }
-}
-
-
-threadsRequest <- function(response, args, request){
-  response$body <- list(
-    threads = list(
-      list(
-        id = session$threadId,
-        name = paste0("Thread ", session$threadId)
-      )
-    )
-  )
-  sendResponse(response)
-}
-
-continueRequest <- function(response, args, request){
-  setErrorHandler(session$breakOnErrorFromFile)
-  callDebugSource <- lget(args, 'callDebugSource', FALSE)
-  path <- lget(args$source, 'path', '')
-  if(callDebugSource && !isCalledFromBrowser()){
-    msg <- paste0('.vsc.debugSource("', path, '")')
-    sendOutputEvent(msg, group='startCollapsed')
-    sendOutputEvent('', group='end')
-    .vsc.debugSource(path)
-    session$ignoreNextCallback <- FALSE
-  } else{
-    sendWriteToStdinEvent('c', expectBrowser = FALSE)
-  }
-  sendResponse(response)
-}
-
-nextRequest <- function(response, args, request){
-  if(isCalledFromBrowser()){
-    sendWriteToStdinEvent('n', expectBrowser = FALSE)
-  }
-  sendResponse(response)
-}
-
-stepInRequest <- function(response, args, request){
-  if(isCalledFromBrowser()){
-    sendWriteToStdinEvent('s', expectBrowser = FALSE)
-  }
-  sendResponse(response)
-}
-
-stepOutRequest <- function(response, args, request){
-  if(isCalledFromBrowser()){
-    sendWriteToStdinEvent('f', expectBrowser = FALSE)
-  }
-  sendResponse(response)
-}
-
-restartRequest <- function(response, args, request){
-  if(isCalledFromBrowser() && session$allowGlobalDebugging){
-    sendWriteToStdinEvent('Q')
-    sendStoppedEvent('step')
-  }
-  sendResponse(response)
-}
-
-setExpressionRequest <- function(response, args, request){}
-
-disconnectRequest <- function(response, args, request){
-  if(isCalledFromBrowser()){
-    sendWriteToStdinEvent('Q')
-    sendWriteToStdinEvent(format(quote(
-      quit(save='no')
-    )))
-    sendResponse(response)
-    closeConnections()
-  } else{
-    sendResponse(response)
-    closeConnections()
-    quit(save = 'no')
-  }
-}
-
-terminateRequest <- function(response, args, request){
-  if(isCalledFromBrowser()){
-    sendWriteToStdinEvent('Q')
-    sendResponse(response)
-    sendContinuedEvent()
-    sendStoppedEvent('step')
-  } else{
-    sendResponse(response)
-    sendTerminatedEvent()
-  }
-}
-
-closeConnections <- function(){
-  if(lget(session, 'useJsonServer', FALSE)){
-    close(session$jsonServerConnection)
-  }
-  if(lget(session, 'useSinkServer', FALSE)){
-    close(session$sinkServerConnection)
-  }
-}
-

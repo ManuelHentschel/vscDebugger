@@ -58,7 +58,7 @@ getCompletionsFromUtils <- function(text, column, line){
   utils:::.completeToken()
   completions <- utils:::.retrieveCompletions()
 
-  # cat('Token: ', token, ' - end: ', column, ' - text: ', text, ' - completions:', length(completions), '\n', sep='')
+  # logCat('Token: ', token, ' - end: ', column, ' - text: ', text, ' - completions:', length(completions), '\n', sep='')
 
   # return
   # (moving function parameters, e.g. 'a=' to the top of the sorted list)

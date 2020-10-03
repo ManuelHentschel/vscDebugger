@@ -1,6 +1,7 @@
 # Sent as very first request
 # Contains info about the debug session itself, not the specific file/function etc.
 initializeRequest <- function(response, args, request){
+  session$state$changeBaseState('starting')
   body <- list()
   # don't support restart -> automatically termiantes + starts again
   body$supportsRestartRequest <- FALSE
@@ -50,10 +51,6 @@ initializeRequest <- function(response, args, request){
   # 
   body$supportsClipboardContext <- TRUE
   body$supportsSetVariable <- getOption('vsc.supportSetVariable', TRUE)
-
-  # assign to session
-  session$isInitialized <- TRUE
-  session$isConfigurationDone <- FALSE
 
   rStrings <- lget(args, 'rStrings', list())
   lapply(names(rStrings), function(name){
@@ -215,11 +212,13 @@ configurationDoneRequest <- function(response, args, request){
 
   # load packages
   if(length(session$packagesBeforeLaunch)>0){
+    session$state$changeBaseState('loadLib', startRunning=TRUE)
     for(pkg in session$packagesBeforeLaunch){
       try(
         library(package=pkg, character.only=TRUE)
       )
     }
+    session$state$changeBaseState('starting', startPaused=TRUE)
   }
 
   # set breakpoints
@@ -232,34 +231,30 @@ configurationDoneRequest <- function(response, args, request){
 
 
   # send response before launching main/debugSource!
-  session$isConfigurationDone <- TRUE
   sendResponse(response)
 
   launchFromStdin <- FALSE
 
+  options(error = .vsc.onError)
+
   # do stuff
   if(session$debugMode == 'file'){
     registerLaunchFrame()
-    setErrorHandler(session$breakOnErrorFromFile)
+    session$state$changeBaseState('runFile', startRunning=TRUE)
     .vsc.debugSource(session[['file']])
     unregisterLaunchFrame()
+    session$stopListeningOnPort <- TRUE
   } else if (session$debugMode == 'function'){
     registerLaunchFrame(skipCalls=2)
-    setErrorHandler(session$breakOnErrorFromFile)
-    # eval(call(session$mainFunction), globalenv())
-    sendWriteToStdinEvent(format(call(session$mainFunction)))
+    session$state$changeBaseState('runMain', startRunning=TRUE)
+    sendWriteToStdinEvent(format(call(session$mainFunction)), when = "topLevelPrompt")
+    session$stopListeningOnPort <- TRUE
     launchFromStdin <- TRUE
     unregisterLaunchFrame()
-  } else{
-    setErrorHandler(session$breakOnErrorFromConsole)
+  } else{ # debugMode == 'workspace'
+    session$state$changeBaseState('workspace')
+    session$stopListeningOnPort <- TRUE
   }
 
-  if(session$allowGlobalDebugging){
-    addTaskCallback(globalStepCallback)
-    setErrorHandler(session$breakOnErrorFromConsole)
-    session$ignoreNextCallback <- FALSE
-  } else{
-    addTaskCallback(terminateSessionCallBack)
-    session$ignoreNextCallback <- launchFromStdin
-  }
+  # response sent already!
 }

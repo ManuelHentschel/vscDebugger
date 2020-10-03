@@ -1,5 +1,12 @@
 
 
+setExceptionBreakPointsRequest <- function(response, args, request){
+  filters <- lget(args, 'filters', list())
+  session$breakOnErrorFromConsole <- ('fromEval' %in% filters)
+  session$breakOnErrorFromFile <- ('fromFile' %in% filters)
+  sendResponse(response)
+}
+
 
 setBreakpointsRequest <- function(response, args, request){
 

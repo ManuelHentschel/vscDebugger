@@ -25,7 +25,7 @@ delayedAssign("x", {message("evaluating promise..."); 1L}, assign.env = e)
 vscDebugger:::getPromiseVar("x", e)
 
 ## evaluate it...
-print(e$x)
+base::print(e$x)
 
 ## is it still a promise? (It depends...)
 stopifnot(vscDebugger:::isPromise("x", e, strict = FALSE))
