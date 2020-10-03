@@ -107,8 +107,7 @@ makeStringForVsc <- function(body = "") {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (session$isEvaluating || (!identical(list(...)$file, "") && !is.null(list(...)$file))) {
-    # return(base::cat(...))
+  if (session$state$isEvaluatingSilent() || (!identical(list(...)$file, "") && !is.null(list(...)$file))) {
     return(base::cat(...))
   }
   ret <- capture.output({base::cat(...);base::cat("\n")})
@@ -128,7 +127,7 @@ makeStringForVsc <- function(body = "") {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (session$isEvaluating) {
+  if (session$state$isEvaluatingSilent()) {
     return(base::print(x, ...))
   }
   ret <- capture.output(base::print(x, ...))

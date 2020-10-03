@@ -110,5 +110,6 @@ export class State extends MinimalState {
   isRunningMain(): boolean;
   isRunningFileOrMain(): boolean;
   isEvaluating(): boolean;
+  isEvaluatingSilent(): boolean;
   isPaused(): boolean;
 }

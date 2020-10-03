@@ -114,7 +114,7 @@ evalInEnv <- function(
   }
 
   # change state
-  prevState <- session$state$startRunning('eval')
+  prevState <- session$state$startRunning('eval', evalSilent = !showOutput)
 
   # deactivate tracing
   if(deactivateTracing){

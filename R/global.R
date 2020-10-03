@@ -189,19 +189,22 @@ State <- R6::R6Class(
       self$hasHitError
     },
     isRunningFile = function(){
-      self$running&& (self$runningWhat == "file")
+      self$running && (self$runningWhat == "file")
     },
     isSourcingMain = function(){
-      self$running&& (self$runningWhat == "sourceMain")
+      self$running && (self$runningWhat == "sourceMain")
     },
     isRunningMain = function(){
-      self$running&& (self$runningWhat == "main")
+      self$running && (self$runningWhat == "main")
     },
     isRunningFileOrMain = function(){
-      self$running&& ((self$runningWhat == "file") || (self$runningWhat == "main"))
+      self$running && ((self$runningWhat == "file") || (self$runningWhat == "main"))
     },
     isEvaluating = function(){
-      self$running&& (self$runningWhat == "eval")
+      self$running && (self$runningWhat == "eval")
+    },
+    isEvaluatingSilent = function(){
+      self$running && (self$runningWhat == "eval") && self$evalSilent
     },
     isPaused = function(){
       !self$running
