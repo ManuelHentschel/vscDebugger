@@ -29,21 +29,21 @@
   ret <- list()
 
   if(verbose){
-    cat('\n\n\nApplying VarInfos to:\n')
-    print(v)
-    cat("\nMissing Infos:\n")
-    print(missingInfos)
-    cat("IsStacking:\n")
-    print(isStacking)
+    logCat('\n\n\nApplying VarInfos to:\n')
+    logPrint(v)
+    logCat("\nMissing Infos:\n")
+    logPrint(missingInfos)
+    logCat("IsStacking:\n")
+    logPrint(isStacking)
   }
 
   for (varInfo in session$varInfos) {
     # find missing infos that are supplied by this varInfo:
     matching <- intersect(missingInfos, names(varInfo))
-    if(verbose) cat("Checking ", varInfo$name, "...\n", sep="")
+    if(verbose) logCat("Checking ", varInfo$name, "...\n", sep="")
     applies <- toAtomicBoolean(varInfo$doesApply(v)) # safe conversion to atomic boolean
     if(applies){
-      if(verbose) cat("applies!\n")
+      if(verbose) logCat("applies!\n")
       for(info in matching){
         # get and (if function) apply info:
         tmp <- varInfo[[info]]
@@ -62,8 +62,8 @@
             },
             error = function(e) {
               if(verbose){
-                print('error:')
-                print(e)
+                logPrint('error:')
+                logPrint(e)
               }
               list(
                 value = NULL,
@@ -78,8 +78,8 @@
           }
         }
         if(verbose){
-          cat(info, " gives: ", sep="")
-          print(tmp)
+          logCat(info, " gives: ", sep="")
+          logPrint(tmp)
         }
         # append or store result:
         if(is.null(tmp)){
@@ -231,73 +231,4 @@ applyTestVar <- function(varInfo, testVar){
     }
   }
   return(varInfo)
-}
-
-# Needs to be updated!
-.vsc.checkVarInfo <- function(varInfo, testCase, verbose=TRUE) {
-  err <- list()
-  warn <- list()
-  remark <- list()
-
-
-  mustNotBeNull <- list('doesApply', 'name')
-  shouldBeFunction <- list('doesApply', 'customAttributes', 'childVars', 'toString')
-
-  retMustBeString <- list('name', 'shortType', 'longType', 'toString')
-  retMustBeList <- list('childVars', 'customAttributes')
-  retMustBeBoolean <- list('hasChildren', 'doesApply')
-
-
-  for(name in mustNotBeNull){
-    if(is.null(varInfo[[name]])){
-      err <- c(err, paste0(name, ' must not be NULL'))
-    }
-  }
-
-  for(name in shouldBeFunction){
-    if(!is.null(varInfo[[name]]) && !is.function(varInfo[[name]])){
-      warn <- c(warn, paste0(name, ' should be a function'))
-    }
-  }
-
-  if (missing(testCase)){
-    warn <- c(warn, 'No test variable supplied. Could not check return values.')
-    results <- NULL
-  } else{
-    results <- applyTestVar(varInfo, testCase)
-      if(!identical(results$doesApply, TRUE)){
-        warn <- c(warn, 'doesApply should return TRUE for the test case.')
-      }
-    for(i in seq_along(varInfo)){
-      name <- names(varInfo)[i]
-      entry <- varInfo[[i]]
-      ret <- results[[i]]
-      if(inherits(ret, 'try-error')){
-        err <- c(err, paste0(name, ' causes an error.'))
-      } else if(name %in% retMustBeBoolean && !(is.character(ret) && is.atomic(ret))){
-        err <- c(err, paste0(name, ' must return (or be) an atomic logical value.'))
-      } else if(name %in% retMustBeList && !is.list(ret)){
-        err <- c(err, paste0(name, ' must return (or be) a list. Do not use NULL instead of list().'))
-      } else if(name %in% retMustBeString && !(is.logical(ret) && is.atomic(ret))){
-        err <- c(err, paste0(name, ' must return (or be) an atomic character vector.'))
-      }
-    }
-  }
-
-  if(verbose){
-    cat('ERRORS:\n')
-    for(er in err){
-      cat(' - ', er, '\n')
-    }
-    cat('\nWARNINGS:\n')
-    for(wa in warn){
-      cat(' - ', wa, '\n')
-    }
-    cat('\nREMARKS:\n')
-    for(rem in remark){
-      cat(' - ', rem, '\n')
-    }
-  }
-
-  return(list(err=err, warn=warn, remark=remark, results=results))
 }

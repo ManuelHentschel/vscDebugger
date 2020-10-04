@@ -137,8 +137,8 @@ export interface WriteToStdinBody {
     text: string;
     when?: "now"|"browserPrompt"|"topLevelPrompt"|"prompt";
     addNewLine?: boolean; //=false (in vscode), =true (in R)
-    changeExpectBrowser?: boolean;
-    expectBrowser?: boolean;
+    count?: number; // =1
+    stack?: boolean;
 }
 
 // Used to send info to R that is not part of the DAP

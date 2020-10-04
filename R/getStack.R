@@ -57,7 +57,7 @@ variablesRequest <- function(response, args, request){
   ))
 
   if(is.null(variableNode)){
-    print("Variable not found. This is not supposed to happen.")
+    logPrint("Variable not found. This is not supposed to happen.")
     response$success <- FALSE
     sendResponse(response)
     return(NULL)

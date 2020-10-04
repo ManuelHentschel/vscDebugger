@@ -46,7 +46,12 @@ getSource <- function(call, frameIdR = 0) {
 
   # return empty source if no source information found
   if(is.null(srcfile)){
-    return(getEmptySource())
+    if(!is.null(srcref)){
+      logPrint('found srcref but not srcfile!!!')
+      logPrint(srcref)
+      logPrint(call)
+    }
+    return(NULL)
   }
 
   # validate path
@@ -77,7 +82,7 @@ getSource <- function(call, frameIdR = 0) {
     # src$name <- 'temp'
     src$path <- strsplit(content, ' ')[[1]][1]
     src$name <- strsplit(content, ' ')[[1]][1]
-    # print(toString(call[[1]]))
+    # logPrint(toString(call[[1]]))
     src$sourceReference <- storeSource(src)
   }
 
@@ -156,28 +161,6 @@ varToStringWithCaptureOutput <- function(v) {
 
 
 
-# getNewVarRef <- function(increment=TRUE){
-#   if(increment){
-#     session$varRef <- session$varRef + 1
-#   }
-#   session$varRef
-# }
-
-
-#' Get the number of frames
-#'
-#' Get the number of frames
-#'
-#' @param topFrame Consider only frames below this frame
-getNFrames <- function(topFrame) {
-  nFrames <- sys.nframe()
-  while (!identical(sys.frame(nFrames), topFrame) && !identical(sys.frame(nFrames), .GlobalEnv)) {
-    nFrames <- nFrames - 1
-  }
-  return(nFrames)
-}
-
-
 #' Get the scopes corresponding to a frame
 #' 
 #' Gets the scopes corresponding to a frame
@@ -196,6 +179,7 @@ getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
 
 
 fixNames <- function(childVars){
+  # used to make sure there are not duplicate variable names in a scope/parent var
   names <- lapply(childVars, function(var) var$name)
   inds <- which(duplicated(names) | names == "")
   while(length(inds)>0){

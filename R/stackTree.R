@@ -337,7 +337,7 @@ FrameNode <- R6::R6Class(
         self$firstenv <- globalenv()
         self$name <- "Global Workspace"
         self$presentationHint <- "label"
-        source <- NULL
+        self$source <- NULL
         self$line <- 0
         self$column <- 0
         self$endLine <- NULL
@@ -349,22 +349,19 @@ FrameNode <- R6::R6Class(
         self$presentationHint <- "normal"
         source <- getSource(sys.call(self$frameIdR + 1), self$frameIdR + 1)
         # source <- getSource(sys.call(self$frameIdR), self$frameIdR)
-        self$line <- source$line
-        self$column <- source$column
-        self$endLine <- source$endLine
-        self$endColumn <- source$endColumn + 1
+        if(!is.null(source)){
+          self$source <- source
+          self$line <- source$line
+          self$column <- source$column
+          self$endLine <- source$endLine
+          self$endColumn <- source$endColumn + 1
+        }
       }
       self$id <- self$frameIdVsc
 
       if(!getOption('vsc.includeFrameColumn', TRUE)){
         self$endColumn <- NULL
       }
-      
-      # if (lget(source, "isFile", FALSE)) {
-        self$source <- source
-      # } else {
-      #   self$source <- NULL
-      # }
     },
     getContent = function(args=list()) {
       list(
