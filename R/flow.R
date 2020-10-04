@@ -145,6 +145,10 @@ disconnectRequest <- function(response, args, request){
       when = "topLevelPrompt"
     )
     sendResponse(response)
+    for(evalResponse in session$pendingEvalResponses){
+      evalResponse$success <- FALSE
+      sendResponse(evalResponse)
+    }
     closeConnections()
   } else{
     logPrint('disconnect from toplevel')
