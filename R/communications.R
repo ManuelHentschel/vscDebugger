@@ -107,11 +107,22 @@ makeStringForVsc <- function(body = "") {
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
 
-  if (session$state$isEvaluatingSilent() || (!identical(list(...)$file, "") && !is.null(list(...)$file))) {
+  if (session$state$isEvaluatingSilent()) {
     return(base::cat(...))
   }
-  ret <- capture.output({base::cat(...);base::cat("\n")})
-  printToVsc(ret, skipCalls+1)
+
+  args <- list(...)
+  if(identical(args$file, stderr())){
+    args['file'] <- NULL
+    category <- "stderr"
+  } else if(is.null(args$file) || identical(args$file, '')){
+    category <- "stdout"
+  } else{
+    return(base::cat(...))
+  }
+
+  ret <- capture.output({do.call(base::cat, args);base::cat("\n")})
+  printToVsc(ret, skipCalls+1, category)
   invisible(NULL)
 }
 
@@ -136,13 +147,41 @@ makeStringForVsc <- function(body = "") {
   invisible(x)
 }
 
-printToVsc <- function(ret, skipCalls=0){
+#' @export
+.vsc.message <- function(..., domain = NULL, appendLF = TRUE){
+  args <- list(...)
+  cond <- if (length(args) == 1L && inherits(args[[1L]], "condition")) {
+    if (nargs() > 1L) {
+      warning("additional arguments ignored in message()")
+    }
+    args[[1L]]
+  } else {
+    msg <- .makeMessage(..., domain = domain, appendLF = appendLF) # changed
+    call <- sys.call()
+    simpleMessage(msg, call)
+  }
+  defaultHandler <- function(c) {
+    .vsc.cat(conditionMessage(c), file = stderr(), sep = "", skipCalls=5) # changed
+  }
+  withRestarts(
+    {
+      signalCondition(cond)
+      defaultHandler(cond)
+    },
+    muffleMessage = function() NULL
+  )
+  invisible()
+}
+
+
+
+printToVsc <- function(ret, skipCalls=0, category="stdout"){
   output <- paste0(ret, collapse = "\n")
 
   source <- getSource(sys.call(-skipCalls))
   line <- lget(source, 'line', 0)
 
-  sendOutputEvent(category="stdout", output = output, line=line, source=source)
+  sendOutputEvent(category, output = output, line=line, source=source)
 }
 
 

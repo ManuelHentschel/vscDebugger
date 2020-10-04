@@ -129,6 +129,11 @@ launchRequest <- function(response, args, request){
     'overwriteCat',
     getOption('vsc.defaultOverwriteCat', TRUE)
   )
+  session$overwriteMessage <- lget(
+    args,
+    'overwriteMessage',
+    getOption('vsc.defaultOverwriteMessage', TRUE)
+  )
   session$overwritePrint <- lget(
     args,
     'overwritePrint',
@@ -199,6 +204,10 @@ configurationDoneRequest <- function(response, args, request){
 
   if (session$overwriteCat) {
     attachList$cat <- .vsc.cat
+  }
+
+  if (session$overwriteMessage) {
+    attachList$message <- .vsc.message
   }
 
   if (session$overwriteSource) {
