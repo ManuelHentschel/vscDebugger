@@ -106,7 +106,7 @@ fixSrcrefOnTracedFunction <- function(what, at, where){
     f2 <- fixSrcref(f2, atEntry)
   }
   f@.Data <- f2
-  methods:::.assignOverBinding(what, f, where, FALSE)
+  assignOverBinding(what, f, where, FALSE)
 }
 
 sendBreakpoints <- function(bps = list(), acknowledge = TRUE, id = 0) {
