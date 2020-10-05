@@ -61,32 +61,26 @@ initializeRequest <- function(response, args, request){
   options(continue = paste0(session$rStrings$continue, '\n'))
   options(browserNLdisabled = TRUE)
 
-  session$useJsonServer <- lget(args, 'useJsonServer', FALSE)
-  if(session$useJsonServer){
-    session$jsonPort <- lget(args, 'jsonPort', 0)
-    session$jsonHost <- lget(args, 'jsonHost', '127.0.0.1')
-    session$jsonServerConnection <- socketConnection(
-      host = session$jsonHost,
-      port = session$jsonPort,
-      server = FALSE,
-      blocking = FALSE,
-      open = "r+b"
-    )
-  }
+  session$jsonPort <- lget(args, 'jsonPort', 0)
+  session$jsonHost <- lget(args, 'jsonHost', '127.0.0.1')
+  session$jsonServerConnection <- socketConnection(
+    host = session$jsonHost,
+    port = session$jsonPort,
+    server = FALSE,
+    blocking = FALSE,
+    open = "r+b"
+  )
 
-  session$useSinkServer <- lget(args, 'useSinkServer', FALSE)
-  if(session$useSinkServer){
-    session$sinkPort <- lget(args, 'sinkPort', 0)
-    session$sinkHost <- lget(args, 'sinkHost', 'localhost')
-    session$sinkServerConnection <- socketConnection(
-      host = session$sinkHost,
-      port = session$sinkPort,
-      server = FALSE,
-      blocking = FALSE,
-      open = "r+b"
-    )
-    sink(session$sinkServerConnection)
-  }
+  session$sinkPort <- lget(args, 'sinkPort', 0)
+  session$sinkHost <- lget(args, 'sinkHost', 'localhost')
+  session$sinkServerConnection <- socketConnection(
+    host = session$sinkHost,
+    port = session$sinkPort,
+    server = FALSE,
+    blocking = FALSE,
+    open = "r+b"
+  )
+  sink(session$sinkServerConnection)
 
   session$threadId <- lget(args, 'threadId', 1)
 
@@ -144,7 +138,7 @@ launchRequest <- function(response, args, request){
     'overwriteSource',
     getOption('vsc.defaultOverwriteSource', TRUE)
   )
-  session$packagesBeforeLaunch <- lget(
+  session$debuggedPackages <- lget(
     args,
     'debuggedPackages',
     character(0)
@@ -180,10 +174,10 @@ launchRequest <- function(response, args, request){
   } 
   
   
-  if(response$success && length(session$packagesBeforeLaunch)>0){
+  if(response$success && length(session$debuggedPackages)>0){
     # load debugged packages
     session$state$changeBaseState('loadLib', startRunning=TRUE)
-    for(pkg in session$packagesBeforeLaunch){
+    for(pkg in session$debuggedPackages){
       ret <- try(
         library(package=pkg, character.only=TRUE)
       )
@@ -263,7 +257,7 @@ configurationDoneRequest <- function(response, args, request){
   # set breakpoints
   if(
     session$debugMode == 'function' ||
-    (session$setBreakpointsInPackages && length(session$packagesBeforeLaunch)>0)
+    (session$setBreakpointsInPackages && length(session$debuggedPackages)>0)
   ){
     .vsc.setStoredBreakpoints()
   }
