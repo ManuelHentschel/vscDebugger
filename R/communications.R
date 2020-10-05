@@ -8,9 +8,6 @@
   logPrint(timeout)
   session$stopListeningOnPort <- FALSE
   registerEntryFrame()
-  if(!lget(session, 'useJsonServer', FALSE)){
-    return(NULL)
-  }
   t <- as.numeric(Sys.time())
   repeat{
     char <- readChar(session$jsonServerConnection, nchars=1)
@@ -47,13 +44,9 @@
 #'
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
 sendToVsc <- function(body = "") {
-  if(session$useJsonServer){
-    j <- getJson(body)
+  j <- getJson(body)
+  if(!is.null(session$jsonServerConnection)){
     base::cat(j, '\n', sep='', file=session$jsonServerConnection)
-  } else {
-    # Deprecated!
-    s <- makeStringForVsc(body)
-    base::cat(s)
   }
 }
 
@@ -75,23 +68,6 @@ removeNonJsonElements <- function(v){
 }
 
 
-#' Prepare a message as string for vsc
-#'
-#' Prepare a message as string for vsc. DEPRECATED!
-#'
-#' @param body The body of the message. Must be convertible to JSON. Usually named lists.
-#' @return A (json) string that can be interpreted by vsc
-makeStringForVsc <- function(body = "") {
-  body <- removeNonJsonElements(body)
-  s <- jsonlite::toJSON(body, auto_unbox = TRUE, force = TRUE)
-  r <- paste0(
-    session$rStrings$delimiter0,
-    s,
-    session$rStrings$delimiter1,
-    '\n'
-  )
-  return(r)
-}
 
 
 

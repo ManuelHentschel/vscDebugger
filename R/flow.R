@@ -182,15 +182,11 @@ terminateSessionFromTopLevel <- function(){
 
 
 closeConnections <- function(){
-  if(lget(session, 'useJsonServer', FALSE)){
-    close(session$jsonServerConnection)
-  }
-  if(lget(session, 'useSinkServer', FALSE)){
-    for(i in seq_len(sink.number())){
-      sink(NULL)
-    }
-    close(session$sinkServerConnection)
-  }
   session$stopListeningOnPort <- TRUE
+  for(i in seq_len(sink.number())){
+    sink(NULL)
+  }
+  try(close(session$sinkServerConnection))
+  try(close(session$jsonServerConnection))
 }
 

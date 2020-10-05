@@ -18,17 +18,15 @@ session <- local({
   mainFunction <- NULL
   includePackageScopes <- NULL
   setBreakpointsInPackages <- FALSE
-  packagesBeforeLaunch <- character(0)
+  debuggedPackages <- character(0)
 
   # server/communication:
   # (set for this debug session)
   # (should not influence the behaviour of the "R facing part" of the debugger)
-  useJsonServer <- FALSE
   jsonPort <- 0
   jsonHost <- 'localhost'
   jsonServerConnection <- NULL
 
-  useSinkServer <- FALSE
   sinkPort <- 0
   sinkHost <- 'localhost'
   sinkServerConnection <- NULL
@@ -36,8 +34,6 @@ session <- local({
   threadId <- 1
 
   rStrings <- list(
-    delimiter0 = '<v\\s\\c>',
-    delimiter1 = '</v\\s\\c>',
     prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
     continue = '<##v\\s\\c>' #actual prompt is followed by a newline to make easier to identify
   )

@@ -27,26 +27,22 @@ export declare module Session {
     mainFunction: string;
     includePackageScopes: boolean;
     setBreakpointsInPackages: boolean;
-    packagesBeforeLaunch: string[];
+    debuggedPackages: string[];
 
     // server/communication:
     // (set for this debug session)
     // (should not influence the behaviour of the "R facing part" of the debugger)
-    useJsonServer?: boolean;
     jsonPort?: number;
     jsonHost?: string;
-    jsonServerConnection?: RValue; // only if useJsonServer==TRUE
+    jsonServerConnection?: RValue;
 
-    useSinkServer?: boolean;
     sinkPort?: number;
     sinkHost?: string;
-    sinkServerConnection?: RValue; // only if useSinkServer==TRUE
+    sinkServerConnection?: RValue;
 
     threadId: number; //dummy, but must match the one used in the DAP host
 
     rStrings: {
-      delimiter0: string;
-      delimiter1: string;
       prompt: string;
       continue: string;
     }

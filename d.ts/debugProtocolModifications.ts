@@ -14,8 +14,6 @@ export enum DebugMode {
 export interface RStartupArguments {
     path: string;
     args: string[];
-    useJsonServer?: boolean;
-    useSinkServer?: boolean;
     jsonPort?: number;
     sinkPort?: number;
     cwd: string;
@@ -39,7 +37,7 @@ export interface DebugConfiguration extends VsCode.DebugConfiguration {
     // specify how to debug (optional)
     includePackageScopes?: boolean;
     setBreakpointsInPackages?: boolean;
-    packagesBeforeLaunch?: string[];
+    debuggedPackages?: string[];
     assignToAns?: boolean;
     overwritePrint?: boolean;
     overwriteCat?: boolean;
@@ -68,8 +66,6 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 }
 
 export interface RStrings {
-    delimiter0?: string;
-    delimiter1?: string;
     prompt?: string;
     continue?: string;
     startup?: string;
@@ -80,10 +76,8 @@ export interface RStrings {
 export interface InitializeRequestArguments extends DebugProtocol.InitializeRequestArguments {
     rStrings?: RStrings;
     threadId?: number;
-    useJsonServer?: boolean;
     jsonPort?: number;
     jsonHost?: string;
-    useSinkServer?: boolean;
     sinkPort?: number;
     sinkHost?: string;
     extensionVersion?: string;
