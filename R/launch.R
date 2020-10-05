@@ -123,6 +123,11 @@ launchRequest <- function(response, args, request){
     'overwriteCat',
     getOption('vsc.defaultOverwriteCat', TRUE)
   )
+  session$overwriteMessage <- lget(
+    args,
+    'overwriteMessage',
+    getOption('vsc.defaultOverwriteMessage', TRUE)
+  )
   session$overwritePrint <- lget(
     args,
     'overwritePrint',
@@ -159,19 +164,60 @@ launchRequest <- function(response, args, request){
   session$file <- file
 
   if(!file.exists(file) && session[['debugMode']] %in% c('function', 'file')){
+    # abort if file doesn't exist
     response$success <- FALSE
     response$message <- paste0("The file ", file, " could not be found!")
+  } else if(!(session[['debugMode']] %in% c('function', 'file', 'workspace'))){
+    # abort if debugmode is invalid
+    response$success <- FALSE
+    response$message <- paste0("Invalid debugMode: ", format(session[['debugMode']]), collapse='')
+  } 
+  
+  
+  if(response$success && length(session$packagesBeforeLaunch)>0){
+    # load debugged packages
+    session$state$changeBaseState('loadLib', startRunning=TRUE)
+    for(pkg in session$packagesBeforeLaunch){
+      ret <- try(
+        library(package=pkg, character.only=TRUE)
+      )
+      if(inherits(ret, 'try-error')){
+        response$success <- FALSE
+        response$message <- paste0("Package not found: ", pkg)
+        break
+      }
+
+      # overwrite print/cat in packages
+      ns <- getNamespace(pkg)
+      if(session$overwritePrint){
+        try(
+          assignOverBinding('print', .vsc.print, ns, FALSE),
+          silent = TRUE
+        )
+      }
+      if(session$overwriteCat){
+        try(
+          assignOverBinding('cat', .vsc.cat, ns, FALSE),
+          silent = TRUE
+        )
+      }
+      if(session$overwriteMessage){
+        try(
+          assignOverBinding('message', .vsc.message, ns, FALSE),
+          silent = TRUE
+        )
+      }
+    }
+    session$state$changeBaseState('starting', startPaused=TRUE)
   }
 
-  ## do stuff
-  # check debugMode
-  if(!(session[['debugMode']] %in% c('function', 'file', 'workspace'))){
-    stop(paste0("Invalid debugMode:", format(session[['debugMode']]), collapse=''))
-  }
-
-  # source file
-  if (session[['debugMode']] == 'function'){
+  if(response$success && session[['debugMode']] == 'function'){
+    # source file if debugmode is function
     base::source(session[['file']])
+    if(!exists(session$mainFunction, mode='function')){
+      response$success <- FALSE
+      response$message <- paste0("Could not find function: ", session$mainFunction, "()")
+    }
   }
 
   ## ret
@@ -195,6 +241,10 @@ configurationDoneRequest <- function(response, args, request){
     attachList$cat <- .vsc.cat
   }
 
+  if (session$overwriteMessage) {
+    attachList$message <- .vsc.message
+  }
+
   if (session$overwriteSource) {
     attachList$source <- .vsc.debugSource
   }
@@ -202,17 +252,6 @@ configurationDoneRequest <- function(response, args, request){
   # attach functions
   if(length(attachList)>0){
     attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
-  }
-
-  # load packages
-  if(length(session$debuggedPackages)>0){
-    session$state$changeBaseState('loadLib', startRunning=TRUE)
-    for(pkg in session$debuggedPackages){
-      try(
-        library(package=pkg, character.only=TRUE)
-      )
-    }
-    session$state$changeBaseState('starting', startPaused=TRUE)
   }
 
   # set breakpoints
@@ -227,8 +266,6 @@ configurationDoneRequest <- function(response, args, request){
   # send response before launching main/debugSource!
   sendResponse(response)
 
-  launchFromStdin <- FALSE
-
   options(error = .vsc.onError)
 
   # do stuff
@@ -239,12 +276,9 @@ configurationDoneRequest <- function(response, args, request){
     unregisterLaunchFrame()
     session$stopListeningOnPort <- TRUE
   } else if (session$debugMode == 'function'){
-    registerLaunchFrame(skipCalls=2)
     session$state$changeBaseState('runMain', startRunning=TRUE)
     sendWriteToStdinEvent(format(call(session$mainFunction)), when = "topLevelPrompt")
     session$stopListeningOnPort <- TRUE
-    launchFromStdin <- TRUE
-    unregisterLaunchFrame()
   } else{ # debugMode == 'workspace'
     session$state$changeBaseState('workspace')
     session$stopListeningOnPort <- TRUE

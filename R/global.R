@@ -9,6 +9,7 @@ session <- local({
   allowGlobalDebugging <- FALSE
   overwritePrint <- TRUE
   overwriteCat <- TRUE
+  overwriteMessage <- TRUE
   overwriteSource <- TRUE
 
   noDebug <- FALSE # currently not used

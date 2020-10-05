@@ -18,6 +18,7 @@ export declare module Session {
     allowGlobalDebugging: boolean;
     overwritePrint: boolean;
     overwriteCat: boolean;
+    overwriteMessage: boolean;
     overwriteSource: boolean;
 
     noDebug: boolean; 

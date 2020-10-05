@@ -9,7 +9,7 @@
 #' @param includePackageScopes Whether to set breakpoints in packages
 #' @param id The id of the answer sent to vsc
 #'
-.vsc.setBreakpoints <- function(file, bps = NULL, includePackageScopes = NULL, id = 0) {
+.vsc.setBreakpoints <- function(file, bps = NULL, includePackageScopes = NULL, id = 0, additionalEnvs = list()) {
   # breakpoints: bp[]
   # bp: {id: number; line: number; verified: boolean}
 
@@ -37,6 +37,15 @@
     # might return multiple refs
     refs <- findLineNum2(file, line, maxLine, lastenv = lastenv)
 
+    if(length(refs)==0){
+      for(env in additionalEnvs){
+        refs <- findLineNum(file, line, nameonly = FALSE, envir=env, lastenv=env)
+        if(length(refs)==0){
+          break
+        }
+      }
+    }
+
     # store occurences of line (for R)
     refList <- append(refList, refs)
 
@@ -60,11 +69,13 @@
   # set breakpoints
   for (sRef in summarizedRefs) {
     # use generic trace function -> does not preserve source info
-    trace(
-      what = sRef$name,
-      tracer = quote({.vsc.preBreakpoint(); browser()}),
-      at = sRef$at,
-      where = sRef$env
+    suppressMessages(
+      trace(
+        what = sRef$name,
+        tracer = quote({.vsc.preBreakpoint(); browser()}),
+        at = sRef$at,
+        where = sRef$env
+      )
     )
     # add source info to lines overwritten by trace():
     fixSrcrefOnTracedFunction(
@@ -106,7 +117,7 @@ fixSrcrefOnTracedFunction <- function(what, at, where){
     f2 <- fixSrcref(f2, atEntry)
   }
   f@.Data <- f2
-  methods:::.assignOverBinding(what, f, where, FALSE)
+  assignOverBinding(what, f, where, FALSE)
 }
 
 sendBreakpoints <- function(bps = list(), acknowledge = TRUE, id = 0) {

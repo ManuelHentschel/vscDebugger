@@ -60,3 +60,7 @@ isCalledFromBrowser <- function(){
     error = function(e) FALSE
   )
 }
+
+assignOverBinding <- function(what, value, where, verbose = TRUE){
+  methods:::.assignOverBinding(what, value, where, verbose)
+}

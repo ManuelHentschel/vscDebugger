@@ -41,6 +41,7 @@ export interface DebugConfiguration extends VsCode.DebugConfiguration {
     assignToAns?: boolean;
     overwritePrint?: boolean;
     overwriteCat?: boolean;
+    overwriteMessage?: boolean;
     overwriteSource?: boolean;
 }
 
