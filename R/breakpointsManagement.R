@@ -101,7 +101,7 @@ getRequestedBreakpointLines <- function(path){
     if(file.exists(file)){
       bps <- lget(fbp, 'breakpoints', list())
       includePackageScopes <- lget(session, 'setBreakpointsInPackages', FALSE)
-      additionalEnvs <- lapply(session$packagesBeforeLaunch, getNamespace)
+      additionalEnvs <- lapply(session$debuggedPackages, getNamespace)
       .vsc.setBreakpoints(file, bps, includePackageScopes = includePackageScopes, additionalEnvs = additionalEnvs)
     }
   }

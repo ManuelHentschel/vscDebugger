@@ -174,10 +174,10 @@ launchRequest <- function(response, args, request){
   } 
   
   
-  if(response$success && length(session$packagesBeforeLaunch)>0){
+  if(response$success && length(session$debuggedPackages)>0){
     # load debugged packages
     session$state$changeBaseState('loadLib', startRunning=TRUE)
-    for(pkg in session$packagesBeforeLaunch){
+    for(pkg in session$debuggedPackages){
       ret <- try(
         library(package=pkg, character.only=TRUE)
       )
