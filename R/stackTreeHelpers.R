@@ -77,6 +77,9 @@ getSource <- function(call, frameIdR = 0) {
     src$path <- path
   } else{
     content <- paste0(srcfile$lines, collapse='\n')
+    if(identical(content, '')){
+      return(NULL)
+    }
     src$content <- content
     # src$path <- 'temp'
     # src$name <- 'temp'
