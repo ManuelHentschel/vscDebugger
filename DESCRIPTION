@@ -17,7 +17,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
 Imports:
     jsonlite(>= 1.6.0), R6
-KeepSource: TRUE
 NeedsCompilation: yes
 Suggests: 
     tinytest
