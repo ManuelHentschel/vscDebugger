@@ -56,7 +56,7 @@ session <- local({
   # data:
   # (like 'state', but contains longer lists etc.)
   rootNode <- NULL
-  fileBreakpoints <- list()
+  sourceBreakpointsList <- list()
   sources <- list()
 
 
@@ -211,6 +211,9 @@ State <- R6::R6Class(
     },
     isPausedAfterError = function(){
       !self$running&& self$hasHitError
+    },
+    isStarted = function(){
+      !(self$baseState %in% c("starting", "loadLib", "sourceMain"))
     }
   )
 )

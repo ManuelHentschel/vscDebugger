@@ -1,5 +1,4 @@
 
-
 setExceptionBreakPointsRequest <- function(response, args, request){
   filters <- lget(args, 'filters', list())
   session$breakOnErrorFromConsole <- ('fromEval' %in% filters)
@@ -10,104 +9,113 @@ setExceptionBreakPointsRequest <- function(response, args, request){
 
 setBreakpointsRequest <- function(response, args, request){
 
-  fileBreakpoints <- requestArgsToFileBreakpoints(args)
+  # convert args to internal representation
+  newSourceBreakpoints <- requestArgsToSourceBreakpoints(args)
 
-  addOrUpdateFileBreakpoints(fileBreakpoints)
+  # update breakpoints
+  oldSourceBreakpoints <- storeSourceBreakpoints(newSourceBreakpoints)
 
+  # set breakpoints
+  if(session$state$isStarted()){
+    newSourceBreakpoints <- setSourceBreakpoints(newSourceBreakpoints, oldSourceBreakpoints)
+  }
+
+  # response
   response$body <- list(
-    breakpoints = fileBreakpoints$breakpoints
+    breakpoints = newSourceBreakpoints$breakpoints
   )
-
   sendResponse(response)
 }
 
 
-requestArgsToFileBreakpoints <- function(args){
-  # not supported: args$lines
-  path <- normalizePath(lget(args$source, 'path', ''), mustWork=FALSE)
-  args$source$path <- path
-  args$breakpoints <- lapply(args$breakpoints, sourceBreakpointToInternalBreakpoint, args$source)
-  return(args)
+setStoredBreakpoints <- function(){
+  session$sourceBreakpointsList <- lapply(
+    session$sourceBreakpointsList,
+    setSourceBreakpoints
+  )
 }
 
-sourceBreakpointToInternalBreakpoint <- function(bp, source){
-  bp$id <- getNewBreakpointId()
-  bp$verified <- FALSE
-  bp$attempted <- FALSE
-  bp$requestedLine <- bp$line
-  bp$source <- source
-  return(bp)
+setSourceBreakpoints <- function(sbps, oldSbps=NULL){
+  if(!session$noDebug){
+    # get options
+    includeAllPackages <- session$setBreakpointsInPackages
+    additionalEnvs <- lapply(session$debuggedPackages, getNamespace)
+    if(getOption('vsc.setBreakpointsInStack', TRUE)){
+      externalFrames <- getExternalFrames()
+      stackFrames <- lapply(externalFrames, sys.frame)
+    } else{
+      stackFrames <- list()
+    }
+
+
+    # remove old bps
+    if(!is.null(oldSbps)){
+      setBreakpoints(
+        oldSbps,
+        unsetBreakpoints = TRUE,
+        includeAllPackages = includeAllPackages,
+        additionalEnvs = additionalEnvs,
+        stackFrames = stackFrames
+      )
+    }
+
+    # set new bps
+    sbps <- setBreakpoints(
+      sbps,
+      unsetBreakpoints = FALSE,
+      includeAllPackages = includeAllPackages,
+      additionalEnvs = additionalEnvs,
+      stackFrames = stackFrames
+    )
+  }
+  return(sbps)
+}
+
+storeSourceBreakpoints <- function(sbps){
+  for(i in rev(seq_along(session$sourceBreakpointsList))){
+    oldSbps <- session$sourceBreakpointsList[[i]]
+    if(oldSbps$source$path == sbps$source$path){
+      session$sourceBreakpointsList[[i]] <- sbps
+      return(oldSbps)
+    }
+  }
+  # add sbps and return (mock) entry without breakpoints:
+  session$sourceBreakpointsList <- c(session$sourceBreakpointsList, list(sbps))
+  sbps$breakpoints <- list()
+  return(sbps)
+}
+
+getSourceBreakpoints <- function(path){
+  for(sbps in session$sourceBreakpointsList){
+    if(sbps$source$path == path){
+      return(sbps)
+    }
+  }
+  return(list(
+    source = list(path=path),
+    breakpoints = list()
+  ))
+}
+
+
+requestArgsToSourceBreakpoints <- function(args){
+  path <- normalizePath(lget(args$source, 'path', ''), mustWork=FALSE)
+  args$source$path <- path
+
+  sourceBreakpointToInternalBreakpoint <- function(bp){
+    bp$id <- getNewBreakpointId()
+    bp$verified <- FALSE
+    bp$attempted <- FALSE
+    bp$requestedLine <- bp$line
+    bp$source <- args$source
+    return(bp)
+  }
+
+  args$breakpoints <- lapply(args$breakpoints, sourceBreakpointToInternalBreakpoint)
+  return(args)
 }
 
 
 getNewBreakpointId <- function(){
   session$breakpointId <- session$breakpointId + 1 # returns the new value of session$breakpoint
-}
-
-
-addOrUpdateFileBreakpoints <- function(fileBreakpoints){
-  path <- lget(fileBreakpoints$source, 'path', '')
-  if(path == '') return(invisible(NULL))
-
-  # remove previous fileBreakpoints:
-  for(i in rev(seq_along(session$fileBreakpoints))){
-    fbp <- session$fileBreakpoints[[i]]
-    if(lget(fbp$source, 'path', '') == path){
-      session$fileBreakpoints[[i]] <- NULL
-    }
-  }
-
-  session$fileBreakpoints <- append(session$fileBreakpoints, list(fileBreakpoints))
-  invisible(NULL)
-}
-
-
-getFileBreakpoints <- function(path){
-  path <- normalizePath(path)
-  for(fbp in session$fileBreakpoints){
-    if(fbp$source$path == path){
-      return(fbp)
-    }
-  }
-  return(NULL)
-}
-
-.vsc.getBreakpoints <- function(path){
-  fbp <- getFileBreakpoints(path)
-  breakpoints <- fbp$breakpoints
-}
-
-getRequestedBreakpointLines <- function(path){
-  fbp <- getFileBreakpoints(path)
-  lines <- lapply(fbp$breakpoints, function(bp) bp$requestedLine)
-}
-
-.vsc.getBreakpointLines <- function(path, getActualLines = FALSE){
-  if(getActualLines){
-    fbp <- getFileBreakpoints(path)
-    lines <- lapply(fbp$breakpoints, function(bp) bp$line)
-  } else{
-    lines <- getRequestedBreakpointLines(path)
-  }
-}
-
-
-.vsc.setStoredBreakpoints <- function() {
-  if(session$noDebug){
-    return(FALSE)
-  }
-  for (fbp in session$fileBreakpoints){
-    file <- lget(fbp$source, 'path', '')
-    if(file.exists(file)){
-      bps <- lget(fbp, 'breakpoints', list())
-      includePackageScopes <- lget(session, 'setBreakpointsInPackages', FALSE)
-      additionalEnvs <- lapply(session$debuggedPackages, getNamespace)
-      .vsc.setBreakpoints(file, bps, includePackageScopes = includePackageScopes, additionalEnvs = additionalEnvs)
-    }
-  }
-}
-
-
-.vsc.getAllBreakpoints <- function() {
-  return(session$fileBreakpoints)
 }
