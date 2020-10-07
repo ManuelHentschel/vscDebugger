@@ -149,6 +149,28 @@ removeNonJsonElements <- function(v){
   invisible()
 }
 
+#' @export
+.vsc.str <- function(object, skipCalls=0, ...){
+  args <- list(
+    name = 'vscStrResult',
+    rValue = list(object)
+  )
+  node <- session$rootNode$getEvalRootNode()$addChild(args)
+  variable <- node$getContent()
+
+  source <- getSource(sys.call(-skipCalls))
+  line <- lget(source, 'line', 0)
+
+  sendOutputEvent(
+    output = "",
+    category = "stdout",
+    variablesReference = variable$variablesReference,
+    source = source,
+    line = line
+  )
+
+  invisible(NULL)
+}
 
 
 printToVsc <- function(ret, skipCalls=0, category="stdout"){

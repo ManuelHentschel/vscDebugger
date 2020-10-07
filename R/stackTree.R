@@ -532,13 +532,15 @@ VariableNode <- R6::R6Class(
         ind = missingIndices
       )
 
+      childVars <- infos[['childVars']]
+      childVars <- fixNames(childVars)
 
       # combine with old vars
       newVars <- lapply(seq_along(missingIndices), function(i){
-        if(i<=length(infos[['childVars']])){
+        if(i<=length(childVars)){
           list(
             index=missingIndices[i],
-            minVar=infos[['childVars']][[i]],
+            minVar=childVars[[i]],
             node=NULL
           )
         } else{
