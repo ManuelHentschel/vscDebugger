@@ -7,7 +7,7 @@
 #' @export
 .vsc.debugSource <- function(
   file, lines = list(), local = FALSE, envir = NULL, chdir = FALSE,
-  encoding = "unknown", applyInternalBreakpoints = TRUE,
+  encoding = "unknown",
   recursive = TRUE, ...
 ) {
   # determine envir
@@ -22,15 +22,13 @@
   }
 
   # parse file:
-  file <- normalizePath(file)
-  body <- parse(file, encoding = encoding, keep.source = TRUE)
+  path <- normalizePath(file)
+  body <- parse(path, encoding = encoding, keep.source = TRUE)
 
   if(!session$noDebug){
-    # apply breakpoints stored in session$srcBreakpoints
-    if (applyInternalBreakpoints) {
-      bps <- .vsc.getBreakpoints(file)
-      lines <- .vsc.getBreakpointLines(file)
-    }
+    sourceBreakpoints <- getSourceBreakpoints(path)
+    bps <- sourceBreakpoints$breakpoints
+    lines <- lapply(bps, '[[', 'line')
 
     # find steps/expressions corresponding to the requested lines:
     ats <- lapply(lines, lineFind, body)
@@ -41,20 +39,22 @@
     }
     sendBreakpoints(bps)
 
+    sourceBreakpoints$breakpoints <- bps
+    storeSourceBreakpoints(sourceBreakpoints)
 
     # set breakpoints:
     body <- mySetBreakpoints(body, ats)
+  }
 
-    # store state
-    if(chdir){
-      tmpwd <- setwd(dirname(file))
-    }
+  # store state
+  if(chdir){
+    tmpwd <- setwd(dirname(path))
   }
 
   registerLaunchFrame()
   # actually run the code:
   enclos <- baseenv()
-  .Internal(eval(body, envir, enclos))
+  ret <- .Internal(eval(body, envir, enclos))
   # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
   unregisterLaunchFrame()
 
@@ -63,6 +63,8 @@
   if(chdir){
     setwd(tmpwd)
   }
+
+  invisible(ret)
 }
 
 

@@ -84,6 +84,29 @@ getTopFrameId <- function(){
   return(ef)
 }
 
+getExternalFrames <- function(){
+  efs <- session$entryFrames
+  lfs <- session$launchFrames
+
+  n <- sys.nframe() - 1
+  externalFrames <- logical(n)
+  isExternal <- TRUE
+  for(i in 1:n){
+    # frame stays external, unless it's an entryframe
+    isExternal <- isExternal && !(i %in% efs)
+
+    # store isExternal
+    externalFrames[i] <- isExternal
+
+    # frame stays external or gets launched (-> external)
+    isExternal <- isExternal || (i %in% lfs)
+  }
+
+  externalFrames <- which(externalFrames)
+
+  return(externalFrames)
+}
+
 
 #' Converts the frame id
 #'

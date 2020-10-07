@@ -4,47 +4,76 @@ import { DebugProtocol } from './debugProtocol';
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
 
 export declare module Breakpoints {
-  interface InternalBreakpoint extends DebugProtocol.SourceBreakpoint, DebugProtocol.Breakpoint {
-    /** The source line of the breakpoint or logpoint. */
-    line: number;
-    /** An optional source column of the breakpoint. */
-    column?: number;
+  interface Source extends DebugProtocol.Source {
+    path: string; // empty string "" when no valid path provided
+  }
 
+  interface InternalBreakpoint extends DebugProtocol.SourceBreakpoint, DebugProtocol.Breakpoint, DebugProtocol.BreakpointLocation {
+
+    // id
     id: number;
 
-    maxOffset?: number; // the maximum difference between requested line and actual breakpoint
+    // location
+    source: Source
+    line: number;
+    column?: number;
+    endLine?: number;
+    endColumn?: number
 
-    rAt?: RVector<number>; // the step in the R parse tree that contains the bp
-    rFunction?: RFunction;
+    // (optional) details
+    condition?: string;
+    hitCondition?: string;
+    logMessage?: string;
 
-    source?: DebugProtocol.Source // For compatibility with DebugProtocol.Breakpoint // Must be same as containing FileBreakpoints
+    // status of the bp
+    verified: boolean;
+    message?: string; // An optional message about the state of the breakpoint
 
-    endLine?: number; // In case the breakpoint spans multiple lines
-    endColumn?: number; // In case the breakpoint spans only part of a line
-
-    verified: boolean; // Whether this breakpoint was successfully set
+    // internals
     attempted: boolean; // Whether it has been attempted to set this breakpoint
     requestedLine: number; // The line requested (might differ from actual line)
+    rFunction?: RFunction;
+    maxOffset?: number; // the maximum difference between requested line and actual breakpoint
   }
 
   // Used to internally store breakpoints:
-  interface FileBreakpoints extends DebugProtocol.SetBreakpointsArguments {
-    source: DebugProtocol.Source; // must match bp.source for bp in breakpoints
+  interface SourceBreakpoints extends DebugProtocol.SetBreakpointsArguments {
+    source: Source; // must match bp.source for bp in breakpoints
     breakpoints: InternalBreakpoint[];
+
+    // // not used:
+    // lines?: number[];
+    // sourceModified?: boolean;
   }
 
-  function getFileBreakpoints(path: string): FileBreakpoints;
+  interface Reference {
+    name: string;
+    env: REnvironment;
+    at: RVector<number>;
+    filename: string;
+    line: number;
+    timediff: number;
+  }
 
-  function getBreakpointLines(path: string): number[];
+  function findLineNum(
+    srcfile: string, 
+    line: number, 
+    nameonly: boolean, 
+    envir: REnvironment, 
+    lastenv: REnvironment
+  ): Reference[];
 
-  function getRequestedBreakpointLines(path: string): number[];
+  interface SummarizedReference {
+    name: string;
+    env: REnvironment;
+    at: RList<RVector<number>>;
+    line: RList<number>;
+    timediff: RList<number>;
+  }
 
-  function _vsc_setBreakpoints(
-    file: string,
-    bps: InternalBreakpoint[],
-    includePackageScopes?: boolean,
-    id?: number
-  ): InternalBreakpoint[];
+  function summarizeRefs(refs: Reference[]): SummarizedReference[];
+
+  function getSourceBreakpoints(path: string): SourceBreakpoints;
 
   function setBreakpointsRequest(
     response: DebugProtocol.SetBreakpointsResponse,

@@ -259,7 +259,7 @@ configurationDoneRequest <- function(response, args, request){
     session$debugMode == 'function' ||
     (session$setBreakpointsInPackages && length(session$debuggedPackages)>0)
   ){
-    .vsc.setStoredBreakpoints()
+    setStoredBreakpoints()
   }
 
 

@@ -64,7 +64,7 @@ export declare module Session {
     // data:
     // (like 'state', but contains longer lists etc.)
     rootNode: StackTree.RootNode;
-    fileBreakpoints: Breakpoints.FileBreakpoints[];
+    sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
     sources: Source[];
   }
 }
@@ -109,4 +109,5 @@ export class State extends MinimalState {
   isEvaluating(): boolean;
   isEvaluatingSilent(): boolean;
   isPaused(): boolean;
+  isStarted(): boolean;
 }
