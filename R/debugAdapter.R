@@ -187,6 +187,22 @@ sendCustomEvent <- function(reason=NULL, body=list()){
   sendEvent(makeCustomEvent(reason, body))
 }
 
+makeInvalidatedEvent <- function(areas=list('all'), threadId=NULL, stackFrameId=NULL){
+  event <- makeEvent('invalidated')
+  event$body <- list(
+    areas = areas,
+    threadId = threadId,
+    stackFrameId = stackFrameId
+  )
+  event
+}
+sendInvalidatedEvent <- function(areas=list('all'), threadId=NULL, stackFrameId=NULL){
+  if(session$supportsInvalidatedEvent){
+    sendEvent(makeInvalidatedEvent(areas, threadId, stackFrameId))
+  } else{
+    FALSE
+  }
+}
 
 makeStoppedEvent <- function(reason="breakpoint", description=NULL, text=NULL){
   event <- makeEvent("stopped")

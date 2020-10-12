@@ -13,7 +13,8 @@ session <- local({
   overwriteStr <- TRUE
   overwriteSource <- TRUE
 
-  noDebug <- FALSE # currently not used
+  supportsInvalidatedEvent <- FALSE
+  noDebug <- FALSE
   debugMode <- NULL
   workingDirectory <- NULL
   file <- NULL

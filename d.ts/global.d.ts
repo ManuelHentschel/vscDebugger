@@ -21,6 +21,7 @@ export declare module Session {
     overwriteMessage: boolean;
     overwriteSource: boolean;
 
+    supportsInvalidatedEvent: boolean;
     noDebug: boolean; 
     debugMode: ("function" | "file" | "workspace")
     workingDirectory: string;
