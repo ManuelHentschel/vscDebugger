@@ -47,6 +47,10 @@ sendToVsc <- function(body = "") {
   j <- getJson(body)
   if(!is.null(session$jsonServerConnection)){
     base::cat(j, '\n', sep='', file=session$jsonServerConnection)
+    logCat('Sent json: ', j, '\n', sep='')
+    TRUE
+  } else{
+    FALSE
   }
 }
 
@@ -57,12 +61,19 @@ getJson <- function(body){
 
 removeNonJsonElements <- function(v){
   if(is.list(v)){
-    lapply(v, removeNonJsonElements)
+    v <- lapply(v, removeNonJsonElements)
+    # remove NULL entries
+    for(i in rev(seq_along(v))){
+      if(is.null(v[[i]])){
+        v[i] <- NULL
+      }
+    }
+    return(v)
   } else{
     if(is.vector(v)){
-      v
+      return(v)
     } else{
-      ''
+      return(NULL)
     }
   }
 }

@@ -9,13 +9,13 @@
   obj <- jsonlite::fromJSON(json, simplifyVector = FALSE)
   if(lget(obj, 'type', '') == 'request'){
     .vsc.dispatchRequest(obj)
-    success <- TRUE
+    typeKnown <- TRUE
   } else{
     logCat('Unknown json: ', json, '\n')
-    success <- FALSE
+    typeKnown <- FALSE
   }
   unregisterEntryFrame()
-  invisible(success)
+  invisible(typeKnown)
 }
 
 #' @export
@@ -24,7 +24,7 @@
   response <- prepareResponse(request)
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
-  success <- TRUE
+  commandKnown <- TRUE
   if(command == 'stackTrace'){
     stackTraceRequest(response, args, request)
   } else if(command == 'scopes'){
@@ -66,16 +66,16 @@
   } else if(command == 'terminate'){
     terminateRequest(response, args, request)
   } else if(command == 'disconnect'){
-    disconnectRequest(response, args, request) # different form terminate?
+    disconnectRequest(response, args, request)
   } else if(command == 'custom'){
     customRequest(response, args, request)
   } else {
-    success <- FALSE
+    commandKnown <- FALSE
     response$success <- FALSE
     sendResponse(response)
   }
   unregisterEntryFrame()
-  invisible(success)
+  invisible(commandKnown)
 }
 
 prepareResponse <- function(request){
