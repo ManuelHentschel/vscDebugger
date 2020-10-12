@@ -12,7 +12,7 @@ setVariableRequest <- function(response, args, request){
 
     node <- session$rootNode$findChildNode(args)
     if(is.null(node)){
-      base::cat("<did not find node>", file=stderr())
+      .vsc.cat("<did not find node>", file=stderr(), showSource = FALSE)
       response$success <- FALSE
       sendResponse(response)
       return(NULL)
@@ -40,14 +40,16 @@ setVariableRequest <- function(response, args, request){
     } else{
       response$success <- FALSE
       if(is.null(successAndRValue$reason)){
-        base::cat("<Changing the variable value was unsuccessful>\n", file = stderr())
+        .vsc.cat("<Changing the variable value was unsuccessful>\n", file = stderr(), showSource = FALSE)
       } else{
-        base::cat(successAndRValue$reason, file = stderr())
+        .vsc.cat(successAndRValue$reason, file = stderr(), showSource = FALSE)
       }
     }
   }
   ret <- sendResponse(response)
-  sendInvalidatedEvent(list('variables')) # update other variables to cover side effects
+  if(getOption('vsc.sendInvalidatedEventAfterSetVar', TRUE)){
+    sendInvalidatedEvent(list('variables')) # update other variables to cover side effects
+  }
   invisible(ret)
 }
 
@@ -62,14 +64,34 @@ setVar <- function(setInfos, valueString){
     success <- FALSE
     reason <- "<No set-info available>\n"
   } else{
-    err <- try({
-      tmpTracingState <- tracingState(FALSE)
-      rValue <- eval(parse(text=valueString), envir=env)
+    valueAndVisible <- evalInEnv(
+      expr = valueString,
+      env = env,
+      showParseErrors = TRUE,
+      showOutput = TRUE,
+      deactivateTracing = TRUE,
+      catchErrors = TRUE,
+      showErrors = TRUE
+    )
+    if(lget(valueAndVisible, 'isError', FALSE)){
+      success <- FALSE
+      reason <- ''
+    } else{
+      rValue <- valueAndVisible$value
       cl <- as.call(list(`<-`, target, rValue))
-      eval(cl)
-      tracingState(tmpTracingState)
-    })
-    success <- !inherits(err, "try-error")
+      body <- list(cl)
+      valueAndVisible2 <- evalInEnv(
+        useBody = TRUE,
+        body = body,
+        env = environment(),
+        showOutput = TRUE,
+        deactivateTracing = TRUE,
+        catchErrors = TRUE,
+        showErrors = TRUE
+      )
+      success <- !lget(valueAndVisible2, 'isError', FALSE)
+      reason <- ''
+    }
   }
   return(list(
     success = success,

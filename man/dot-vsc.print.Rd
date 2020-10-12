@@ -4,7 +4,7 @@
 \alias{.vsc.print}
 \title{Modified version of \code{base::print()} for vsc}
 \usage{
-.vsc.print(x, ..., skipCalls = 0)
+.vsc.print(x, ..., skipCalls = 0, showSource = TRUE)
 }
 \arguments{
 \item{...}{Arguments passed to \code{base::cat()}}
