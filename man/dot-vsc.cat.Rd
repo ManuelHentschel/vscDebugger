@@ -4,7 +4,7 @@
 \alias{.vsc.cat}
 \title{Modified version of \code{base::cat()} for vsc}
 \usage{
-.vsc.cat(..., skipCalls = 0)
+.vsc.cat(..., skipCalls = 0, showSource = TRUE)
 }
 \arguments{
 \item{...}{Arguments passed to base::cat()}

@@ -1,6 +1,5 @@
 
 evaluateRequest <- function(response, args, request){
-  logPrint('evaluating3!!!!!!!')
   # args
   expr <- lget(args, 'expression', '')
   frameId <- lget(args, 'frameId', 0)
@@ -95,22 +94,28 @@ evalInEnv <- function(
   showOutput,
   deactivateTracing,
   catchErrors,
-  showErrors
+  showErrors,
+  useBody = FALSE,
+  body = NULL
 ){
   # check input
   if(deactivateTracing && !catchErrors) stop('invalid args')
   # other invalid combinations are silently ignored/treated unexpectedly
 
   # parse expr
-  body <- try(
-    parse(text=expr),
-    silent = !showParseErrors
-  )
-  if(inherits(body, 'try-error')){
-    return(list(
-      value = body,
-      visible = FALSE
-    ))
+  if(!useBody){
+    body <- try(
+      parse(text=expr),
+      silent = !showParseErrors
+    )
+    if(inherits(body, 'try-error')){
+      return(list(
+        value = body,
+        visible = FALSE,
+        isError = TRUE,
+        errorType = 'parseError'
+      ))
+    }
   }
 
   # change state
@@ -125,7 +130,6 @@ evalInEnv <- function(
   # eval
   if(catchErrors && !showOutput){
     # wrap in try(), withVisible(), capture.output()
-    logPrint(" wrap in try(), withVisible(), capture.output() ")
     valueAndVisible <- try(
       {
         for(exp in body){
@@ -138,7 +142,6 @@ evalInEnv <- function(
     )
   } else if(catchErrors && showOutput){
     # wrap in try(), withVisible()
-    logPrint(" wrap in try(), withVisible() ")
     valueAndVisible <- try(
       {
         for(exp in body){
@@ -151,7 +154,6 @@ evalInEnv <- function(
     )
   } else{
     # wrap in withVisible()
-    logPrint(" wrap in withVisible() ")
     registerLaunchFrame(2)
     for(exp in body){
       cl <- call('withVisible', exp)
@@ -170,8 +172,13 @@ evalInEnv <- function(
   session$state$revert(prevState)
   
   # handle error caught by try()
-  if(inherits(valueAndVisible, 'try-error')){
-    valueAndVisible <- list(value=valueAndVisible, visible=FALSE)
+  if(inherits(valueAndVisible, 'try-error') && catchErrors){
+    valueAndVisible <- list(
+      value=valueAndVisible,
+      visible=FALSE,
+      isError=TRUE,
+      errorType='evalError'
+    )
   }
 
   return(valueAndVisible)

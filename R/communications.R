@@ -89,7 +89,7 @@ removeNonJsonElements <- function(v){
 #' @param ... Arguments passed to base::cat()
 #' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
 #' @return NULL (invisible)
-.vsc.cat <- function(..., skipCalls=0) {
+.vsc.cat <- function(..., skipCalls=0, showSource=TRUE) {
   # TODO: consider correct environment for base::print(...)?
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
@@ -109,7 +109,7 @@ removeNonJsonElements <- function(v){
   }
 
   ret <- capture.output({do.call(base::cat, args);base::cat("\n")})
-  printToVsc(ret, skipCalls+1, category)
+  printToVsc(ret, skipCalls+1, category, showSource = showSource)
   invisible(NULL)
 }
 
@@ -120,7 +120,7 @@ removeNonJsonElements <- function(v){
 #' @param ... Arguments passed to `base::cat()`
 #' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
 #' @return `NULL` (invisible)
-.vsc.print <- function(x, ..., skipCalls=0) {
+.vsc.print <- function(x, ..., skipCalls=0, showSource=TRUE) {
   # TODO: consider correct environment for base::print(...)?
   # env <- sys.frame(-1)
   # ret <- capture.output(base::print(...), envir=env)
@@ -130,12 +130,12 @@ removeNonJsonElements <- function(v){
   }
   ret <- capture.output(base::print(x, ...))
   ret <- c(ret, "")
-  printToVsc(ret, skipCalls+1)
+  printToVsc(ret, skipCalls+1, showSource = showSource)
   invisible(x)
 }
 
 #' @export
-.vsc.message <- function(..., domain = NULL, appendLF = TRUE){
+.vsc.message <- function(..., domain = NULL, appendLF = TRUE, showSource=TRUE){
   args <- list(...)
   cond <- if (length(args) == 1L && inherits(args[[1L]], "condition")) {
     if (nargs() > 1L) {
@@ -161,7 +161,7 @@ removeNonJsonElements <- function(v){
 }
 
 #' @export
-.vsc.str <- function(object, skipCalls=0, ...){
+.vsc.str <- function(object, ..., skipCalls=0, showSource=TRUE){
   args <- list(
     name = 'vscStrResult',
     rValue = list(object)
@@ -184,11 +184,16 @@ removeNonJsonElements <- function(v){
 }
 
 
-printToVsc <- function(ret, skipCalls=0, category="stdout"){
+printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
   output <- paste0(ret, collapse = "\n")
 
-  source <- getSource(sys.call(-skipCalls))
-  line <- lget(source, 'line', 0)
+  if(showSource){
+    source <- getSource(sys.call(-skipCalls))
+    line <- lget(source, 'line', 0)
+  } else{
+    source <- NULL
+    line <- NULL
+  }
 
   sendOutputEvent(category, output = output, line=line, source=source)
 }
