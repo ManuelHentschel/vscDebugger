@@ -67,6 +67,8 @@
     terminateRequest(response, args, request)
   } else if(command == 'disconnect'){
     disconnectRequest(response, args, request)
+  } else if(command == 'attach'){
+    attachRequest(response, args, request)
   } else if(command == 'custom'){
     customRequest(response, args, request)
   } else {

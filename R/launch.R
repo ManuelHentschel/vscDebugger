@@ -57,30 +57,41 @@ initializeRequest <- function(response, args, request){
     session$rStrings[[name]] <- rStrings[[name]]
   })
 
-  options(prompt = paste0(session$rStrings$prompt, '\n'))
-  options(continue = paste0(session$rStrings$continue, '\n'))
-  options(browserNLdisabled = TRUE)
+  internalOptions <- list(browserNLdisabled = TRUE)
+  if(!is.null(rStrings$prompt)){
+    internalOptions$prompt <- paste0(rStrings$prompt, '\n')
+  }
+  if(!is.null(rStrings$continue)){
+    internalOptions$continue <- paste0(rStrings$continue, '\n')
+  }
+  session$previousOptions <- options(internalOptions)
+  session$internalOptions <- internalOptions
 
-  session$jsonPort <- lget(args, 'jsonPort', 0)
+  session$jsonPort <- lget(args, 'jsonPort', -1)
   session$jsonHost <- lget(args, 'jsonHost', '127.0.0.1')
-  session$jsonServerConnection <- socketConnection(
-    host = session$jsonHost,
-    port = session$jsonPort,
-    server = FALSE,
-    blocking = FALSE,
-    open = "r+b"
-  )
+  if(session$jsonPort>=0){
+    session$jsonSocketConnection <- socketConnection(
+      host = session$jsonHost,
+      port = session$jsonPort,
+      server = FALSE,
+      blocking = FALSE,
+      open = "r+b"
+    )
+  }
 
-  session$sinkPort <- lget(args, 'sinkPort', 0)
+  session$sinkPort <- lget(args, 'sinkPort', -1)
   session$sinkHost <- lget(args, 'sinkHost', 'localhost')
-  session$sinkServerConnection <- socketConnection(
-    host = session$sinkHost,
-    port = session$sinkPort,
-    server = FALSE,
-    blocking = FALSE,
-    open = "r+b"
-  )
-  sink(session$sinkServerConnection)
+  if(session$sinkPort>=0){
+    session$sinkSocketConnection <- socketConnection(
+      host = session$sinkHost,
+      port = session$sinkPort,
+      server = FALSE,
+      blocking = FALSE,
+      open = "r+b"
+    )
+    sink(session$sinkSocketConnection)
+    session$sinkNumber <- sink.number()
+  }
 
   session$supportsInvalidatedEvent <- lget(args, 'supportsInvalidatedEvent', FALSE)
 
@@ -283,7 +294,11 @@ configurationDoneRequest <- function(response, args, request){
   # send response before launching main/debugSource!
   sendResponse(response)
 
-  options(error = .vsc.onError)
+  errorOption <- list(error=.vsc.onError)
+  previousErrorOption <- options(errorOption)
+
+  session$internalOptions <- c(session$internalOptions, errorOption)
+  session$previousOptions <- c(session$previousOptions, previousErrorOption)
 
   # do stuff
   if(session$debugMode == 'file'){
@@ -296,10 +311,21 @@ configurationDoneRequest <- function(response, args, request){
     session$state$changeBaseState('runMain', startRunning=TRUE)
     sendWriteToStdinEvent(format(call(session$mainFunction)), when = "topLevelPrompt")
     session$stopListeningOnPort <- TRUE
-  } else{ # debugMode == 'workspace'
+  } else if(session$debugMode == 'workspace'){
     session$state$changeBaseState('workspace')
     session$stopListeningOnPort <- TRUE
+  } else{
+    session$state$startPaused('entry')
+    sendStoppedEvent('entry')
   }
 
   # response sent already!
 }
+
+
+attachRequest <- function(response, args, request){
+  session$debugMode <- 'attached'
+  session$state$changeBaseState('attached', TRUE)
+  sendResponse(response)
+}
+

@@ -23,26 +23,41 @@ export declare module Session {
 
     supportsInvalidatedEvent: boolean;
     noDebug: boolean; 
-    debugMode: ("function" | "file" | "workspace")
+    debugMode: ("function" | "file" | "workspace" | "attached" | "")
     workingDirectory: string;
     file: string;
     mainFunction: string;
     includePackageScopes: boolean;
     setBreakpointsInPackages: boolean;
-    debuggedPackages: string[];
+    debuggedPackages: RVector<string>;
+
+    previousOptions?: {
+      prompt?: string;
+      continue?: string;
+      browserNLdisabled?: boolean;
+      error?: RFunction;
+      // ...
+      [key: string]: any;
+    }
 
     // server/communication:
     // (set for this debug session)
     // (should not influence the behaviour of the "R facing part" of the debugger)
+
+    dapPort?: number;
+    dapHost?: string;
+    dapSocketConnection?: RValue;
+
     jsonPort?: number;
     jsonHost?: string;
-    jsonServerConnection?: RValue;
+    jsonSocketConnection?: RValue;
 
     sinkPort?: number;
     sinkHost?: string;
-    sinkServerConnection?: RValue;
+    sinkSocketConnection?: RValue;
+    sinkNumber: number; //=0
 
-    threadId: number; //dummy, but must match the one used in the DAP host
+    threadId: number; //dummy, but must match the one used in the DAP client
 
     rStrings: {
       prompt: string;
@@ -70,9 +85,9 @@ export declare module Session {
   }
 }
 
-export type BaseState = "starting"|"loadLib"|"sourceMain"|"runMain"|"runFile"|"workspace"|"quitting";
-export type RunningWhat = "loadLib"|"sourceMain"|"file"|"main"|"eval";
-export type PausedOn = "breakpoint"|"browser"|"error"|"toplevel";
+export type BaseState = "starting"|"loadLib"|"sourceMain"|"runMain"|"runFile"|"workspace"|"quitting"|"attached"|"detached";
+export type RunningWhat = "loadLib"|"sourceMain"|"file"|"main"|"eval"|"attachedCode";
+export type PausedOn = "breakpoint"|"browser"|"error"|"toplevel"|"entry"|"step"|"pause";
 
 export class MinimalState {
   baseState: ""|BaseState;

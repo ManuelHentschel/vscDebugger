@@ -3,14 +3,31 @@
 
 # Can be used to dispatch requests via tcp socket instead of stdin
 #' @export
-.vsc.listenOnPort <- function(timeout=0){
-  logPrint('start listening on port. timeout:')
-  logPrint(timeout)
-  session$stopListeningOnPort <- FALSE
+.vsc.listenOnPort <- function(
+  timeout=0,
+  host='127.0.0.1',
+  port=NULL,
+  stopListening=FALSE
+){
+  if(is.null(port)){
+    connection <- session$jsonSocketConnection
+    host <- session$jsonHost
+    port <- session$jsonPort
+  } else{
+    connection <- socketConnection(
+      host = host,
+      port = port,
+      server = TRUE,
+      open = "r+b"
+    )
+  }
+  logCat('Start listening on ', host, ':', port, '\nTimeout: ', toString(timeout), '\n', sep='')
+  session$stopListeningOnPort <- stopListening
   registerEntryFrame()
   t <- as.numeric(Sys.time())
   repeat{
-    char <- readChar(session$jsonServerConnection, nchars=1)
+    char <- readChar(connection, nchars=1)
+    # char <- readChar(session$jsonSocketConnection, nchars=1)
     if(length(char)==0){
       if(timeout == 0 || (timeout > 0 && as.numeric(Sys.time()) - t > timeout)){
         break
@@ -37,6 +54,52 @@
 }
 
 
+#' @export
+.vsc.listenForDAP <- function(
+  host = session$dapHost,
+  port = session$dapPort
+){
+  registerEntryFrame()
+  if(is.null(session$dapSocketConnection)){
+    conn <- socketConnection(
+      host = host,
+      port = port,
+      server = TRUE,
+      open = "r+b",
+      blocking = FALSE
+    )
+    session$dapSocketConnection <- conn
+  } else{
+    conn <- session$dapSocketConnection
+    sendStoppedEvent('step')
+    session$state$startPaused('step')
+    session$previousOptions <- options(session$internalOptions)
+  }
+  cat('Listening on ', host, ':', toString(port), '\n', sep='')
+  session$stopListeningOnPort <- FALSE
+  while(!session$stopListeningOnPort){
+    header <- ''
+    while(!endsWith(header, '\r\n\r\n')){
+      char <- readChar(conn, nchars=1)
+      if(length(char)==0){
+        Sys.sleep(0.01)
+      } else {
+        header <- paste0(header, char)
+      }
+    }
+    m <- regexec('Content-Length: (\\d+)\r\n', header)
+    rm <- regmatches(header, m)
+    contentLength <- as.numeric(rm[[1]][2])
+    json <- readChar(conn, nchars=contentLength)
+    # base::cat('Received json: ', json, '\n', sep='')
+    .vsc.handleJson(json)
+  }
+  logPrint('stop listening on port')
+  options(session$previousOptions)
+  unregisterEntryFrame()
+}
+
+
 
 #' Sends a json to vsc
 #'
@@ -45,9 +108,20 @@
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
 sendToVsc <- function(body = "") {
   j <- getJson(body)
-  if(!is.null(session$jsonServerConnection)){
-    base::cat(j, '\n', sep='', file=session$jsonServerConnection)
+  if(!is.null(session$jsonSocketConnection)){
+    base::cat(j, '\n', sep='', file=session$jsonSocketConnection)
     logCat('Sent json: ', j, '\n', sep='')
+    TRUE
+  } else if(!is.null(session$dapSocketConnection)){
+    contentLength <- nchar(j, type='bytes')
+    msg <- paste0(
+      'Content-Length: ',
+      toString(contentLength),
+      '\r\n\r\n',
+      j
+    )
+    base::cat(msg, file=session$dapSocketConnection)
+    # base::cat('Sent message:', msg, '\n')
     TRUE
   } else{
     FALSE

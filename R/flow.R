@@ -133,8 +133,15 @@ stepOutRequest <- function(response, args, request){
 }
 
 disconnectRequest <- function(response, args, request){
+  doQuit <- session$state$baseState != 'attached'
   session$state$changeBaseState('quitting')
-  if(isCalledFromBrowser()){
+
+  if(!doQuit){
+    logPrint('disconnect from attached session')
+    sendResponse(response)
+    closeConnections()
+    session$state$changeBaseState('detached')
+  } else if(isCalledFromBrowser()){
     logPrint('disconnect from browser')
     sendWriteToStdinEvent('Q', when = "browserPrompt")
     sendWriteToStdinEvent(
@@ -176,17 +183,22 @@ terminateSessionFromTopLevel <- function(){
   session$state$changeBaseState('quitting')
   sendTerminatedEvent()
   sendExitedEvent()
-  # closeConnections()
-  # quit(save = 'no')
 }
 
 
 closeConnections <- function(){
   session$stopListeningOnPort <- TRUE
-  for(i in seq_len(sink.number())){
-    sink(NULL)
+  if(!is.null(session$sinkSocketConnection)){
+    while(sink.number() > session$sinkNumber){
+      sink(NULL)
+    }
+    try(close(session$sinkSocketConnection), silent=TRUE)
   }
-  try(close(session$sinkServerConnection))
-  try(close(session$jsonServerConnection))
+  if(!is.null(session$jsonSocketConnection)){
+    try(close(session$jsonSocketConnection), silent=TRUE)
+  }
+  if(!is.null(session$dapSocketConnection)){
+    try(close(session$dapSocketConnection), silent=TRUE)
+  }
 }
 

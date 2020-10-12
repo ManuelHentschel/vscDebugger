@@ -2,7 +2,7 @@
 session <- local({
   # settings:
   # (usually changed globally, persisting across debug sessions)
-  varInfos <- NULL
+  varInfos <- list()
 
   # debugSession:
   # (set for this debug session)
@@ -15,30 +15,39 @@ session <- local({
 
   supportsInvalidatedEvent <- FALSE
   noDebug <- FALSE
-  debugMode <- NULL
-  workingDirectory <- NULL
-  file <- NULL
-  mainFunction <- NULL
-  includePackageScopes <- NULL
+  debugMode <- ''
+  workingDirectory <- ''
+  file <- ''
+  mainFunction <- 'main'
+  includePackageScopes <- FALSE
   setBreakpointsInPackages <- FALSE
   debuggedPackages <- character(0)
+
+  previousOptions <- list()
+  internalOptions <- list()
 
   # server/communication:
   # (set for this debug session)
   # (should not influence the behaviour of the "R facing part" of the debugger)
+
+  dapPort <- 18721
+  dapHost <- 'localhost'
+  dapSocketConnection <- NULL
+
   jsonPort <- 0
   jsonHost <- 'localhost'
-  jsonServerConnection <- NULL
+  jsonSocketConnection <- NULL
 
   sinkPort <- 0
   sinkHost <- 'localhost'
-  sinkServerConnection <- NULL
+  sinkSocketConnection <- NULL
+  sinkNumber <- 0
 
   threadId <- 1
 
   rStrings <- list(
-    prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    continue = '<##v\\s\\c>' #actual prompt is followed by a newline to make easier to identify
+  #   prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
+  #   continue = '<##v\\s\\c>' #actual prompt is followed by a newline to make easier to identify
   )
 
   # state:
@@ -127,6 +136,7 @@ State <- R6::R6Class(
             self$hasHitError <- TRUE
           }
         }
+        logCat('starting paused on', toString(pausedOn), '\n')
       }
       return(prevState)
     },
@@ -141,6 +151,7 @@ State <- R6::R6Class(
           runMain = "main",
           runFile = "file",
           workspace = "eval",
+          attached = "attachedCode",
           quitting = "",
           ""
         )
