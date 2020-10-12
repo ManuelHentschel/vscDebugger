@@ -46,7 +46,9 @@ setVariableRequest <- function(response, args, request){
       }
     }
   }
-  sendResponse(response)
+  ret <- sendResponse(response)
+  sendInvalidatedEvent(list('variables')) # update other variables to cover side effects
+  invisible(ret)
 }
 
 

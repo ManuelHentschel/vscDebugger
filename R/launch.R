@@ -82,6 +82,8 @@ initializeRequest <- function(response, args, request){
   )
   sink(session$sinkServerConnection)
 
+  session$supportsInvalidatedEvent <- lget(args, 'supportsInvalidatedEvent', FALSE)
+
   session$threadId <- lget(args, 'threadId', 1)
 
   response$body <- body

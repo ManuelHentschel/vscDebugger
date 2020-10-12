@@ -9,7 +9,7 @@ export declare module DebugProtocol {
         /** Message type.
             Values: 'request', 'response', 'event', etc.
         */
-        type: string;
+        type: 'request' | 'response' | 'event' | string;
     }
     /** A client or debug adapter initiated request. */
     interface Request extends ProtocolMessage {
@@ -43,7 +43,7 @@ export declare module DebugProtocol {
             'cancelled': request was cancelled.
             etc.
         */
-        message?: string;
+        message?: 'cancelled' | string;
         /** Contains request result if success is true and optional error details if success is false. */
         body?: any;
     }
@@ -99,15 +99,15 @@ export declare module DebugProtocol {
     }
     /** Event message for 'stopped' event type.
         The event indicates that the execution of the debuggee has stopped due to some condition.
-        This can be caused by a break point previously set, a stepping action has completed, by executing a debugger statement etc.
+        This can be caused by a break point previously set, a stepping request has completed, by executing a debugger statement etc.
     */
     interface StoppedEvent extends Event {
         body: {
             /** The reason for the event.
                 For backward compatibility this string is shown in the UI if the 'description' attribute is missing (but it must not be translated).
-                Values: 'step', 'breakpoint', 'exception', 'pause', 'entry', 'goto', 'function breakpoint', 'data breakpoint', etc.
+                Values: 'step', 'breakpoint', 'exception', 'pause', 'entry', 'goto', 'function breakpoint', 'data breakpoint', 'instruction breakpoint', etc.
             */
-            reason: string;
+            reason: 'step' | 'breakpoint' | 'exception' | 'pause' | 'entry' | 'goto' | 'function breakpoint' | 'data breakpoint' | 'instruction breakpoint' | string;
             /** The full reason for the event, e.g. 'Paused on exception'. This string is shown in the UI as is and must be translated. */
             description?: string;
             /** The thread which was stopped. */
@@ -164,7 +164,7 @@ export declare module DebugProtocol {
             /** The reason for the event.
                 Values: 'started', 'exited', etc.
             */
-            reason: string;
+            reason: 'started' | 'exited' | string;
             /** The identifier of the thread. */
             threadId: number;
         };
@@ -177,7 +177,7 @@ export declare module DebugProtocol {
             /** The output category. If not specified, 'console' is assumed.
                 Values: 'console', 'stdout', 'stderr', 'telemetry', etc.
             */
-            category?: string;
+            category?: 'console' | 'stdout' | 'stderr' | 'telemetry' | string;
             /** The output to report. */
             output: string;
             /** Support for keeping an output log organized by grouping related messages.
@@ -209,7 +209,7 @@ export declare module DebugProtocol {
             /** The reason for the event.
                 Values: 'changed', 'new', 'removed', etc.
             */
-            reason: string;
+            reason: 'changed' | 'new' | 'removed' | string;
             /** The 'id' attribute is used to find the target breakpoint and the other attributes are used as the new values. */
             breakpoint: Breakpoint;
         };
@@ -326,6 +326,21 @@ export declare module DebugProtocol {
             message?: string;
         };
     }
+    /** Event message for 'invalidated' event type.
+        This event signals that some state in the debug adapter has changed and requires that the client needs to re-render the data snapshot previously requested.
+        Debug adapters do not have to emit this event for runtime changes like stopped or thread events because in that case the client refetches the new state anyway. But the event can be used for example to refresh the UI after rendering formatting has changed in the debug adapter.
+        This event should only be sent if the debug adapter has received a value true for the 'supportsInvalidatedEvent' capability of the 'initialize' request.
+    */
+    interface InvalidatedEvent extends Event {
+        body: {
+            /** Optional set of logical areas that got invalidated. This property has a hint characteristic: a client can only be expected to make a 'best effort' in honouring the areas but there are no guarantees. If this property is missing, empty, or if values are not understand the client should assume a single value 'all'. */
+            areas?: InvalidatedAreas[];
+            /** If specified, the client only needs to refetch data related to this thread. */
+            threadId?: number;
+            /** If specified, the client only needs to refetch data related to this stack frame (and the 'threadId' is ignored). */
+            stackFrameId?: number;
+        };
+    }
     /** RunInTerminal request; value of command field is 'runInTerminal'.
         This optional request is sent from the debug adapter to the client to run a command in a terminal.
         This is typically used to launch the debuggee in a terminal provided by the client.
@@ -385,7 +400,7 @@ export declare module DebugProtocol {
         /** Determines in what format paths are specified. The default is 'path', which is the native format.
             Values: 'path', 'uri', etc.
         */
-        pathFormat?: string;
+        pathFormat?: 'path' | 'uri' | string;
         /** Client supports the optional type attribute for variables. */
         supportsVariableType?: boolean;
         /** Client supports the paging of variables. */
@@ -396,6 +411,8 @@ export declare module DebugProtocol {
         supportsMemoryReferences?: boolean;
         /** Client supports progress reporting. */
         supportsProgressReporting?: boolean;
+        /** Client supports the invalidated event. */
+        supportsInvalidatedEvent?: boolean;
     }
     /** Response to 'initialize' request. */
     interface InitializeResponse extends Response {
@@ -662,6 +679,27 @@ export declare module DebugProtocol {
             breakpoints: Breakpoint[];
         };
     }
+    /** SetInstructionBreakpoints request; value of command field is 'setInstructionBreakpoints'.
+        Replaces all existing instruction breakpoints. Typically, instruction breakpoints would be set from a diassembly window.
+        To clear all instruction breakpoints, specify an empty array.
+        When an instruction breakpoint is hit, a 'stopped' event (with reason 'instruction breakpoint') is generated.
+        Clients should only call this request if the capability 'supportsInstructionBreakpoints' is true.
+    */
+    interface SetInstructionBreakpointsRequest extends Request {
+        arguments: SetInstructionBreakpointsArguments;
+    }
+    /** Arguments for 'setInstructionBreakpoints' request */
+    interface SetInstructionBreakpointsArguments {
+        /** The instruction references of the breakpoints */
+        breakpoints: InstructionBreakpoint[];
+    }
+    /** Response to 'setInstructionBreakpoints' request */
+    interface SetInstructionBreakpointsResponse extends Response {
+        body: {
+            /** Information about the breakpoints. The array elements correspond to the elements of the 'breakpoints' array. */
+            breakpoints: Breakpoint[];
+        };
+    }
     /** Continue request; value of command field is 'continue'.
         The request starts the debuggee to run again.
     */
@@ -695,6 +733,8 @@ export declare module DebugProtocol {
     interface NextArguments {
         /** Execute 'next' for this thread. */
         threadId: number;
+        /** Optional granularity to step. If no granularity is specified, a granularity of 'statement' is assumed. */
+        granularity?: SteppingGranularity;
     }
     /** Response to 'next' request. This is just an acknowledgement, so no body field is required. */
     interface NextResponse extends Response {
@@ -716,6 +756,8 @@ export declare module DebugProtocol {
         threadId: number;
         /** Optional id of the target to step into. */
         targetId?: number;
+        /** Optional granularity to step. If no granularity is specified, a granularity of 'statement' is assumed. */
+        granularity?: SteppingGranularity;
     }
     /** Response to 'stepIn' request. This is just an acknowledgement, so no body field is required. */
     interface StepInResponse extends Response {
@@ -731,6 +773,8 @@ export declare module DebugProtocol {
     interface StepOutArguments {
         /** Execute 'stepOut' for this thread. */
         threadId: number;
+        /** Optional granularity to step. If no granularity is specified, a granularity of 'statement' is assumed. */
+        granularity?: SteppingGranularity;
     }
     /** Response to 'stepOut' request. This is just an acknowledgement, so no body field is required. */
     interface StepOutResponse extends Response {
@@ -747,6 +791,8 @@ export declare module DebugProtocol {
     interface StepBackArguments {
         /** Execute 'stepBack' for this thread. */
         threadId: number;
+        /** Optional granularity to step. If no granularity is specified, a granularity of 'statement' is assumed. */
+        granularity?: SteppingGranularity;
     }
     /** Response to 'stepBack' request. This is just an acknowledgement, so no body field is required. */
     interface StepBackResponse extends Response {
@@ -1047,7 +1093,7 @@ export declare module DebugProtocol {
             The attribute is only honored by a debug adapter if the capability 'supportsClipboardContext' is true.
             etc.
         */
-        context?: string;
+        context?: 'watch' | 'repl' | 'hover' | 'clipboard' | string;
         /** Specifies details on how to format the Evaluate result.
             The attribute is only honored by a debug adapter if the capability 'supportsValueFormattingOptions' is true.
         */
@@ -1354,6 +1400,10 @@ export declare module DebugProtocol {
         supportsBreakpointLocationsRequest?: boolean;
         /** The debug adapter supports the 'clipboard' context value in the 'evaluate' request. */
         supportsClipboardContext?: boolean;
+        /** The debug adapter supports stepping granularities (argument 'granularity') for the stepping requests. */
+        supportsSteppingGranularity?: boolean;
+        /** The debug adapter supports adding breakpoints based on instruction references. */
+        supportsInstructionBreakpoints?: boolean;
     }
     /** An ExceptionBreakpointsFilter is shown in the UI as an option for configuring how exceptions are dealt with. */
     interface ExceptionBreakpointsFilter {
@@ -1519,7 +1569,7 @@ export declare module DebugProtocol {
             'registers': Scope contains registers. Only a single 'registers' scope should be returned from a 'scopes' request.
             etc.
         */
-        presentationHint?: string;
+        presentationHint?: 'arguments' | 'locals' | 'registers' | string;
         /** The variables of this scope can be retrieved by passing the value of variablesReference to the VariablesRequest. */
         variablesReference: number;
         /** The number of named variables in this scope.
@@ -1596,7 +1646,7 @@ export declare module DebugProtocol {
             'dataBreakpoint': Indicates that a data breakpoint is registered for the object.
             etc.
         */
-        kind?: string;
+        kind?: 'property' | 'method' | 'class' | 'data' | 'event' | 'baseClass' | 'innerClass' | 'interface' | 'mostDerivedClass' | 'virtual' | 'dataBreakpoint' | string;
         /** Set of attributes represented as an array of strings. Before introducing additional values, try to use the listed values.
             Values:
             'static': Indicates that the object is static.
@@ -1608,11 +1658,11 @@ export declare module DebugProtocol {
             'hasSideEffects': Indicates that the evaluation had side effects.
             etc.
         */
-        attributes?: string[];
+        attributes?: ('static' | 'constant' | 'readOnly' | 'rawString' | 'hasObjectId' | 'canHaveObjectId' | 'hasSideEffects' | string)[];
         /** Visibility of variable. Before introducing additional values, try to use the listed values.
             Values: 'public', 'private', 'protected', 'internal', 'final', etc.
         */
-        visibility?: string;
+        visibility?: 'public' | 'private' | 'protected' | 'internal' | 'final' | string;
     }
     /** Properties of a breakpoint location returned from the 'breakpointLocations' request. */
     interface BreakpointLocation {
@@ -1675,7 +1725,27 @@ export declare module DebugProtocol {
         */
         hitCondition?: string;
     }
-    /** Information about a Breakpoint created in setBreakpoints or setFunctionBreakpoints. */
+    /** Properties of a breakpoint passed to the setInstructionBreakpoints request */
+    interface InstructionBreakpoint {
+        /** The instruction reference of the breakpoint.
+            This should be a memory or instruction pointer reference from an EvaluateResponse, Variable, StackFrame, GotoTarget, or Breakpoint.
+        */
+        instructionReference: string;
+        /** An optional offset from the instruction reference.
+            This can be negative.
+        */
+        offset?: number;
+        /** An optional expression for conditional breakpoints.
+            It is only honored by a debug adapter if the capability 'supportsConditionalBreakpoints' is true.
+        */
+        condition?: string;
+        /** An optional expression that controls how many hits of the breakpoint are ignored.
+            The backend is expected to interpret the expression as needed.
+            The attribute is only honored by a debug adapter if the capability 'supportsHitConditionalBreakpoints' is true.
+        */
+        hitCondition?: string;
+    }
+    /** Information about a Breakpoint created in setBreakpoints, setFunctionBreakpoints, setInstructionBreakpoints, or setDataBreakpoints. */
     interface Breakpoint {
         /** An optional identifier for the breakpoint. It is needed if breakpoint events are used to update or remove breakpoints. */
         id?: number;
@@ -1697,7 +1767,21 @@ export declare module DebugProtocol {
             If no end line is given, then the end column is assumed to be in the start line.
         */
         endColumn?: number;
+        /** An optional memory reference to where the breakpoint is set. */
+        instructionReference?: string;
+        /** An optional offset from the instruction reference.
+            This can be negative.
+        */
+        offset?: number;
     }
+    /** The granularity of one 'step' in the stepping requests 'next', 'stepIn', 'stepOut', and 'stepBack'.
+        'statement': The step should allow the program to run until the current statement has finished executing.
+        The meaning of a statement is determined by the adapter and it may be considered equivalent to a line.
+        For example 'for(int i = 0; i < 10; i++) could be considered to have 3 statements 'int i = 0', 'i < 10', and 'i++'.
+        'line': The step should allow the program to run until the current source line has executed.
+        'instruction': The step should allow one instruction to execute (e.g. one x86 instruction).
+    */
+    type SteppingGranularity = 'statement' | 'line' | 'instruction';
     /** A StepInTarget can be used in the 'stepIn' request and determines into which single target the stepIn request should step. */
     interface StepInTarget {
         /** Unique identifier for a stepIn target. */
@@ -1851,4 +1935,13 @@ export declare module DebugProtocol {
         /** The end column of the range that corresponds to this instruction, if any. */
         endColumn?: number;
     }
+    /** Logical areas that can be invalidated by the 'invalidated' event.
+        Values:
+        'all': All previously fetched data has become invalid and needs to be refetched.
+        'stacks': Previously fetched stack related data has become invalid and needs to be refetched.
+        'threads': Previously fetched thread related data has become invalid and needs to be refetched.
+        'variables': Previously fetched variable data has become invalid and needs to be refetched.
+        etc.
+    */
+    type InvalidatedAreas = 'all' | 'stacks' | 'threads' | 'variables' | string;
 }
