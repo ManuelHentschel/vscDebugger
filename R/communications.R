@@ -56,8 +56,8 @@
 
 #' @export
 .vsc.listenForDAP <- function(
-  host = session$dapHost,
-  port = session$dapPort
+  port = session$dapPort,
+  host = session$dapHost
 ){
   registerEntryFrame()
   if(is.null(session$dapSocketConnection)){
@@ -68,6 +68,8 @@
       open = "r+b",
       blocking = FALSE
     )
+    session$dapPort <- port
+    session$dapHost <- host
     session$dapSocketConnection <- conn
   } else{
     conn <- session$dapSocketConnection

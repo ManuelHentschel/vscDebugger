@@ -193,12 +193,15 @@ closeConnections <- function(){
       sink(NULL)
     }
     try(close(session$sinkSocketConnection), silent=TRUE)
+    session$sinkSocketConnection <- NULL
   }
   if(!is.null(session$jsonSocketConnection)){
     try(close(session$jsonSocketConnection), silent=TRUE)
+    session$jsonSocketConnection <- NULL
   }
   if(!is.null(session$dapSocketConnection)){
     try(close(session$dapSocketConnection), silent=TRUE)
+    session$dapSocketConnection <- NULL
   }
 }
 
