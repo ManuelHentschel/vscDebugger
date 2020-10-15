@@ -97,6 +97,9 @@ initializeRequest <- function(response, args, request){
 
   session$threadId <- lget(args, 'threadId', 1)
 
+  session$pid <- Sys.getpid()
+  session$ppid <- getPpid()
+
   response$body <- body
   response$packageInfo <- packageDescription('vscDebugger')
   sendResponse(response)

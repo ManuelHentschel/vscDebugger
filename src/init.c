@@ -4,10 +4,12 @@
 
 extern SEXP c_is_promise(SEXP, SEXP);
 extern SEXP c_promise_info(SEXP, SEXP);
+extern SEXP c_get_ppid();
 
 static const R_CallMethodDef CallEntries[] = {
     {"c_is_promise",   (DL_FUNC) &c_is_promise,   3},
     {"c_promise_info", (DL_FUNC) &c_promise_info, 2},
+    {"c_get_ppid", (DL_FUNC) &c_get_ppid, 0},
     {NULL, NULL, 0}
 };
 

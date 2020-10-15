@@ -40,6 +40,9 @@ export declare module Session {
       [key: string]: any;
     }
 
+    pid: number;
+    ppid: number;
+
     // server/communication:
     // (set for this debug session)
     // (should not influence the behaviour of the "R facing part" of the debugger)
