@@ -129,6 +129,7 @@ evalInEnv <- function(
 
   # eval
   if(catchErrors && !showOutput){
+    registerLaunchFrame(8)
     # wrap in try(), withVisible(), capture.output()
     valueAndVisible <- try(
       {
@@ -140,7 +141,9 @@ evalInEnv <- function(
       },
       silent = getOption('vsc.trySilent', default=TRUE)
     )
+    unregisterLaunchFrame()
   } else if(catchErrors && showOutput){
+    registerLaunchFrame(8)
     # wrap in try(), withVisible()
     valueAndVisible <- try(
       {
@@ -152,6 +155,7 @@ evalInEnv <- function(
       },
       silent = FALSE
     )
+    unregisterLaunchFrame()
   } else{
     # wrap in withVisible()
     registerLaunchFrame(2)

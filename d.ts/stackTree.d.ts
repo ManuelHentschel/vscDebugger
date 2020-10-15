@@ -1,6 +1,6 @@
 
 import { DebugProtocol } from './debugProtocol';
-import { REnvironment, RCall, RValue } from './RTypes';
+import { REnvironment, RCall, RValue, RVector } from './RTypes';
 
 export declare module StackTree {
 
@@ -51,6 +51,7 @@ export declare module StackTree {
     nodeType: string;
   }
   interface StackArgs extends InitializeArgs {
+    frameIdsR?: RVector<number>;
     topFrameId?: number;
     skipFromTop?: number;
     skipFromBottom?: number;
@@ -120,8 +121,8 @@ export declare module StackTree {
     public skipFromBottom: number;
     public forceDummyStack: boolean;
     public dummyFile: string;
-    public frameIdsR: number[];
-    public frameIdsVsc: number[];
+    public frameIdsR: RVector<number>;
+    public frameIdsVsc: RVector<number>;
 
     public initialize(args: StackArgs): void;
     public getChildren(args: GetFramesArgs): FrameNode[];

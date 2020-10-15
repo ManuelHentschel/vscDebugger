@@ -1,11 +1,18 @@
 
 
 stackTraceRequest <- function(response, args, request){
+
   topFrameId <- getTopFrameId()
   skipFromBottom <- getSkipFromBottom()
+  if(getOption('vsc.showInternalFrames', FALSE)){
+    frameIdsR <- seq2(topFrameId, (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
+  } else{
+    frameIdsR <- getExternalFrames()
+  }
 
   stackArgs <- list(
     nodeType = 'Stack',
+    frameIdsR = frameIdsR,
     topFrameId = topFrameId,
     skipFromTop = 0,
     skipFromBottom = skipFromBottom,

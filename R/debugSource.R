@@ -51,10 +51,11 @@
     tmpwd <- setwd(dirname(path))
   }
 
-  registerLaunchFrame()
+  registerLaunchFrame(1)
   # actually run the code:
-  enclos <- baseenv()
-  ret <- .Internal(eval(body, envir, enclos))
+  # enclos <- baseenv()
+  # ret <- .Internal(eval(body, envir, enclos))
+  ret <- eval(body, envir=envir)
   # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
   unregisterLaunchFrame()
 
