@@ -127,7 +127,8 @@ makeEvent <- function(eventType, body=NULL){
   )
 }
 sendEvent <- function(event){
-  sendToVsc(body=event)
+  useCustomSocket <- session$useCustomSocket && event$event == 'custom'
+  sendToVsc(body=event, useCustomSocket)
 }
 
 makeOutputEvent <- function(
@@ -268,15 +269,20 @@ sendTerminatedEvent <- function(restart=NULL){
   sendEvent(makeTerminatedEvent(restart))
 }
 
-makeWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE){
+makeWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE, fallBackToNow=FALSE){
   event <- makeCustomEvent('writeToStdin', list(
     text = text,
     when = when,
+    fallBackToNow = fallBackToNow,
     addNewLine = addNewLine,
     count = count,
-    stack = stack
+    stack = stack,
+    pid = session$pid,
+    ppid = session$ppid,
+    terminalId = session$terminalId,
+    useActiveTerminal = TRUE
   ))
 }
-sendWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE){
-  sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectPrompt, count, stack))
+sendWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE, fallBackToNow=FALSE){
+  sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectPrompt, count, stack, fallBackToNow))
 }

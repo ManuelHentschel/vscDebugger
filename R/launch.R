@@ -67,26 +67,30 @@ initializeRequest <- function(response, args, request){
   session$previousOptions <- options(internalOptions)
   session$internalOptions <- internalOptions
 
-  session$jsonPort <- lget(args, 'jsonPort', -1)
+  session$useJsonSocket <- lget(args, 'useJsonSocket', FALSE)
+  session$jsonPort <- lget(args, 'jsonPort', 0)
   session$jsonHost <- lget(args, 'jsonHost', '127.0.0.1')
-  if(session$jsonPort>=0){
+  if(session$useJsonSocket){
     session$jsonSocketConnection <- socketConnection(
       host = session$jsonHost,
       port = session$jsonPort,
       server = FALSE,
       blocking = FALSE,
+      encoding = 'UTF-8',
       open = "r+b"
     )
   }
 
-  session$sinkPort <- lget(args, 'sinkPort', -1)
+  session$useSinkSocket <- lget(args, 'useSinkSocket', FALSE)
+  session$sinkPort <- lget(args, 'sinkPort', 0)
   session$sinkHost <- lget(args, 'sinkHost', 'localhost')
-  if(session$sinkPort>=0){
+  if(session$useSinkSocket){
     session$sinkSocketConnection <- socketConnection(
       host = session$sinkHost,
       port = session$sinkPort,
       server = FALSE,
       blocking = FALSE,
+      encoding = 'UTF-8',
       open = "r+b"
     )
     sink(session$sinkSocketConnection)
@@ -99,6 +103,7 @@ initializeRequest <- function(response, args, request){
 
   session$pid <- Sys.getpid()
   session$ppid <- getPpid()
+  session$terminalId <- Sys.getenv('VSCODE_R_DEBUGGER_TERMINAL_ID')
 
   response$body <- body
   response$packageInfo <- packageDescription('vscDebugger')
@@ -113,70 +118,15 @@ initializeRequest <- function(response, args, request){
 # Sent as second request
 # Contains info about the file/function debugged and file-specifig settings
 launchRequest <- function(response, args, request){
-  ## args
-  session$debugMode <- lget(
-    args,
-    'debugMode',
-    getOption('vsc.defaultDebugMode', 'workspace')
-  )
-  session$allowGlobalDebugging <- lget(
-    args,
-    'allowGlobalDebugging',
-    getOption('vsc.defaultAllowGlobalDebugging', TRUE)
-  )
-  session$includePackageScopes <- lget(
-    args,
-    'includePackageScopes',
-    getOption('vsc.includePackageScopes', FALSE)
-  )
-  session$setBreakpointsInPackages <- lget(
-    args,
-    'setBreakpointsInPackages',
-    getOption('vsc.defaultSetBreakpointsInPackages', FALSE)
-  )
-  session$overwriteCat <- lget(
-    args,
-    'overwriteCat',
-    getOption('vsc.defaultOverwriteCat', TRUE)
-  )
-  session$overwriteMessage <- lget(
-    args,
-    'overwriteMessage',
-    getOption('vsc.defaultOverwriteMessage', TRUE)
-  )
-  session$overwriteStr <- lget(
-    args,
-    'overwriteStr',
-    getOption('vsc.defaultOverwriteStr', TRUE)
-  )
-  session$overwritePrint <- lget(
-    args,
-    'overwritePrint',
-    getOption('vsc.defaultOverwritePrint', TRUE)
-  )
-  session$overwriteSource <- lget(
-    args,
-    'overwriteSource',
-    getOption('vsc.defaultOverwriteSource', TRUE)
-  )
-  session$debuggedPackages <- lget(
-    args,
-    'debuggedPackages',
-    character(0)
-  )
-  session$noDebug <- lget(
-    args,
-    'noDebug',
-    FALSE
-  )
 
+  # handle generic config entries
+  handleDebugConfig(args)
+
+  # handle launch specific config entries
   if(session$noDebug){
     session$allowGlobalDebugging <- FALSE
   }
-
-
   session$mainFunction <- lget(args, 'mainFunction', 'main')
-
   session$workingDirectory <- lget(args, 'workingDirectory', '.')
   setwd(session$workingDirectory)
 
@@ -193,7 +143,7 @@ launchRequest <- function(response, args, request){
     response$success <- FALSE
     response$message <- paste0("Invalid debugMode: ", format(session[['debugMode']]), collapse='')
   } 
-  
+
   
   if(response$success && length(session$debuggedPackages)>0){
     # load debugged packages
@@ -282,7 +232,7 @@ configurationDoneRequest <- function(response, args, request){
 
   # attach functions
   if(length(attachList)>0){
-    attach(attachList, name = "tools:vscDebugger", warn.conflicts = FALSE)
+    attach(attachList, name = session$rStrings$attachName, warn.conflicts = FALSE)
   }
 
   # set breakpoints
@@ -317,8 +267,12 @@ configurationDoneRequest <- function(response, args, request){
   } else if(session$debugMode == 'workspace'){
     session$state$changeBaseState('workspace')
     session$stopListeningOnPort <- TRUE
-  } else{
-    session$state$startPaused('entry')
+  } else{ # attached
+    if(isCalledFromBrowser()){
+      session$state$startPaused('entry')
+    } else{
+      session$state$startPaused('toplevel')
+    }
     sendStoppedEvent('entry')
   }
 
@@ -327,8 +281,40 @@ configurationDoneRequest <- function(response, args, request){
 
 
 attachRequest <- function(response, args, request){
+  handleDebugConfig(args)
+
+  if(session$useCustomSocket){
+    session$customSocketConnection <- socketConnection(
+      host = session$customHost,
+      port = session$customPort,
+      server = FALSE,
+      open = 'r+b'
+    )
+  }
+  
   session$debugMode <- 'attached'
   session$state$changeBaseState('attached', TRUE)
   sendResponse(response)
 }
 
+handleDebugConfig <- function(args){
+  ## args
+  session$debugMode <- lget(args, 'debugMode', getOption('vsc.defaultDebugMode', 'workspace'))
+  session$allowGlobalDebugging <- lget(args, 'allowGlobalDebugging', getOption('vsc.defaultAllowGlobalDebugging', TRUE))
+  session$includePackageScopes <- lget(args, 'includePackageScopes', getOption('vsc.includePackageScopes', FALSE))
+  session$setBreakpointsInPackages <- lget(args, 'setBreakpointsInPackages', getOption('vsc.defaultSetBreakpointsInPackages', FALSE))
+  session$overwriteCat <- lget(args, 'overwriteCat', getOption('vsc.defaultOverwriteCat', TRUE))
+  session$overwriteMessage <- lget(args, 'overwriteMessage', getOption('vsc.defaultOverwriteMessage', TRUE))
+  session$overwriteStr <- lget(args, 'overwriteStr', getOption('vsc.defaultOverwriteStr', TRUE))
+  session$overwritePrint <- lget(args, 'overwritePrint', getOption('vsc.defaultOverwritePrint', TRUE))
+  session$overwriteSource <- lget(args, 'overwriteSource', getOption('vsc.defaultOverwriteSource', TRUE))
+  session$splitOverwrittenOutput <- lget(args, 'splitOverwrittenOutput', FALSE)
+  session$debuggedPackages <- lget(args, 'debuggedPackages', character(0))
+  session$noDebug <- lget(args, 'noDebug', FALSE)
+  session$supportsWriteToStdinEvent <- lget(args, 'supportsWriteToStdinEvent', FALSE)
+  session$supportsShowingPromptRequest <- lget(args, 'supportsShowingPromptRequest', FALSE)
+  session$useCustomSocket <- lget(args, 'useCustomSocket', FALSE)
+  session$customPort <- lget(args, 'customPort', 0)
+  session$customHost <- lget(args, 'customHost', 'localhost')
+  return(invisible(NULL))
+}

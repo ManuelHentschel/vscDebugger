@@ -12,6 +12,7 @@ session <- local({
   overwriteMessage <- TRUE
   overwriteStr <- TRUE
   overwriteSource <- TRUE
+  splitOverwrittenOutput <- FALSE
 
   supportsInvalidatedEvent <- FALSE
   noDebug <- FALSE
@@ -28,29 +29,43 @@ session <- local({
 
   pid <- 0
   ppid <- 0
+  terminalId <- ''
+
   # server/communication:
   # (set for this debug session)
   # (should not influence the behaviour of the "R facing part" of the debugger)
 
+  useDapSocket <- FALSE
   dapPort <- 18721
   dapHost <- 'localhost'
   dapSocketConnection <- NULL
 
+  useJsonSocket <- FALSE
   jsonPort <- 0
   jsonHost <- 'localhost'
   jsonSocketConnection <- NULL
 
+  useSinkSocket <- FALSE
   sinkPort <- 0
   sinkHost <- 'localhost'
   sinkSocketConnection <- NULL
   sinkNumber <- 0
 
+  useCustomSocket <- FALSE
+  customPort <- 18720
+  customHost <- 'localhost'
+  customSocketConnection <- NULL
+
   threadId <- 1
 
   rStrings <- list(
-  #   prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-  #   continue = '<##v\\s\\c>' #actual prompt is followed by a newline to make easier to identify
+    packageName = 'vscDebugger',
+    attachName = 'tools:vscDebugger'
   )
+
+  # cusotm events/requests:
+  supportsWriteToStdinEvent <- FALSE
+  supportsShowingPromptRequest <- FALSE
 
   # state:
   # (is managed by the debugger itself and might change frequently)

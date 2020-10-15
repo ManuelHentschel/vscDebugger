@@ -9,7 +9,9 @@
   port=NULL,
   stopListening=FALSE
 ){
-  if(is.null(port)){
+  if(session$useDapSocket){
+    stop('This debug session receives messages via DAP socket.')
+  } else if(is.null(port)){
     connection <- session$jsonSocketConnection
     host <- session$jsonHost
     port <- session$jsonPort
@@ -60,7 +62,10 @@
   host = session$dapHost
 ){
   registerEntryFrame()
-  if(is.null(session$dapSocketConnection)){
+  if(session$useJsonSocket){
+    stop('This Debug session receives messages via JSON socket.')
+  } else if(is.null(session$dapSocketConnection)){
+    base::cat('Listening on ', host, ':', toString(port), '\n', sep='')
     conn <- socketConnection(
       host = host,
       port = port,
@@ -71,13 +76,20 @@
     session$dapPort <- port
     session$dapHost <- host
     session$dapSocketConnection <- conn
+    session$useDapSocket <- TRUE
   } else{
+    port <- session$dapPort
+    host <- session$dapHost
     conn <- session$dapSocketConnection
+    base::cat('Listening on ', host, ':', toString(port), '\n', sep='')
     sendStoppedEvent('step')
-    session$state$startPaused('step')
     session$previousOptions <- options(session$internalOptions)
   }
-  cat('Listening on ', host, ':', toString(port), '\n', sep='')
+  if(isCalledFromBrowser()){
+    session$state$startPaused('step')
+  } else{
+    session$state$startPaused('toplevel')
+  }
   session$stopListeningOnPort <- FALSE
   while(!session$stopListeningOnPort){
     header <- ''
@@ -96,7 +108,7 @@
     # base::cat('Received json: ', json, '\n', sep='')
     .vsc.handleJson(json)
   }
-  logPrint('stop listening on port')
+  logPrint('Stop listening on port')
   options(session$previousOptions)
   unregisterEntryFrame()
 }
@@ -108,26 +120,37 @@
 #' Sends a json to vsc
 #'
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
-sendToVsc <- function(body = "") {
-  j <- getJson(body)
-  if(!is.null(session$jsonSocketConnection)){
-    base::cat(j, '\n', sep='', file=session$jsonSocketConnection)
-    logCat('Sent json: ', j, '\n', sep='')
-    TRUE
+sendToVsc <- function(body = "", useCustomSocket = FALSE) {
+  json <- getJson(body)
+  success <- TRUE
+  if(useCustomSocket){
+    if(session$useCustomSocket){
+      base::cat(json, '\n', sep='', file=session$customSocketConnection)
+      logCat('Sent json: ', json, '\n', sep='')
+    } else{
+      success <- FALSE
+    }
+  } else if(!is.null(session$jsonSocketConnection)){
+    base::cat(json, '\n', sep='', file=session$jsonSocketConnection)
+    logCat('Sent json: ', json, '\n', sep='')
   } else if(!is.null(session$dapSocketConnection)){
-    contentLength <- nchar(j, type='bytes')
-    msg <- paste0(
-      'Content-Length: ',
-      toString(contentLength),
-      '\r\n\r\n',
-      j
-    )
+    msg <- makeDapMessage(json)
     base::cat(msg, file=session$dapSocketConnection)
     # base::cat('Sent message:', msg, '\n')
-    TRUE
   } else{
-    FALSE
+    success <- FALSE
   }
+  return(success)
+}
+
+makeDapMessage <- function(json){
+  contentLength <- nchar(json, type='bytes')
+  paste0(
+    'Content-Length: ',
+    toString(contentLength),
+    '\r\n\r\n',
+    json
+  )
 }
 
 getJson <- function(body){
@@ -174,17 +197,25 @@ removeNonJsonElements <- function(v){
     return(base::cat(...))
   }
 
+  split <- session$splitOverwrittenOutput
   args <- list(...)
+
   if(identical(args$file, stderr())){
+    if(split){
+      # cannot split message connection -> cat() twice
+      base::cat(...)
+    }
+    category <- 'stderr'
     args['file'] <- NULL
-    category <- "stderr"
+    ret <- capture.output({do.call(base::cat, args);base::cat("\n")})
   } else if(is.null(args$file) || identical(args$file, '')){
-    category <- "stdout"
+    type <- 'output'
+    category <- 'stdout'
+    ret <- capture.output({do.call(base::cat, args);base::cat("\n")}, type=type, split=split)
   } else{
     return(base::cat(...))
   }
 
-  ret <- capture.output({do.call(base::cat, args);base::cat("\n")})
   printToVsc(ret, skipCalls+1, category, showSource = showSource)
   invisible(NULL)
 }
@@ -204,7 +235,8 @@ removeNonJsonElements <- function(v){
   if (session$state$isEvaluatingSilent()) {
     return(base::print(x, ...))
   }
-  ret <- capture.output(base::print(x, ...))
+  split <- session$splitOverwrittenOutput
+  ret <- capture.output(base::print(x, ...), split=split)
   ret <- c(ret, "")
   printToVsc(ret, skipCalls+1, showSource = showSource)
   invisible(x)
@@ -219,7 +251,7 @@ removeNonJsonElements <- function(v){
     }
     args[[1L]]
   } else {
-    msg <- .makeMessage(..., domain = domain, appendLF = appendLF) # changed
+    msg <- .makeMessage(..., domain = domain, appendLF = appendLF)
     call <- sys.call()
     simpleMessage(msg, call)
   }
@@ -245,8 +277,13 @@ removeNonJsonElements <- function(v){
   node <- session$rootNode$getEvalRootNode()$addChild(args)
   variable <- node$getContent()
 
-  source <- getSource(sys.call(-skipCalls))
-  line <- lget(source, 'line', 0)
+  if(showSource){
+    source <- getSource(sys.call(-skipCalls))
+    line <- lget(source, 'line', 0)
+  } else{
+    source <- NULL
+    line <- NULL
+  }
 
   sendOutputEvent(
     output = "",
@@ -255,6 +292,10 @@ removeNonJsonElements <- function(v){
     source = source,
     line = line
   )
+
+  if(session$splitOverwrittenOutput){
+    utils::str(object, ...)
+  }
 
   invisible(NULL)
 }

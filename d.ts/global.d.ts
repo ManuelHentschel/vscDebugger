@@ -20,6 +20,7 @@ export declare module Session {
     overwriteCat: boolean;
     overwriteMessage: boolean;
     overwriteSource: boolean;
+    splitOverwrittenOutput: boolean;
 
     supportsInvalidatedEvent: boolean;
     noDebug: boolean; 
@@ -39,33 +40,56 @@ export declare module Session {
       // ...
       [key: string]: any;
     }
+    internalOptions?: {
+      prompt?: string;
+      continue?: string;
+      browserNLdisabled?: boolean;
+      error?: RFunction;
+      // ...
+      [key: string]: any;
+    }
 
     pid: number;
     ppid: number;
+    terminalId: string;
 
     // server/communication:
     // (set for this debug session)
     // (should not influence the behaviour of the "R facing part" of the debugger)
 
+    useDapSocket: boolean;
     dapPort?: number;
     dapHost?: string;
     dapSocketConnection?: RValue;
 
+    useJsonSocket: boolean;
     jsonPort?: number;
     jsonHost?: string;
     jsonSocketConnection?: RValue;
 
+    useSinkSocket: boolean;
     sinkPort?: number;
     sinkHost?: string;
     sinkSocketConnection?: RValue;
     sinkNumber: number; //=0
 
+    useCustomSocket: boolean;
+    customPort?: number;
+    customHost?: string;
+    customSocketConnection?: RValue;
+
     threadId: number; //dummy, but must match the one used in the DAP client
 
     rStrings: {
-      prompt: string;
-      continue: string;
+      prompt?: string;
+      continue?: string;
+      packageName: 'vscDebugger';
+      attachName: 'tools:vscDebugger';
     }
+
+    // custom events/requests:
+    supportsWriteToStdinEvent?: boolean;
+    supportsShowingPromptRequest?: boolean;
 
     // state:
     // (is managed by the debugger itself and might change frequently)

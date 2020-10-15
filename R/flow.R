@@ -66,29 +66,46 @@ showingPromptRequest <- function(response, args, request){
   }
 }
 
+sendWriteToStdinForStepRequest <- function(text){
+  if(session$useDapSocket){
+    print('using dap socket...')
+    sendWriteToStdinEvent(text, when = 'now')
+    listenCall <- paste0(
+      session$rStrings$packageName,
+      '::',
+      format(quote(.vsc.listenForDAP)),
+      '()'
+    )
+    sendWriteToStdinEvent(listenCall, when = 'now')
+  } else{
+    sendWriteToStdinEvent(text, when = 'browserPrompt')
+  }
+}
 
 continueRequest <- function(response, args, request){
   # setErrorHandler(session$breakOnErrorFromFile)
   logPrint(session$state$isPaused())
   logPrint(session$state$pausedOn)
   if(session$state$isPaused() && session$state$pausedOn == "toplevel"){
-    path <- lget(args$source, 'path', '')
-    if(!identical(path, '')){
-      logPrint('starting debugSource()...')
-      msg <- paste0('.vsc.debugSource("', path, '")')
-      sendOutputEvent(msg, group='startCollapsed')
-      sendOutputEvent('', group='end')
-      prevState <- session$state$startRunning('file')
-      .vsc.debugSource(path)
-      session$state$revert(prevState)
-      session$stopListeningOnPort <- TRUE
+    if(lget(args, 'callDebugSource', FALSE)){
+      path <- lget(args$source, 'path', '')
+      if(!identical(path, '')){
+        logPrint('starting debugSource()...')
+        msg <- paste0('.vsc.debugSource("', path, '")')
+        sendOutputEvent(msg, group='startCollapsed')
+        sendOutputEvent('', group='end')
+        prevState <- session$state$startRunning('file')
+        .vsc.debugSource(path)
+        session$state$revert(prevState)
+      }
     } else{
       logPrint('invalid path for debugSource()')
     }
+    session$stopListeningOnPort <- TRUE
   } else if(session$state$isPaused()){
     logPrint('continuing execution...')
     session$state$startRunning()
-    sendWriteToStdinEvent('c', expectPrompt = FALSE, when = "browserPrompt")
+    sendWriteToStdinEvent('c', when='browserPrompt', fallBackToNow = TRUE)
     session$stopListeningOnPort <- TRUE
   } else {
     logPrint('case not handled...')
@@ -101,7 +118,7 @@ continueRequest <- function(response, args, request){
 nextRequest <- function(response, args, request){
   if(isCalledFromBrowser()){
     session$state$startRunning()
-    sendWriteToStdinEvent('n', when = "browserPrompt")
+    sendWriteToStdinForStepRequest('n')
     session$stopListeningOnPort <- TRUE
   } else{
     logPrint('not called from browser!')
@@ -113,7 +130,7 @@ nextRequest <- function(response, args, request){
 stepInRequest <- function(response, args, request){
   if(isCalledFromBrowser()){
     session$state$startRunning()
-    sendWriteToStdinEvent('s', when = "browserPrompt")
+    sendWriteToStdinForStepRequest('s')
     session$stopListeningOnPort <- TRUE
   } else{
     response$success <- FALSE
@@ -124,7 +141,7 @@ stepInRequest <- function(response, args, request){
 stepOutRequest <- function(response, args, request){
   if(isCalledFromBrowser()){
     session$state$startRunning()
-    sendWriteToStdinEvent('f', when = "browserPrompt")
+    sendWriteToStdinForStepRequest('f')
     session$stopListeningOnPort <- TRUE
   } else{
     response$success <- FALSE
@@ -140,10 +157,11 @@ disconnectRequest <- function(response, args, request){
     logPrint('disconnect from attached session')
     sendResponse(response)
     closeConnections()
+    detach(session$rStrings$attachName, character.only = TRUE)
     session$state$changeBaseState('detached')
   } else if(isCalledFromBrowser()){
     logPrint('disconnect from browser')
-    sendWriteToStdinEvent('Q', when = "browserPrompt")
+    sendWriteToStdinEvent('Q', when = "browserPrompt", fallBackToNow = TRUE)
     sendWriteToStdinEvent(
       format(quote(
         quit(save='no')
@@ -167,7 +185,7 @@ disconnectRequest <- function(response, args, request){
 
 terminateRequest <- function(response, args, request){
   if(isCalledFromBrowser()){
-    sendWriteToStdinEvent('Q', when = "browserPrompt")
+    sendWriteToStdinEvent('Q', when = "browserPrompt", fallBackToNow = TRUE)
     session$stopListeningOnPort <- TRUE
     sendResponse(response)
     sendContinuedEvent()

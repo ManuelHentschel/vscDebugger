@@ -4,7 +4,7 @@
 \alias{sendToVsc}
 \title{Sends a json to vsc}
 \usage{
-sendToVsc(body = "")
+sendToVsc(body = "", useCustomSocket = FALSE)
 }
 \arguments{
 \item{body}{The body of the message. Must be convertible to JSON. Usually named lists.}
