@@ -25,7 +25,7 @@
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
   commandKnown <- TRUE
-  if(command == 'stackTrace'){
+  ret <- if(command == 'stackTrace'){
     stackTraceRequest(response, args, request)
   } else if(command == 'scopes'){
     scopesRequest(response, args, request)
@@ -77,7 +77,8 @@
     sendResponse(response)
   }
   unregisterEntryFrame()
-  invisible(commandKnown)
+  # return success (boolean) of sendResponse(...)
+  invisible(ret)
 }
 
 prepareResponse <- function(request){
@@ -284,5 +285,9 @@ makeWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPr
   ))
 }
 sendWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE, fallBackToNow=FALSE){
-  sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectPrompt, count, stack, fallBackToNow))
+  if(session$supportsWriteToStdinEvent){
+    sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectPrompt, count, stack, fallBackToNow))
+  } else{
+    FALSE
+  }
 }

@@ -66,6 +66,7 @@ session <- local({
   # cusotm events/requests:
   supportsWriteToStdinEvent <- FALSE
   supportsShowingPromptRequest <- FALSE
+  supportsStdoutReading <- FALSE
 
   # state:
   # (is managed by the debugger itself and might change frequently)

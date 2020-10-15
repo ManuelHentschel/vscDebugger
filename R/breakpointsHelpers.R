@@ -5,7 +5,8 @@
   # set some state in session?
   # logPrint('pre breakpoint!!!')
   # request `n`
-  sendWriteToStdinEvent('n', when = "browserPrompt")
+  sendWriteToStdinForFlowControl('n')
+  # sendWriteToStdinEvent('n', when = "browserPrompt")
   session$state$startPaused(pausedOn = "breakpoint")
   # send breakpoint event
   sendStoppedEvent('breakpoint')
@@ -17,7 +18,8 @@
     # set some state in session?
     # logPrint('pre breakpoint!!!')
     # request `n`
-    sendWriteToStdinEvent('n', when = "browserPrompt")
+    # sendWriteToStdinEvent('n', when = "browserPrompt")
+    sendWriteToStdinForFlowControl('n')
     session$state$startPaused(pausedOn = "breakpoint")
     # send breakpoint event
     sendStoppedEvent('breakpoint')

@@ -313,6 +313,7 @@ handleDebugConfig <- function(args){
   session$noDebug <- lget(args, 'noDebug', FALSE)
   session$supportsWriteToStdinEvent <- lget(args, 'supportsWriteToStdinEvent', FALSE)
   session$supportsShowingPromptRequest <- lget(args, 'supportsShowingPromptRequest', FALSE)
+  session$supportsStdoutReading <- lget(args, 'supportsStdoutReading', FALSE)
   session$useCustomSocket <- lget(args, 'useCustomSocket', FALSE)
   session$customPort <- lget(args, 'customPort', 0)
   session$customHost <- lget(args, 'customHost', 'localhost')

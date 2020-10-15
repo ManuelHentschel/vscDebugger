@@ -59,12 +59,16 @@
 #' @export
 .vsc.listenForDAP <- function(
   port = session$dapPort,
-  host = session$dapHost
+  host = session$dapHost,
+  timeout = -1
 ){
   registerEntryFrame()
+
   if(session$useJsonSocket){
+    # sessions can only use one or the other function to receive commands
     stop('This Debug session receives messages via JSON socket.')
   } else if(is.null(session$dapSocketConnection)){
+    # new session (also applies for disconnected sessions)
     base::cat('Listening on ', host, ':', toString(port), '\n', sep='')
     conn <- socketConnection(
       host = host,
@@ -78,6 +82,7 @@
     session$dapSocketConnection <- conn
     session$useDapSocket <- TRUE
   } else{
+    # resume running session
     port <- session$dapPort
     host <- session$dapHost
     conn <- session$dapSocketConnection
@@ -85,13 +90,19 @@
     sendStoppedEvent('step')
     session$previousOptions <- options(session$internalOptions)
   }
+
+  # check if paused on function step or toplevel prompt
   if(isCalledFromBrowser()){
     session$state$startPaused('step')
   } else{
     session$state$startPaused('toplevel')
   }
+
+  # main loop
+  t <- as.numeric(Sys.time())
   session$stopListeningOnPort <- FALSE
   while(!session$stopListeningOnPort){
+    # read header, temrinated by "\r\n\r\n"
     header <- ''
     while(!endsWith(header, '\r\n\r\n')){
       char <- readChar(conn, nchars=1)
@@ -100,13 +111,30 @@
       } else {
         header <- paste0(header, char)
       }
+      if(timeout>=0 && nchar(header)==0){
+        if(as.numeric(Sys.time())-t > timeout){
+          session$stopListeningOnPort <- TRUE
+          break
+        }
+      }
     }
-    m <- regexec('Content-Length: (\\d+)\r\n', header)
-    rm <- regmatches(header, m)
-    contentLength <- as.numeric(rm[[1]][2])
-    json <- readChar(conn, nchars=contentLength)
-    # base::cat('Received json: ', json, '\n', sep='')
-    .vsc.handleJson(json)
+
+    # only continue if a header was actually read (i.e. no timeout)
+    if(nchar(header)>0){
+      # identify content-length
+      m <- regexec('Content-Length: (\\d+)\r\n', header)
+      rm <- regmatches(header, m)
+      contentLength <- as.numeric(rm[[1]][2])
+
+      # read content in one go
+      json <- readChar(conn, nchars=contentLength)
+
+      # handle content
+      .vsc.handleJson(json)
+
+      # reset timer
+      t <- as.numeric(Sys.time())
+    }
   }
   logPrint('Stop listening on port')
   options(session$previousOptions)

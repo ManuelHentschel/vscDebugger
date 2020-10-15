@@ -90,6 +90,7 @@ export declare module Session {
     // custom events/requests:
     supportsWriteToStdinEvent?: boolean;
     supportsShowingPromptRequest?: boolean;
+    supportsStdoutReading?: boolean;
 
     // state:
     // (is managed by the debugger itself and might change frequently)
