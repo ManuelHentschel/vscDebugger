@@ -7,9 +7,11 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 
-devtools::document()
 
 if('quick' %in% args){
+  # update documentation
+  devtools::document()
+
   # quick install only
   # usually enough, e.g. when only changing some R code
   devtools::install(
@@ -22,9 +24,24 @@ if('quick' %in% args){
   # This workflow seems to work on windows to reliably build the 
   # binaries and keep the source info of the debugger:
 
+  # remove old files
+  suppressWarnings({
+    file.remove('src/init.o')
+    file.remove('src/ppid.o')
+    file.remove('src/promise.o')
+    file.remove('src/vscDebugger.dll')
+    file.remove('src/vscDebugger.so')
+  })
+
+  # update documentation
+  devtools::document()
+
   # normal install first to build binaries
   devtools::install(
     dependencies = FALSE,
+    quick = FALSE,
+    build = TRUE,
+    force = TRUE,
     args="--no-byte-compile"
   )
 
