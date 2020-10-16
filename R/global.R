@@ -237,11 +237,14 @@ State <- R6::R6Class(
     isPaused = function(){
       !self$running
     },
+    isPausedOnBreakpoint = function(){
+      !self$running && (self$pausedOn == 'breakpoint')
+    },
     isPausedOnError = function(){
-      !self$running&& (self$pausedOn == "error")
+      !self$running && (self$pausedOn == "error")
     },
     isPausedAfterError = function(){
-      !self$running&& self$hasHitError
+      !self$running && self$hasHitError
     },
     isStarted = function(){
       !(self$baseState %in% c("starting", "loadLib", "sourceMain"))

@@ -454,7 +454,7 @@ getDefaultVarInfos <- function() {
         )
       },
       customAttributes = function(v){
-        if(getOption('vsc.groupAttributes', FALSE) && !inherits(v, '.vsc.internalClass')){
+        if(getOption('vsc.groupAttributes', FALSE) && !inherits(v, '.vsc.internalClass') && getOption('vsc.showAttributes', TRUE)){
           rValue <- attributes(v)
           class(rValue) <- c('.vsc.attributeList', '.vsc.internalClass')
           ret <- list(

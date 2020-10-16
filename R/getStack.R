@@ -1,13 +1,19 @@
 
 
 stackTraceRequest <- function(response, args, request){
+  # args:
+  startFrame <- lget(args, 'startFrame', 0)
+  levels <- lget(args, 'levels', -1)
+
+  Sys.sleep(lget(globalenv(), 'tempWait0', 0))
+  
 
   topFrameId <- getTopFrameId()
   skipFromBottom <- getSkipFromBottom()
   if(getOption('vsc.showInternalFrames', FALSE)){
     frameIdsR <- seq2(topFrameId, (skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
   } else{
-    frameIdsR <- getExternalFrames()
+    frameIdsR <- rev(getExternalFrames())
   }
 
   stackArgs <- list(
@@ -19,17 +25,23 @@ stackTraceRequest <- function(response, args, request){
     isError = FALSE,
     forceDummyStack = FALSE,
     dummyFile = '',
-    refresh = TRUE
+    refresh = (startFrame == 0)
   )
   stackNode <- session$rootNode$getStackNode(stackArgs)
 
-  frameNodes <- stackNode$getChildren()
+  if(levels>=0){
+    frameIds <- startFrame:(startFrame+levels)
+    frameNodes <- stackNode$getChildren(list(frameIdsVsc = frameIds))
+  } else{
+    frameNodes <- stackNode$getChildren()
+  }
 
   stackFrames <- lapply(frameNodes, function(node) node$getContent())
 
   # return:
   response[['body']] <- list(
-    stackFrames = stackFrames
+    stackFrames = stackFrames,
+    totalFrames = length(stackFrames)
   )
   sendResponse(response)
 }
@@ -41,7 +53,7 @@ scopesRequest <- function(response, args, request){
   frameIdVsc <- args$frameId
 
   stackNode <- session$rootNode$getStackNode()
-  frameNode <- stackNode$getChildren(args)
+  frameNode <- stackNode$getChildren(args)[[1]]
   scopeNodes <- frameNode$getChildren(list(refresh=TRUE))
 
   scopes <- lapply(scopeNodes, function(node) node$getContent())

@@ -269,19 +269,19 @@ StackNode <- R6::R6Class(
     },
 
     getChildren = function(args=list()){
-      frameId <- lget(args, 'frameIdR', -1)
-      if(frameId>=0){
-        frameIds <- self$frameIdsR
+      frameIdsVsc <- unlist(lget(args, 'frameIdsVsc', NULL))
+      frameIdR <- lget(args, 'frameIdR', -1)
+      frameIdVsc <- lget(args, 'frameId', -1)
+      if(!is.null(frameIdsVsc)){
+        ind <- which(self$frameIdsVsc %in% frameIdsVsc)
+      } else if(frameIdR>=0){
+        ind <- which(self$frameIdsR == frameIdR)
+      } else if(frameIdVsc>=0){
+        ind <- which(self$frameIdsVsc == frameIdVsc)
       } else{
-        frameId <- lget(args, 'frameId', -1)
-        frameIds <- self$frameIdsVsc
+        ind <- seq_along(private$children)
       }
-      ind <- which(frameIds == frameId)[1]
-      if(!is.na(ind)){
-        return(private$children[[ind]])
-      } else{
-        return(private$children)
-      }
+      return(private$children[ind])
     },
 
     getContent = function(args=list()) list(

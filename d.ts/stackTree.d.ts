@@ -37,6 +37,7 @@ export declare module StackTree {
     lazy?: boolean; // indicates that no further computation should be done
   }
   interface GetFramesArgs extends GetChildrenArgs {
+    frameIdsVsc?: number[];
     frameIdR?: number;
     frameId?: number;
   }

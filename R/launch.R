@@ -6,7 +6,10 @@ initializeRequest <- function(response, args, request){
   # don't support restart -> automatically termiantes + starts again
   body$supportsRestartRequest <- FALSE
 
-  # suppoert terminate: can be used to exit function without terminating R session
+  # support delayed stackTraceResponse
+  body$supportsDelayedStackTraceLoading <- TRUE
+
+  # support terminate: can be used to exit function without terminating R session
   # only works ONCE (!)
   body$supportsTerminateRequest <- getOption('vsc.supportTerminateRequest', FALSE)
 
@@ -266,10 +269,8 @@ configurationDoneRequest <- function(response, args, request){
 
   # do stuff
   if(session$debugMode == 'file'){
-    registerLaunchFrame()
     session$state$changeBaseState('runFile', startRunning=TRUE)
     .vsc.debugSource(session[['file']])
-    unregisterLaunchFrame()
     session$stopListeningOnPort <- TRUE
   } else if (session$debugMode == 'function'){
     session$state$changeBaseState('runMain', startRunning=TRUE)

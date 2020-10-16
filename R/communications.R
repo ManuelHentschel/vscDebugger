@@ -1,58 +1,78 @@
 
 
+#' @export
+.vsc.listenOnPort <- function(...){
+  .vsc.listenForJSON(...)
+}
 
 # Can be used to dispatch requests via tcp socket instead of stdin
 #' @export
-.vsc.listenOnPort <- function(
-  timeout=0,
-  host='127.0.0.1',
-  port=NULL,
-  stopListening=FALSE
+.vsc.listenForJSON <- function(
+  port = session$jsonPort,
+  host = session$jsonHost,
+  timeout = -1,
+  server = FALSE
 ){
+  registerEntryFrame()
+
+  # choose/open socketConnection
   if(session$useDapSocket){
+    # sessions can only use one or the other function to receive commands
     stop('This debug session receives messages via DAP socket.')
-  } else if(is.null(port)){
-    connection <- session$jsonSocketConnection
-    host <- session$jsonHost
-    port <- session$jsonPort
-  } else{
-    connection <- socketConnection(
+  } else if(is.null(session$jsonSocketConnection)){
+    # create new connection
+    # should be used, if the initialize request is sent using this function
+    conn <- socketConnection(
       host = host,
       port = port,
-      server = TRUE,
+      server = server,
       open = "r+b"
     )
+    session$jsonSocketConnection <- conn 
+    session$jsonHosthost <- host
+    session$jsonPort <- port
+    session$useJsonSocket <- TRUE
+  } else{
+    # should be the 'normal' case
+    conn <- session$jsonSocketConnection
+    host <- session$jsonHost
+    port <- session$jsonPort
   }
-  logCat('Start listening on ', host, ':', port, '\nTimeout: ', toString(timeout), '\n', sep='')
-  session$stopListeningOnPort <- stopListening
-  registerEntryFrame()
+  logCat('Listening on ', host, ':', port, '\nTimeout: ', toString(timeout), '\n', sep='')
+
+  # main loop
   t <- as.numeric(Sys.time())
-  repeat{
-    char <- readChar(connection, nchars=1)
-    # char <- readChar(session$jsonSocketConnection, nchars=1)
-    if(length(char)==0){
-      if(timeout == 0 || (timeout > 0 && as.numeric(Sys.time()) - t > timeout)){
-        break
+  session$stopListeningOnPort <- FALSE
+  while(!session$stopListeningOnPort){
+    # wait for first character, regularly checking for timeout
+    char <- readChar(conn, nchars=1)
+    while(length(char)==0 && !session$stopListeningOnPort){
+      if(timeout>=0 && as.numeric(Sys.time())-t > timeout){
+        session$stopListeningOnPort <- TRUE
       } else{
-        Sys.sleep(0.01)
+        Sys.sleep(0.001)
       }
-    } else {
-      if(char == '\n'){
-        json <- session$restOfLine
-        session$restOfLine <- ''
-        logCat('Received json: ', json, '\n', sep='')
-        .vsc.handleJson(json)
-        if(session$stopListeningOnPort){
-          break
-        }
-      } else{
-        session$restOfLine <- paste0(session$restOfLine, char)
+      char <- readChar(conn, nchars=1)
+    }
+
+    # read json, don't check timeout, don't Sys.sleep
+    if(length(char)>0){
+      json <- ''
+      while(!identical(char, '\n')){
+        json <- paste0(json, char)
+        char <- readChar(conn, nchars=1)
       }
+
+      # handle content
+      .vsc.handleJson(json)
+
+      # reset timer
       t <- as.numeric(Sys.time())
     }
   }
   logPrint('stop listening on port')
   unregisterEntryFrame()
+  invisible(NULL)
 }
 
 
@@ -64,6 +84,7 @@
 ){
   registerEntryFrame()
 
+  # choose/open socketConnection
   if(session$useJsonSocket){
     # sessions can only use one or the other function to receive commands
     stop('This Debug session receives messages via JSON socket.')
@@ -102,25 +123,25 @@
   t <- as.numeric(Sys.time())
   session$stopListeningOnPort <- FALSE
   while(!session$stopListeningOnPort){
-    # read header, temrinated by "\r\n\r\n"
-    header <- ''
-    while(!endsWith(header, '\r\n\r\n')){
+    # wait for first character, regularly checking for timeout
+    char <- readChar(conn, nchars=1)
+    while(length(char)==0 && !session$stopListeningOnPort){
+      if(timeout>=0 && as.numeric(Sys.time())-t > timeout){
+        session$stopListeningOnPort <- TRUE
+      } else{
+        Sys.sleep(0.001)
+      }
       char <- readChar(conn, nchars=1)
-      if(length(char)==0){
-        Sys.sleep(0.01)
-      } else {
-        header <- paste0(header, char)
-      }
-      if(timeout>=0 && nchar(header)==0){
-        if(as.numeric(Sys.time())-t > timeout){
-          session$stopListeningOnPort <- TRUE
-          break
-        }
-      }
     }
 
-    # only continue if a header was actually read (i.e. no timeout)
-    if(nchar(header)>0){
+    # read header, don't check timeout, don't Sys.sleep
+    if(length(char)>0){
+      header <- char
+      while(!endsWith(header, '\r\n\r\n')){
+        char <- readChar(conn, nchars=1)
+        header <- paste0(header, char)
+      }
+
       # identify content-length
       m <- regexec('Content-Length: (\\d+)\r\n', header)
       rm <- regmatches(header, m)
@@ -139,7 +160,11 @@
   logPrint('Stop listening on port')
   options(session$previousOptions)
   unregisterEntryFrame()
+  invisible(NULL)
 }
+
+#' @export
+.vsc.listen <- .vsc.listenForDAP
 
 
 
@@ -154,19 +179,21 @@ sendToVsc <- function(body = "", useCustomSocket = FALSE) {
   if(useCustomSocket){
     if(session$useCustomSocket){
       base::cat(json, '\n', sep='', file=session$customSocketConnection)
-      logCat('Sent json: ', json, '\n', sep='')
+      logCat('Sent json (custom): ', json, '\n', sep='')
     } else{
+      logCat('Not using custom socket!\n')
       success <- FALSE
     }
   } else if(!is.null(session$jsonSocketConnection)){
     base::cat(json, '\n', sep='', file=session$jsonSocketConnection)
-    logCat('Sent json: ', json, '\n', sep='')
+    logCat('Sent json (json): ', json, '\n', sep='')
   } else if(!is.null(session$dapSocketConnection)){
     msg <- makeDapMessage(json)
     base::cat(msg, file=session$dapSocketConnection)
-    # base::cat('Sent message:', msg, '\n')
+    logCat('Sent json (dap): ', json, '\n', sep='')
   } else{
     success <- FALSE
+    logCat('Unknown sendToVsc target!\n')
   }
   return(success)
 }
@@ -207,141 +234,6 @@ removeNonJsonElements <- function(v){
 
 
 
-
-
-#' Modified version of `base::cat()` for vsc
-#'
-#' Captures the output of `base::cat(...)` and sends it to vsc together with information about the sourcefile and line
-#' @export
-#' @param ... Arguments passed to base::cat()
-#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
-#' @return NULL (invisible)
-.vsc.cat <- function(..., skipCalls=0, showSource=TRUE) {
-  # TODO: consider correct environment for base::print(...)?
-  # env <- sys.frame(-1)
-  # ret <- capture.output(base::print(...), envir=env)
-
-  if (session$state$isEvaluatingSilent()) {
-    return(base::cat(...))
-  }
-
-  split <- session$splitOverwrittenOutput
-  args <- list(...)
-
-  if(identical(args$file, stderr())){
-    if(split){
-      # cannot split message connection -> cat() twice
-      base::cat(...)
-    }
-    category <- 'stderr'
-    args['file'] <- NULL
-    ret <- capture.output({do.call(base::cat, args);base::cat("\n")})
-  } else if(is.null(args$file) || identical(args$file, '')){
-    type <- 'output'
-    category <- 'stdout'
-    ret <- capture.output({do.call(base::cat, args);base::cat("\n")}, type=type, split=split)
-  } else{
-    return(base::cat(...))
-  }
-
-  printToVsc(ret, skipCalls+1, category, showSource = showSource)
-  invisible(NULL)
-}
-
-#' Modified version of `base::print()` for vsc
-#'
-#' Captures the output of `base::print(...)` and sends it to vsc together with information about the sourcefile and line
-#' @export
-#' @param ... Arguments passed to `base::cat()`
-#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
-#' @return `NULL` (invisible)
-.vsc.print <- function(x, ..., skipCalls=0, showSource=TRUE) {
-  # TODO: consider correct environment for base::print(...)?
-  # env <- sys.frame(-1)
-  # ret <- capture.output(base::print(...), envir=env)
-
-  if (session$state$isEvaluatingSilent()) {
-    return(base::print(x, ...))
-  }
-  split <- session$splitOverwrittenOutput
-  ret <- capture.output(base::print(x, ...), split=split)
-  ret <- c(ret, "")
-  printToVsc(ret, skipCalls+1, showSource = showSource)
-  invisible(x)
-}
-
-#' @export
-.vsc.message <- function(..., domain = NULL, appendLF = TRUE, showSource=TRUE){
-  args <- list(...)
-  cond <- if (length(args) == 1L && inherits(args[[1L]], "condition")) {
-    if (nargs() > 1L) {
-      warning("additional arguments ignored in message()")
-    }
-    args[[1L]]
-  } else {
-    msg <- .makeMessage(..., domain = domain, appendLF = appendLF)
-    call <- sys.call()
-    simpleMessage(msg, call)
-  }
-  defaultHandler <- function(c) {
-    .vsc.cat(conditionMessage(c), file = stderr(), sep = "", skipCalls=5) # changed
-  }
-  withRestarts(
-    {
-      signalCondition(cond)
-      defaultHandler(cond)
-    },
-    muffleMessage = function() NULL
-  )
-  invisible()
-}
-
-#' @export
-.vsc.str <- function(object, ..., skipCalls=0, showSource=TRUE){
-  args <- list(
-    name = 'vscStrResult',
-    rValue = list(object)
-  )
-  node <- session$rootNode$getEvalRootNode()$addChild(args)
-  variable <- node$getContent()
-
-  if(showSource){
-    source <- getSource(sys.call(-skipCalls))
-    line <- lget(source, 'line', 0)
-  } else{
-    source <- NULL
-    line <- NULL
-  }
-
-  sendOutputEvent(
-    output = "",
-    category = "stdout",
-    variablesReference = variable$variablesReference,
-    source = source,
-    line = line
-  )
-
-  if(session$splitOverwrittenOutput){
-    utils::str(object, ...)
-  }
-
-  invisible(NULL)
-}
-
-
-printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
-  output <- paste0(ret, collapse = "\n")
-
-  if(showSource){
-    source <- getSource(sys.call(-skipCalls))
-    line <- lget(source, 'line', 0)
-  } else{
-    source <- NULL
-    line <- NULL
-  }
-
-  sendOutputEvent(category, output = output, line=line, source=source)
-}
 
 
 # used for debugging

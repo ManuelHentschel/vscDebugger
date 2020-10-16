@@ -5,112 +5,114 @@ import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from '.
 import { VarInfo } from './customVarInfo';
 import { StackTree } from './stackTree';
 import { DebugProtocol } from './debugProtocol';
-import { Source } from './debugProtocolModifications';
 
-export declare module Session {
-  interface Session {
-    // settings:
-    // (usually changed globally, persisting across debug sessions)
-    varInfos: VarInfo[];
 
-    // debugSession:
-    // (set for this debug session)
-    allowGlobalDebugging: boolean;
-    overwritePrint: boolean;
-    overwriteCat: boolean;
-    overwriteMessage: boolean;
-    overwriteSource: boolean;
-    splitOverwrittenOutput: boolean;
+interface InternalSource extends DebugProtocol.Source {
+    content?: string;
+}
 
-    supportsInvalidatedEvent: boolean;
-    noDebug: boolean; 
-    debugMode: ("function" | "file" | "workspace" | "attached" | "")
-    workingDirectory: string;
-    file: string;
-    mainFunction: string;
-    includePackageScopes: boolean;
-    setBreakpointsInPackages: boolean;
-    debuggedPackages: RVector<string>;
+export interface Session {
+  // settings:
+  // (usually changed globally, persisting across debug sessions)
+  varInfos: VarInfo[];
 
-    previousOptions?: {
-      prompt?: string;
-      continue?: string;
-      browserNLdisabled?: boolean;
-      error?: RFunction;
-      // ...
-      [key: string]: any;
-    }
-    internalOptions?: {
-      prompt?: string;
-      continue?: string;
-      browserNLdisabled?: boolean;
-      error?: RFunction;
-      // ...
-      [key: string]: any;
-    }
+  // debugSession:
+  // (set for this debug session)
+  allowGlobalDebugging: boolean;
+  overwritePrint: boolean;
+  overwriteCat: boolean;
+  overwriteMessage: boolean;
+  overwriteSource: boolean;
+  splitOverwrittenOutput: boolean;
 
-    pid: number;
-    ppid: number;
-    terminalId: string;
+  supportsInvalidatedEvent: boolean;
+  noDebug: boolean; 
+  debugMode: ("function" | "file" | "workspace" | "attached" | "")
+  workingDirectory: string;
+  file: string;
+  mainFunction: string;
+  includePackageScopes: boolean;
+  setBreakpointsInPackages: boolean;
+  debuggedPackages: RVector<string>;
 
-    // server/communication:
-    // (set for this debug session)
-    // (should not influence the behaviour of the "R facing part" of the debugger)
-
-    useDapSocket: boolean;
-    dapPort?: number;
-    dapHost?: string;
-    dapSocketConnection?: RValue;
-
-    useJsonSocket: boolean;
-    jsonPort?: number;
-    jsonHost?: string;
-    jsonSocketConnection?: RValue;
-
-    useSinkSocket: boolean;
-    sinkPort?: number;
-    sinkHost?: string;
-    sinkSocketConnection?: RValue;
-    sinkNumber: number; //=0
-
-    useCustomSocket: boolean;
-    customPort?: number;
-    customHost?: string;
-    customSocketConnection?: RValue;
-
-    threadId: number; //dummy, but must match the one used in the DAP client
-
-    rStrings: {
-      prompt?: string;
-      continue?: string;
-      packageName: 'vscDebugger';
-      attachName: 'tools:vscDebugger';
-    }
-
-    // custom events/requests:
-    supportsWriteToStdinEvent?: boolean;
-    supportsShowingPromptRequest?: boolean;
-    supportsStdoutReading?: boolean;
-
-    // state:
-    // (is managed by the debugger itself and might change frequently)
-    breakOnErrorFromConsole: boolean;
-    breakOnErrorFromFile: boolean;
-    entryFrames: number[];
-    launchFrames: number[];
-    breakpointId: number;
-    stopListeningOnPort: boolean;
-    restOfLine: string;
-
-    state: State;
-    pendingEvalResponses: DebugProtocol.EvaluateResponse[];
-
-    // data:
-    // (like 'state', but contains longer lists etc.)
-    rootNode: StackTree.RootNode;
-    sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
-    sources: Source[];
+  previousOptions?: {
+    prompt?: string;
+    continue?: string;
+    browserNLdisabled?: boolean;
+    error?: RFunction;
+    // ...
+    [key: string]: any;
   }
+  internalOptions?: {
+    prompt?: string;
+    continue?: string;
+    browserNLdisabled?: boolean;
+    error?: RFunction;
+    // ...
+    [key: string]: any;
+  }
+
+  pid: number;
+  ppid: number;
+  terminalId: string;
+
+  // server/communication:
+  // (set for this debug session)
+  // (should not influence the behaviour of the "R facing part" of the debugger)
+
+  useDapSocket: boolean;
+  dapPort?: number;
+  dapHost?: string;
+  dapSocketConnection?: RValue;
+
+  useJsonSocket: boolean;
+  jsonPort?: number;
+  jsonHost?: string;
+  jsonSocketConnection?: RValue;
+
+  useSinkSocket: boolean;
+  sinkPort?: number;
+  sinkHost?: string;
+  sinkSocketConnection?: RValue;
+  sinkNumber: number; //=0
+
+  useCustomSocket: boolean;
+  customPort?: number;
+  customHost?: string;
+  customSocketConnection?: RValue;
+
+  threadId: number; //dummy, but must match the one used in the DAP client
+
+  rStrings: {
+    prompt?: string;
+    continue?: string;
+    packageName: 'vscDebugger';
+    attachName: 'tools:vscDebugger';
+  }
+
+  // custom events/requests:
+  supportsWriteToStdinEvent?: boolean;
+  supportsShowingPromptRequest?: boolean;
+  supportsStdoutReading?: boolean;
+
+  // state:
+  // (is managed by the debugger itself and might change frequently)
+  breakOnErrorFromConsole: boolean;
+  breakOnErrorFromFile: boolean;
+  entryFrames: number[];
+  launchFrames: number[];
+  breakpointId: number;
+  stopListeningOnPort: boolean;
+  restOfLine: string;
+
+  state: State;
+  pendingEvalResponses: DebugProtocol.EvaluateResponse[];
+
+  // data:
+  // (like 'state', but contains longer lists etc.)
+  rootNode: StackTree.RootNode;
+  sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
+  sources: InternalSource[];
 }
 
 export type BaseState = "starting"|"loadLib"|"sourceMain"|"runMain"|"runFile"|"workspace"|"quitting"|"attached"|"detached";
@@ -153,5 +155,8 @@ export class State extends MinimalState {
   isEvaluating(): boolean;
   isEvaluatingSilent(): boolean;
   isPaused(): boolean;
+  isPausedOnBreakpoint(): boolean;
+  isPausedOnError(): boolean;
+  isPausedAfterError(): boolean;
   isStarted(): boolean;
 }

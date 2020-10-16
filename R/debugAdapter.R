@@ -288,6 +288,7 @@ sendWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPr
   if(session$supportsWriteToStdinEvent){
     sendEvent(makeWriteToStdinEvent(text, when, addNewLine, expectPrompt, count, stack, fallBackToNow))
   } else{
+    logCat('Not supporting write to stdin event!\n')
     FALSE
   }
 }

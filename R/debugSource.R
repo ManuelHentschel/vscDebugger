@@ -97,7 +97,7 @@ mySetBreakpoint <- function(body, at, finalize = FALSE) {
     callAsList <- list(
       as.name('{'),
       quote(base::cat('Tracing debugSourceBreakpoint step XXX\n')),
-      quote(.vsc.preDebugSourceBreakpoint()),
+      quote(vscDebugger::.vsc.preDebugSourceBreakpoint()),
       quote(.doTrace(browser())),
       body[[at]]
     )

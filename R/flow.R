@@ -59,10 +59,13 @@ showingPromptRequest <- function(response, args, request){
     }
   } else if(session$state$isPausedOnError()){
     # ignore
+  } else if(session$state$isPausedOnBreakpoint()){
+    logPrint('starting paused on breakpoint!!!')
+    sendStoppedEvent(reason='breakpoint')
   } else{
     logPrint('starting paused!!!')
     session$state$startPaused('browser')
-    sendStoppedEvent(reason='breakpoint')
+    sendStoppedEvent(reason='step')
   }
 }
 
@@ -71,9 +74,11 @@ sendWriteToStdinForFlowControl <- function(text){
   if(session$supportsStdoutReading){
     # request text on browser prompt
     # .vsc.listenOnPort is called automatically
+    logCat('Request text on browserPrompt: ', text, '\n')
     sendWriteToStdinEvent(text, when = 'browserPrompt')
   } else{
     # request text immediately
+    logCat('Request text now: ', text, '\n')
     ret <- sendWriteToStdinEvent(text, when = 'now')
 
     # request new listen call
@@ -81,7 +86,7 @@ sendWriteToStdinForFlowControl <- function(text){
       listenFunction <- format(quote(.vsc.listenForDAP))
       callListenFunction <- TRUE
     } else if(session$useJsonSocket){
-      listenFunction <- format(quote(.vsc.listenOnPort))
+      listenFunction <- format(quote(.vsc.listenForJSON))
       callListenFunction <- TRUE
     } else{
       callListenFunction <- FALSE
@@ -138,6 +143,7 @@ genericStepRequest <- function(response, textToStdin){
       session$state$startRunning()
     }
   } else{
+    logCat('Not called from browser!\n')
     response$success <- FALSE
   }
   sendResponse(response)
