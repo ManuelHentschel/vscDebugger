@@ -38,25 +38,31 @@ initializeRequest <- function(response, args, request){
   body$exceptionBreakpointFilters <- list(
     list(
       filter = 'fromFile',
-      label = 'Errors from R file',
+      label = 'Errors from R Files',
       default = TRUE
     ),
     list(
       filter = 'fromEval',
-      label = 'Errors from debug console',
+      label = 'Errors from the Debug Console',
       default = FALSE
     )
   )
   
-  # 
+  # support clipboard context 
+  # is always answered with success=false -> uses known variable.value
   body$supportsClipboardContext <- TRUE
+
+  # support setVariable. Is implemented for most basic variable types
   body$supportsSetVariable <- getOption('vsc.supportSetVariable', TRUE)
 
+  # save R strings
+  # mostly deprecated, only packagename still relevant
   rStrings <- lget(args, 'rStrings', list())
   lapply(names(rStrings), function(name){
     session$rStrings[[name]] <- rStrings[[name]]
   })
 
+  # save and apply options that are reverted upon disconnect
   internalOptions <- list(browserNLdisabled = TRUE)
   if(!is.null(rStrings$prompt)){
     internalOptions$prompt <- paste0(rStrings$prompt, '\n')
@@ -67,6 +73,7 @@ initializeRequest <- function(response, args, request){
   session$previousOptions <- options(internalOptions)
   session$internalOptions <- internalOptions
 
+  # connect to json socket, if specified
   session$useJsonSocket <- lget(args, 'useJsonSocket', FALSE)
   session$jsonPort <- lget(args, 'jsonPort', 0)
   session$jsonHost <- lget(args, 'jsonHost', '127.0.0.1')
@@ -81,6 +88,7 @@ initializeRequest <- function(response, args, request){
     )
   }
 
+  # connect to sink socket if specified
   session$useSinkSocket <- lget(args, 'useSinkSocket', FALSE)
   session$sinkPort <- lget(args, 'sinkPort', 0)
   session$sinkHost <- lget(args, 'sinkHost', 'localhost')
@@ -97,18 +105,21 @@ initializeRequest <- function(response, args, request){
     session$sinkNumber <- sink.number()
   }
 
+  # save session info that was supplied
   session$supportsInvalidatedEvent <- lget(args, 'supportsInvalidatedEvent', FALSE)
-
   session$threadId <- lget(args, 'threadId', 1)
 
+  # this info is used by VS Code to identify the terminal corresponding to this debug session
   session$pid <- Sys.getpid()
   session$ppid <- getPpid()
   session$terminalId <- Sys.getenv('VSCODE_R_DEBUGGER_TERMINAL_ID')
 
+  # prepare and send response
   response$body <- body
   response$packageInfo <- packageDescription('vscDebugger')
   sendResponse(response)
 
+  # send initialized event
   initializedEvent <- makeEvent("initialized")
   sendEvent(initializedEvent)
 
