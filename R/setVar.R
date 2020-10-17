@@ -40,7 +40,7 @@ setVariableRequest <- function(response, args, request){
     } else{
       response$success <- FALSE
       if(is.null(successAndRValue$reason)){
-        .vsc.cat("<Changing the variable value was unsuccessful>\n", file = stderr(), showSource = FALSE)
+        .vsc.cat("<Variable not set: internal error>\n", file = stderr(), showSource = FALSE)
       } else{
         .vsc.cat(successAndRValue$reason, file = stderr(), showSource = FALSE)
       }
@@ -62,7 +62,7 @@ setVar <- function(setInfos, valueString){
   reason <- NULL
   if(is.null(target) || is.null(env)){
     success <- FALSE
-    reason <- "<No set-info available>\n"
+    reason <- "<Variable not set: No set-info available>\n"
   } else{
     valueAndVisible <- evalInEnv(
       expr = valueString,
@@ -75,10 +75,10 @@ setVar <- function(setInfos, valueString){
     )
     if(lget(valueAndVisible, 'isError', FALSE)){
       success <- FALSE
-      reason <- ''
+      reason <- '<Variable not set: Error during evaluation of new value>\n'
     } else{
       rValue <- valueAndVisible$value
-      cl <- as.call(list(`<-`, target, rValue))
+      cl <- as.call(list(`<-`, target, substitute(quote(rValue), list(rValue=rValue))))
       body <- list(cl)
       valueAndVisible2 <- evalInEnv(
         useBody = TRUE,
@@ -113,7 +113,7 @@ substituteSetInfos <- function(setInfos){
     parent <- substituteSetInfos(setInfos[-1])
     if(!is.null(parent$expression) && !is.null(parent$environment)){
       env <- parent$environment
-      expr <- do.call('substitute', list(setter, list(parent = parent$expression)))
+      expr <- do.call(substitute, list(setter, list(parent = parent$expression)))
     }
   } else{
     expr <- NULL

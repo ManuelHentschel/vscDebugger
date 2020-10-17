@@ -2,7 +2,7 @@
 session <- local({
   # settings:
   # (usually changed globally, persisting across debug sessions)
-  varInfos <- NULL
+  varInfos <- list()
 
   # debugSession:
   # (set for this debug session)
@@ -12,34 +12,61 @@ session <- local({
   overwriteMessage <- TRUE
   overwriteStr <- TRUE
   overwriteSource <- TRUE
+  splitOverwrittenOutput <- FALSE
 
   supportsInvalidatedEvent <- FALSE
   noDebug <- FALSE
-  debugMode <- NULL
-  workingDirectory <- NULL
-  file <- NULL
-  mainFunction <- NULL
-  includePackageScopes <- NULL
+  debugMode <- ''
+  workingDirectory <- ''
+  file <- ''
+  mainFunction <- 'main'
+  includePackageScopes <- FALSE
   setBreakpointsInPackages <- FALSE
   debuggedPackages <- character(0)
+
+  previousOptions <- list()
+  internalOptions <- list()
+
+  pid <- 0
+  ppid <- 0
+  terminalId <- ''
 
   # server/communication:
   # (set for this debug session)
   # (should not influence the behaviour of the "R facing part" of the debugger)
+
+  useDapSocket <- FALSE
+  dapPort <- 18721
+  dapHost <- 'localhost'
+  dapSocketConnection <- NULL
+
+  useJsonSocket <- FALSE
   jsonPort <- 0
   jsonHost <- 'localhost'
-  jsonServerConnection <- NULL
+  jsonSocketConnection <- NULL
 
+  useSinkSocket <- FALSE
   sinkPort <- 0
   sinkHost <- 'localhost'
-  sinkServerConnection <- NULL
+  sinkSocketConnection <- NULL
+  sinkNumber <- 0
+
+  useCustomSocket <- FALSE
+  customPort <- 18720
+  customHost <- 'localhost'
+  customSocketConnection <- NULL
 
   threadId <- 1
 
   rStrings <- list(
-    prompt = '<#v\\s\\c>', #actual prompt is followed by a newline to make easier to identify
-    continue = '<##v\\s\\c>' #actual prompt is followed by a newline to make easier to identify
+    packageName = 'vscDebugger',
+    attachName = 'tools:vscDebugger'
   )
+
+  # cusotm events/requests:
+  supportsWriteToStdinEvent <- FALSE
+  supportsShowingPromptRequest <- FALSE
+  supportsStdoutReading <- FALSE
 
   # state:
   # (is managed by the debugger itself and might change frequently)
@@ -127,6 +154,7 @@ State <- R6::R6Class(
             self$hasHitError <- TRUE
           }
         }
+        logCat('starting paused on', toString(pausedOn), '\n')
       }
       return(prevState)
     },
@@ -141,6 +169,7 @@ State <- R6::R6Class(
           runMain = "main",
           runFile = "file",
           workspace = "eval",
+          attached = "attachedCode",
           quitting = "",
           ""
         )
@@ -208,11 +237,14 @@ State <- R6::R6Class(
     isPaused = function(){
       !self$running
     },
+    isPausedOnBreakpoint = function(){
+      !self$running && (self$pausedOn == 'breakpoint')
+    },
     isPausedOnError = function(){
-      !self$running&& (self$pausedOn == "error")
+      !self$running && (self$pausedOn == "error")
     },
     isPausedAfterError = function(){
-      !self$running&& self$hasHitError
+      !self$running && self$hasHitError
     },
     isStarted = function(){
       !(self$baseState %in% c("starting", "loadLib", "sourceMain"))

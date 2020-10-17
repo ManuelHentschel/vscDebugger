@@ -124,7 +124,7 @@ getDefaultVarInfos <- function() {
         if (is.null(names(v))) {
           names <- paste0('[', ind, ']')
         } else{
-          names <- names(ret$value)
+          names <- names(v)
         }
         if(getOption('vsc.convertFactorEntries', FALSE)){
           rValues <- as.list(format(v))
@@ -143,7 +143,11 @@ getDefaultVarInfos <- function() {
         )
       },
       nChildVars = function(v){
-        length(v)
+        ret <- length(v)
+        if(ret==1){
+          ret <- 0
+        }
+        ret
       },
       type = 'factor'
     ),
@@ -297,10 +301,16 @@ getDefaultVarInfos <- function() {
         if (is.name(v) || is.symbol(v)) {
           return(list())
         } else {
-          return(unsummarizeLists(list(
-            rValue = as.list(v),
-            name = format(seq_along(as.list(v)))
-          )))
+          if(is.null(ind)){
+            ind <- seq_along(as.list(v))
+          }
+          lapply(ind, function(i){
+            list(
+              rValue = v[[i]],
+              name = format(i),
+              setter = substitute(parent[[i]], list(i=i))
+            )
+          })
         }
       },
       nChildVars = function(v){
@@ -358,15 +368,19 @@ getDefaultVarInfos <- function() {
         'class' %in% names(attributes(v)) && !is.environment(v) && !isS4(v) && !inherits(v, '.vsc.internalClass')
       },
       customAttributes = function(v) {
-        tryCatch(
-          list(
+        if(getOption('vsc.showUnclass', TRUE)){
+          tryCatch(
             list(
-              name = '__unclass()',
-              rValue = unclass(v)
-            )
-          ),
-          error = function(e) list()
-        )
+              list(
+                name = '__unclass()',
+                rValue = unclass(v)
+              )
+            ),
+            error = function(e) list()
+          )
+        } else{
+          list()
+        }
       }
     ),
     # function
@@ -377,7 +391,8 @@ getDefaultVarInfos <- function() {
         list(
           list(
             name = '__body()',
-            rValue = body(v)
+            rValue = body(v),
+            setter = quote(body(parent))
           )
         )
       },
@@ -439,7 +454,7 @@ getDefaultVarInfos <- function() {
         )
       },
       customAttributes = function(v){
-        if(getOption('vsc.groupAttributes', FALSE) && !inherits(v, '.vsc.internalClass')){
+        if(getOption('vsc.groupAttributes', FALSE) && !inherits(v, '.vsc.internalClass') && getOption('vsc.showAttributes', TRUE)){
           rValue <- attributes(v)
           class(rValue) <- c('.vsc.attributeList', '.vsc.internalClass')
           ret <- list(

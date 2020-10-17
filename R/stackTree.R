@@ -232,6 +232,7 @@ StackNode <- R6::R6Class(
     initialize = function(args=list(), parent=NULL){
       super$initialize(args, parent)
 
+      self$frameIdsR <- lget(args, 'frameIdsR', integer(0))
       self$topFrameId <- lget(args, 'topFrameId', 0)
       self$skipFromTop <- lget(args, 'skipFromTop', 0)
       self$skipFromBottom <- lget(args, 'skipFromBottom', 0)
@@ -239,12 +240,13 @@ StackNode <- R6::R6Class(
       self$dummyFile <- lget(args, 'dummyFile', '')
 
       # do stuff
-      if(self$topFrameId <= 0 || self$forceDummyStack){
+      # if(self$topFrameId <= 0 || self$forceDummyStack){
+      if(length(self$frameIdsR)==0){
         self$forceDummyStack <- TRUE
         self$frameIdsR <- c(0)
         self$frameIdsVsc <- c(0)
       } else{
-        self$frameIdsR <- seq2((self$topFrameId - self$skipFromTop), (self$skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
+        # self$frameIdsR <- seq2((self$topFrameId - self$skipFromTop), (self$skipFromBottom + 1), -1) # vsc considers frames in the opposite order!
         self$frameIdsVsc <- seq_along(self$frameIdsR) - 1
       }
 
@@ -267,19 +269,19 @@ StackNode <- R6::R6Class(
     },
 
     getChildren = function(args=list()){
-      frameId <- lget(args, 'frameIdR', -1)
-      if(frameId>=0){
-        frameIds <- self$frameIdsR
+      frameIdsVsc <- unlist(lget(args, 'frameIdsVsc', NULL))
+      frameIdR <- lget(args, 'frameIdR', -1)
+      frameIdVsc <- lget(args, 'frameId', -1)
+      if(!is.null(frameIdsVsc)){
+        ind <- which(self$frameIdsVsc %in% frameIdsVsc)
+      } else if(frameIdR>=0){
+        ind <- which(self$frameIdsR == frameIdR)
+      } else if(frameIdVsc>=0){
+        ind <- which(self$frameIdsVsc == frameIdVsc)
       } else{
-        frameId <- lget(args, 'frameId', -1)
-        frameIds <- self$frameIdsVsc
+        ind <- seq_along(private$children)
       }
-      ind <- which(frameIds == frameId)[1]
-      if(!is.na(ind)){
-        return(private$children[[ind]])
-      } else{
-        return(private$children)
-      }
+      return(private$children[ind])
     },
 
     getContent = function(args=list()) list(

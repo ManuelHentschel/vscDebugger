@@ -59,19 +59,49 @@ showingPromptRequest <- function(response, args, request){
     }
   } else if(session$state$isPausedOnError()){
     # ignore
+  } else if(session$state$isPausedOnBreakpoint()){
+    logPrint('starting paused on breakpoint!!!')
+    sendStoppedEvent(reason='breakpoint')
   } else{
     logPrint('starting paused!!!')
     session$state$startPaused('browser')
-    sendStoppedEvent(reason='breakpoint')
+    sendStoppedEvent(reason='step')
   }
 }
 
+# also used by breakpoints!
+sendWriteToStdinForFlowControl <- function(text){
+  if(session$supportsStdoutReading){
+    # request text on browser prompt
+    # .vsc.listenOnPort is called automatically
+    logCat('Request text on browserPrompt: ', text, '\n')
+    sendWriteToStdinEvent(text, when = 'browserPrompt')
+  } else{
+    # request text immediately
+    logCat('Request text now: ', text, '\n')
+    ret <- sendWriteToStdinEvent(text, when = 'now')
+
+    # request new listen call
+    if(session$useDapSocket){
+      listenFunction <- format(quote(.vsc.listenForDAP))
+      callListenFunction <- TRUE
+    } else if(session$useJsonSocket){
+      listenFunction <- format(quote(.vsc.listenForJSON))
+      callListenFunction <- TRUE
+    } else{
+      callListenFunction <- FALSE
+    }
+    if(callListenFunction){
+      listenCall <- paste0(session$rStrings$packageName, '::', listenFunction, '()')
+      sendWriteToStdinEvent(listenCall, when = 'now')
+    } else{
+      ret # return success of previous sendWriteToSTdinEvent()
+    }
+  }
+}
 
 continueRequest <- function(response, args, request){
-  # setErrorHandler(session$breakOnErrorFromFile)
-  logPrint(session$state$isPaused())
-  logPrint(session$state$pausedOn)
-  if(session$state$isPaused() && session$state$pausedOn == "toplevel"){
+  if(session$state$isPaused() && session$state$pausedOn == "toplevel" && lget(args, 'callDebugSource', FALSE)){
     path <- lget(args$source, 'path', '')
     if(!identical(path, '')){
       logPrint('starting debugSource()...')
@@ -81,15 +111,21 @@ continueRequest <- function(response, args, request){
       prevState <- session$state$startRunning('file')
       .vsc.debugSource(path)
       session$state$revert(prevState)
-      session$stopListeningOnPort <- TRUE
     } else{
-      logPrint('invalid path for debugSource()')
+      response$success <- FALSE
     }
+    session$stopListeningOnPort <- response$success
   } else if(session$state$isPaused()){
-    logPrint('continuing execution...')
-    session$state$startRunning()
-    sendWriteToStdinEvent('c', expectPrompt = FALSE, when = "browserPrompt")
-    session$stopListeningOnPort <- TRUE
+    if(session$state$pausedOn != "toplevel"){
+      sendWriteToStdinEvent('c', when='browserPrompt', fallBackToNow = TRUE)
+    }
+    # always treat as successful -> return control to stdin in attached mode
+    success <- TRUE
+    response$success <- success
+    session$stopListeningOnPort <- success
+    if(success){
+      session$state$startRunning()
+    }
   } else {
     logPrint('case not handled...')
     logPrint(session$state$export())
@@ -98,45 +134,46 @@ continueRequest <- function(response, args, request){
   sendResponse(response)
 }
 
-nextRequest <- function(response, args, request){
+genericStepRequest <- function(response, textToStdin){
   if(isCalledFromBrowser()){
-    session$state$startRunning()
-    sendWriteToStdinEvent('n', when = "browserPrompt")
-    session$stopListeningOnPort <- TRUE
+    success <- sendWriteToStdinForFlowControl(textToStdin)
+    response$success <- success
+    session$stopListeningOnPort <- success
+    if(success){
+      session$state$startRunning()
+    }
   } else{
-    logPrint('not called from browser!')
+    logCat('Not called from browser!\n')
     response$success <- FALSE
   }
   sendResponse(response)
+}
+
+nextRequest <- function(response, args, request){
+  genericStepRequest(response, 'n')
 }
 
 stepInRequest <- function(response, args, request){
-  if(isCalledFromBrowser()){
-    session$state$startRunning()
-    sendWriteToStdinEvent('s', when = "browserPrompt")
-    session$stopListeningOnPort <- TRUE
-  } else{
-    response$success <- FALSE
-  }
-  sendResponse(response)
+  genericStepRequest(response, 's')
 }
 
 stepOutRequest <- function(response, args, request){
-  if(isCalledFromBrowser()){
-    session$state$startRunning()
-    sendWriteToStdinEvent('f', when = "browserPrompt")
-    session$stopListeningOnPort <- TRUE
-  } else{
-    response$success <- FALSE
-  }
-  sendResponse(response)
+  genericStepRequest(response, 'f')
 }
 
 disconnectRequest <- function(response, args, request){
+  doQuit <- session$state$baseState != 'attached'
   session$state$changeBaseState('quitting')
-  if(isCalledFromBrowser()){
+
+  if(!doQuit){
+    logPrint('disconnect from attached session')
+    sendResponse(response)
+    closeConnections()
+    detach(session$rStrings$attachName, character.only = TRUE)
+    session$state$changeBaseState('detached')
+  } else if(isCalledFromBrowser()){
     logPrint('disconnect from browser')
-    sendWriteToStdinEvent('Q', when = "browserPrompt")
+    sendWriteToStdinEvent('Q', when = "browserPrompt", fallBackToNow = TRUE)
     sendWriteToStdinEvent(
       format(quote(
         quit(save='no')
@@ -160,7 +197,7 @@ disconnectRequest <- function(response, args, request){
 
 terminateRequest <- function(response, args, request){
   if(isCalledFromBrowser()){
-    sendWriteToStdinEvent('Q', when = "browserPrompt")
+    sendWriteToStdinEvent('Q', when = "browserPrompt", fallBackToNow = TRUE)
     session$stopListeningOnPort <- TRUE
     sendResponse(response)
     sendContinuedEvent()
@@ -176,17 +213,29 @@ terminateSessionFromTopLevel <- function(){
   session$state$changeBaseState('quitting')
   sendTerminatedEvent()
   sendExitedEvent()
-  # closeConnections()
-  # quit(save = 'no')
 }
 
 
 closeConnections <- function(){
   session$stopListeningOnPort <- TRUE
-  for(i in seq_len(sink.number())){
-    sink(NULL)
+  if(!is.null(session$sinkSocketConnection)){
+    while(sink.number() > session$sinkNumber){
+      sink(NULL)
+    }
+    try(close(session$sinkSocketConnection), silent=TRUE)
+    session$sinkSocketConnection <- NULL
   }
-  try(close(session$sinkServerConnection))
-  try(close(session$jsonServerConnection))
+  if(!is.null(session$jsonSocketConnection)){
+    try(close(session$jsonSocketConnection), silent=TRUE)
+    session$jsonSocketConnection <- NULL
+  }
+  if(!is.null(session$dapSocketConnection)){
+    try(close(session$dapSocketConnection), silent=TRUE)
+    session$dapSocketConnection <- NULL
+  }
+  if(!is.null(session$customSocketConnection)){
+    try(close(session$customSocketConnection), silent=TRUE)
+    session$customSocketConnection <- NULL
+  }
 }
 
