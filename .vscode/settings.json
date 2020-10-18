@@ -3,5 +3,8 @@
     "editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",<>/?",
     "search.exclude": {
         "man/*": true,
+    },
+    "terminal.integrated.env.windows": {
+        "VSCODE_R_DEBUGGER_TERMINAL_ID": "4"
     }
 }
