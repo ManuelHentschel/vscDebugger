@@ -373,7 +373,8 @@ getDefaultVarInfos <- function() {
             list(
               list(
                 name = '__unclass()',
-                rValue = unclass(v)
+                rValue = unclass(v),
+                setter = quote(.vsc.unclass(parent))
               )
             ),
             error = function(e) list()

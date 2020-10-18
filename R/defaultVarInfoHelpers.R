@@ -343,3 +343,7 @@ makeNameFromIndex <- function(ind){
   name <- paste(ind, collapse=',', sep='')
   name <- paste('[', name, ']', collapse=',', sep='')
 }
+
+`.vsc.unclass<-` <- function(x, value){
+    do.call(structure, c(list(value), attributes(x)))
+}
