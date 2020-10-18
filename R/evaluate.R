@@ -82,6 +82,10 @@ evaluateRequest <- function(response, args, request){
     )
   }
 
+  if(!isWatch && session$assignToAns){
+    assign('.ans', valueAndVisible$value, envir = globalenv())
+  }
+
   sendResponse(response)
 }
 

@@ -34,6 +34,7 @@ export interface Session {
   includePackageScopes: boolean;
   setBreakpointsInPackages: boolean;
   debuggedPackages: RVector<string>;
+  assignToAns: boolean;
 
   previousOptions?: {
     prompt?: string;

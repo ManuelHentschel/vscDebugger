@@ -329,5 +329,6 @@ handleDebugConfig <- function(args){
   session$useCustomSocket <- lget(args, 'useCustomSocket', FALSE)
   session$customPort <- lget(args, 'customPort', 0)
   session$customHost <- lget(args, 'customHost', 'localhost')
+  session$assignToAns <- lget(args, 'assignToAns', TRUE)
   return(invisible(NULL))
 }
