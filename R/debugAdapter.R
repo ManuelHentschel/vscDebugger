@@ -2,22 +2,6 @@
 
 ### REQUESTS
 
-
-#' @export
-.vsc.handleJson <- function(json){
-  registerEntryFrame()
-  obj <- jsonlite::fromJSON(json, simplifyVector = FALSE)
-  if(lget(obj, 'type', '') == 'request'){
-    .vsc.dispatchRequest(obj)
-    typeKnown <- TRUE
-  } else{
-    logCat('Unknown json: ', json, '\n')
-    typeKnown <- FALSE
-  }
-  unregisterEntryFrame()
-  invisible(typeKnown)
-}
-
 #' @export
 .vsc.dispatchRequest <- function(request){
   registerEntryFrame()

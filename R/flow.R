@@ -215,27 +215,3 @@ terminateSessionFromTopLevel <- function(){
   sendExitedEvent()
 }
 
-
-closeConnections <- function(){
-  session$stopListeningOnPort <- TRUE
-  if(!is.null(session$sinkSocketConnection)){
-    while(sink.number() > session$sinkNumber){
-      sink(NULL)
-    }
-    try(close(session$sinkSocketConnection), silent=TRUE)
-    session$sinkSocketConnection <- NULL
-  }
-  if(!is.null(session$jsonSocketConnection)){
-    try(close(session$jsonSocketConnection), silent=TRUE)
-    session$jsonSocketConnection <- NULL
-  }
-  if(!is.null(session$dapSocketConnection)){
-    try(close(session$dapSocketConnection), silent=TRUE)
-    session$dapSocketConnection <- NULL
-  }
-  if(!is.null(session$customSocketConnection)){
-    try(close(session$customSocketConnection), silent=TRUE)
-    session$customSocketConnection <- NULL
-  }
-}
-
