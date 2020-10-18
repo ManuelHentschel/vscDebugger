@@ -259,7 +259,7 @@ configurationDoneRequest <- function(response, args, request){
 
 
   # send response before launching main/debugSource!
-  sendResponse(response)
+  ret <- sendResponse(response)
 
   errorOption <- list(error=.vsc.onError)
   previousErrorOption <- options(errorOption)
@@ -289,6 +289,7 @@ configurationDoneRequest <- function(response, args, request){
   }
 
   # response sent already!
+  invisible(ret)
 }
 
 
