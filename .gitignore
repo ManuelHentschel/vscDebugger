@@ -1,7 +1,8 @@
 .Rproj.user
 .Rhistory
 .RData
-.vscode/vscode-R
+.vscode/*
+!.vscode/tasks.json
 src/*.so
 src/*.o
 *.dll
