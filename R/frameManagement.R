@@ -119,10 +119,10 @@ convertFrameId <- function(vsc = NULL, R = NULL) {
   if (is.null(vsc) && is.null(R)) {
     return(NULL)
   } else if (is.null(vsc)) {
-    frame <- session$rootNode$getStackNode()$getChildren(list(frameIdR=R))
+    frame <- session$rootNode$getStackNode()$getChildren(list(frameIdR=R))[[1]]
     return(frame$frameIdVsc)
   } else {
-    frame <- session$rootNode$getStackNode()$getChildren(list(frameId=vsc))
+    frame <- session$rootNode$getStackNode()$getChildren(list(frameId=vsc))[[1]]
     return(frame$frameIdR)
   }
 }

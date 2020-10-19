@@ -50,6 +50,8 @@ getSource <- function(call, frameIdR = 0) {
       logPrint('found srcref but not srcfile!!!')
       logPrint(srcref)
       logPrint(call)
+    } else{
+      logPrint('no srcfile!!!!')
     }
     return(NULL)
   }
