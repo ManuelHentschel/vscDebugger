@@ -8,6 +8,7 @@ If you encounter bugs/problems while using the debugger or have suggestions for 
 If you want to contribute code but are unsure how/where to integrate your code in the package, please don't hesitate to ask and I'll try to clarify the packet structure or write some better documentation (which is naturally on the todo list anyways...).
 
 Current ideas/todos include:
+* Adding Logpoints, conditional breakpoints
 * Improve display of variables (e.g. promises, R6 objects).
 This is rather simple to integrate in defaultVarInfos.R, but might take some time to implement precisely and error-free.
 * Improve handling of breakpoints in function definitions by `.vsc.debugSource`

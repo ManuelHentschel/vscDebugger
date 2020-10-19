@@ -5,6 +5,6 @@
         "man/*": true,
     },
     "terminal.integrated.env.windows": {
-        "VSCODE_R_DEBUGGER_TERMINAL_ID": "6"
+        "VSCODE_R_DEBUGGER_TERMINAL_ID": "7"
     }
 }
