@@ -64,3 +64,11 @@ isCalledFromBrowser <- function(){
 assignOverBinding <- function(what, value, where, verbose = TRUE){
   methods:::.assignOverBinding(what, value, where, verbose)
 }
+
+avoidLazyLoading <- function(package){
+  ns <- getNamespace(package)
+  for(name in ls(ns)){
+    get(name, envir=ns)
+  }
+  invisible(NULL)
+}
