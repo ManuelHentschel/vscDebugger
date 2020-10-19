@@ -1,8 +1,8 @@
 
 
 #' @export
-#' DEPRECATED
 .vsc.listenOnPort <- function(...){
+  # DEPRECATED
   .vsc.listenForJSON(...)
 }
 
