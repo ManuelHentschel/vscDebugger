@@ -110,9 +110,8 @@ normalizePathInWd <- function(path, winslash="\\", mustWork=FALSE, wd=NULL){
     ret <- tryCatch(
       {
         tmpwd <- getwd()
-        tmpwd <- setwd(wd)
-        ret <- normalizePath(path, winslash, mustWork)
-        ret
+        setwd(wd)
+        normalizePath(path, winslash, mustWork)
       },
       error = function(e) path,
       finally = setwd(tmpwd)
