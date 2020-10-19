@@ -72,6 +72,6 @@ jobs:
         uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          title: Version ${{ steps.get_version.outputs.version }}
           files: "artifacts/*/*"
+          prerelease: false
           draft: true # add .vsix and change description before release
