@@ -169,7 +169,10 @@ disconnectRequest <- function(response, args, request){
     logPrint('disconnect from attached session')
     sendResponse(response)
     closeConnections()
-    detach(session$rStrings$attachName, character.only = TRUE)
+    try(
+      detach(session$rStrings$attachName, character.only = TRUE),
+      silent = TRUE
+    )
     session$state$changeBaseState('detached')
   } else if(isCalledFromBrowser()){
     logPrint('disconnect from browser')
@@ -215,3 +218,11 @@ terminateSessionFromTopLevel <- function(){
   sendExitedEvent()
 }
 
+sessionFinalizer <- function(...){
+  if(session$state$baseState != 'quitting'){
+    try(detach(session$rStrings$attachName, character.only = TRUE), silent = TRUE)
+    try(sendExitedEvent(), silent = TRUE)
+    try(sendTerminatedEvent(), silent = TRUE)
+    try(closeConnections(), silent = TRUE)
+  }
+}

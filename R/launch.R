@@ -257,6 +257,12 @@ configurationDoneRequest <- function(response, args, request){
     setStoredBreakpoints()
   }
 
+  # register finalizer to send disconnect event on quit()
+  reg.finalizer(
+    topenv(),
+    sessionFinalizer,
+    onexit = TRUE
+  )
 
   # send response before launching main/debugSource!
   ret <- sendResponse(response)
