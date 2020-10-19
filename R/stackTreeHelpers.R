@@ -114,7 +114,7 @@ normalizePathInWd <- function(path, winslash="\\", mustWork=FALSE, wd=NULL){
         ret
       },
       error = function(e) path,
-      finally = function(...) setwd(tmpwd)
+      finally = setwd(tmpwd)
     )
   }
   ret
