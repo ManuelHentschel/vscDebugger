@@ -166,6 +166,7 @@ launchRequest <- function(response, args, request){
       ret <- try(
         library(package=pkg, character.only=TRUE)
       )
+      avoidLazyLoading(pkg)
       if(inherits(ret, 'try-error')){
         response$success <- FALSE
         response$message <- paste0("Package not found: ", pkg)

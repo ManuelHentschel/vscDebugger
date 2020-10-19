@@ -164,6 +164,7 @@ stepOutRequest <- function(response, args, request){
 disconnectRequest <- function(response, args, request){
   doQuit <- session$state$baseState != 'attached'
   session$state$changeBaseState('quitting')
+  options(error = NULL)
 
   if(!doQuit){
     logPrint('disconnect from attached session')
@@ -220,6 +221,7 @@ terminateSessionFromTopLevel <- function(){
 
 sessionFinalizer <- function(...){
   if(session$state$baseState != 'quitting'){
+    options(error = NULL)
     try(detach(session$rStrings$attachName, character.only = TRUE), silent = TRUE)
     try(sendExitedEvent(), silent = TRUE)
     try(sendTerminatedEvent(), silent = TRUE)
