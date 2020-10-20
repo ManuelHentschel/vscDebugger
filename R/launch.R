@@ -142,7 +142,9 @@ launchRequest <- function(response, args, request){
   }
   session$mainFunction <- lget(args, 'mainFunction', 'main')
   session$workingDirectory <- lget(args, 'workingDirectory', '.')
-  setwd(session$workingDirectory)
+  if(nchar(session$workingDirectory)>0){
+    setwd(session$workingDirectory)
+  }
 
   file <- lget(args, 'file', 'main.R')
   file <- normalizePath(file, mustWork=FALSE) # make sure to setwd() first!
