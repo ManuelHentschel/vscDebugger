@@ -5,8 +5,6 @@ stackTraceRequest <- function(response, args, request){
   startFrame <- lget(args, 'startFrame', 0)
   levels <- lget(args, 'levels', -1)
 
-  Sys.sleep(lget(globalenv(), 'tempWait0', 0))
-  
 
   topFrameId <- getTopFrameId()
   skipFromBottom <- getSkipFromBottom()
