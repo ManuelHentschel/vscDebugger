@@ -220,6 +220,13 @@ launchRequest <- function(response, args, request){
 configurationDoneRequest <- function(response, args, request){
   # no args
 
+  # update capabilities that might have been changed by loaded user code
+  capabilities <- list()
+  capabilities$supportsTerminateRequest <- getOption('vsc.supportTerminateRequest', FALSE)
+  capabilities$supportsStepBack <- getOption('vsc.repurposeReverseContinue', FALSE)
+  capabilities$supportsSetVariable <- getOption('vsc.supportSetVariable', TRUE)
+  sendCapabilitesEvent(capabilities)
+
   # overwrite requested functions
   attachList <- list()
 

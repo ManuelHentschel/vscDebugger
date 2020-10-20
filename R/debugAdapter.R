@@ -247,17 +247,23 @@ sendExitedEvent <- function(exitCode=0){
 }
 
 makeTerminatedEvent <- function(restart=NULL){
-  event <- makeEvent("terminated")
-  event$body <- list()
-  event$body$restart <- restart
-  event
+  makeEvent("terminated", list(restart = restart))
 }
 sendTerminatedEvent <- function(restart=NULL){
   sendEvent(makeTerminatedEvent(restart))
 }
 
+makeCapabilitiesEvent <- function(capabilities){
+  makeEvent('capabilities', list(
+    capabilities = capabilities
+  ))
+}
+sendCapabilitesEvent <- function(capabilities){
+  sendEvent(makeCapabilitiesEvent(capabilities))
+}
+
 makeWriteToStdinEvent <- function(text='', when='now', addNewLine=TRUE, expectPrompt=NULL, count=1, stack=FALSE, fallBackToNow=FALSE){
-  event <- makeCustomEvent('writeToStdin', list(
+  makeCustomEvent('writeToStdin', list(
     text = text,
     when = when,
     fallBackToNow = fallBackToNow,
