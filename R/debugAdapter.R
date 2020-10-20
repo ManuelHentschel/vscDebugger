@@ -45,6 +45,8 @@
     stepInRequest(response, args, request)
   } else if(command == 'stepOut'){
     stepOutRequest(response, args, request)
+  } else if(command == 'reverseContinue'){
+    reverseContinueRequest(response, args, request)
   } else if(command == 'restart'){
     restartRequest(response, args, request)
   } else if(command == 'terminate'){

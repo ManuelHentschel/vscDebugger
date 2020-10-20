@@ -12,15 +12,13 @@ initializeRequest <- function(response, args, request){
   # support terminate: can be used to exit function without terminating R session
   # only works ONCE (!)
   body$supportsTerminateRequest <- getOption('vsc.supportTerminateRequest', FALSE)
+  body$supportsStepBack <- getOption('vsc.repurposeReverseContinue', FALSE)
 
   # the adapter implements the configurationDoneRequest.
   body$supportsConfigurationDoneRequest <- TRUE
 
   # make VS Code NOT use 'evaluate' when hovering over source
   body$supportsEvaluateForHovers <- FALSE
-
-  # make VS Code NOT show a 'step back' button
-  body$supportsStepBack <- FALSE
 
   # make VS Code NOT support data breakpoints
   body$supportsDataBreakpoints <- FALSE

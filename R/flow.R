@@ -213,6 +213,17 @@ terminateRequest <- function(response, args, request){
 }
 
 
+reverseContinueRequest <- function(response, args, request){
+  if(isCalledFromBrowser()){
+    success <- sendWriteToStdinForFlowControl('Q')
+    session$stopListeningOnPort <- success
+    response$success <- success
+  } else{
+    response$success <- FALSE
+  }
+  sendResponse(response)
+}
+
 terminateSessionFromTopLevel <- function(){
   session$state$changeBaseState('quitting')
   sendTerminatedEvent()
