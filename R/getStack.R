@@ -5,7 +5,6 @@ stackTraceRequest <- function(response, args, request){
   startFrame <- lget(args, 'startFrame', 0)
   levels <- lget(args, 'levels', -1)
 
-
   topFrameId <- getTopFrameId()
   skipFromBottom <- getSkipFromBottom()
   if(getOption('vsc.showInternalFrames', FALSE)){
