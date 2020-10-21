@@ -220,11 +220,14 @@ terminateSessionFromTopLevel <- function(){
 }
 
 sessionFinalizer <- function(...){
+  logPrint('finalizing session!!!!')
+  logPrint(session$state$baseState)
   if(session$state$baseState != 'quitting'){
     options(error = NULL)
     try(detach(session$rStrings$attachName, character.only = TRUE), silent = TRUE)
     try(sendExitedEvent(), silent = TRUE)
     try(sendTerminatedEvent(), silent = TRUE)
+    Sys.sleep(0.05)
     try(closeConnections(), silent = TRUE)
   }
 }
