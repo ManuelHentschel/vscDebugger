@@ -99,12 +99,7 @@ constants <- c("TRUE", "FALSE", "NULL",
   "Inf", "NaN")
 
 getLazyDataFromNamespace <- function(ns) {
-  lazydata <- ns$.__NAMESPACE__.$lazydata
-  if (length(lazydata)) {
-    ls(lazydata)
-  } else {
-    character()
-  }
+  as.character(names(.getNamespaceInfo(ns, "lazydata")))
 }
 
 getAttachedPackages <- function() {
