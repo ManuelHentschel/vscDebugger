@@ -15,7 +15,8 @@ linters: with_defaults(
     commas_linter = NULL, # 4
     # object_length_linter = NULL, # 3
     assignment_linter = NULL, # 2
-    dummy_linter = NULL
+    dummy_linter = NULL,
+    paren_brace_linter = NULL
   )
 exclusions: list(
     "man/convertFrameId.Rd",

@@ -349,6 +349,8 @@ FrameNode <- R6::R6Class(
         self$firstenv <- sys.frame(self$frameIdR)
         self$name <- getFrameName(self$call)
         self$presentationHint <- "normal"
+        self$line <- 0 # to be overwritten by line from source
+        self$column <- 0 # to be overwritten by column from source
         source <- getSource(sys.call(self$frameIdR + 1), self$frameIdR + 1)
         # source <- getSource(sys.call(self$frameIdR), self$frameIdR)
         if(!is.null(source)){
@@ -362,7 +364,11 @@ FrameNode <- R6::R6Class(
       self$id <- self$frameIdVsc
 
       if(!getOption('vsc.includeFrameColumn', TRUE)){
+        self$column <- 0
         self$endColumn <- NULL
+        if(!is.null(self$endLine) && self$endLine > self$line){
+          self$endLine <- self$endLine + 1
+        }
       }
     },
     getContent = function(args=list()) {
