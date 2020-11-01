@@ -40,6 +40,10 @@ setSourceBreakpoints <- function(sbps, oldSbps=NULL){
     # get options
     includeAllPackages <- session$setBreakpointsInPackages
     additionalEnvs <- lapply(session$debuggedPackages, getNamespace)
+    tmp <- lapply(session$debuggedPackages, function(pkg) {
+      as.environment(paste0('package:', pkg))
+    })
+    additionalEnvs <- c(additionalEnvs, tmp)
     if(getOption('vsc.setBreakpointsInStack', TRUE)){
       externalFrames <- getExternalFrames()
       stackFrames <- lapply(externalFrames, sys.frame)

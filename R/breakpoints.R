@@ -50,7 +50,7 @@ setBreakpoints <- function(
       bp$line <- refs[[1]]$line
     } else {
       bp$verified <- FALSE
-      bp$line <- 0
+      # bp$line <- 0
     }
     bp$attempted <- TRUE
     bps[[i]] <- bp

@@ -258,10 +258,7 @@ configurationDoneRequest <- function(response, args, request){
   }
 
   # set breakpoints
-  if(
-    session$debugMode == 'function' ||
-    (session$setBreakpointsInPackages && length(session$debuggedPackages)>0)
-  ){
+  if(session$debugMode == 'function' || length(session$debuggedPackages)>0){
     setStoredBreakpoints()
   }
 
