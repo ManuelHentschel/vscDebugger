@@ -161,3 +161,38 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 
   sendOutputEvent(category, output = output, line=line, source=source)
 }
+
+
+#' @export 
+.vsc.help <- function(...){
+  h <- utils::help(...)
+  printHelp(h)
+}
+
+
+#' @export
+.vsc.questionMark <- function(...){
+  h <- utils::`?`(...)
+  printHelp(h)
+}
+
+# Print help result by sending it to vscode
+# Should probably be adjusted to use method dispatch
+printHelp <- function(h){
+  if(length(h)==0 || !is.character(h)){
+    return(h)
+  }
+  file <- h[1]
+  path <- dirname(file)
+  dirpath <- dirname(path)
+  pkgname <- basename(dirpath)
+  requestPath <- paste0("/library/", pkgname, "/html/", basename(file), ".html")
+  # request(command = 'help', requestPath = requestPath)
+  success <- sendCustomEvent('viewHelp', list(requestPath = requestPath))
+  if(success){
+    return(invisible(h))
+  } else{
+    return(h)
+  }
+}
+

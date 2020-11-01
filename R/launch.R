@@ -252,6 +252,11 @@ configurationDoneRequest <- function(response, args, request){
     attachList$source <- .vsc.debugSource
   }
 
+  if (session$supportsHelpViewer){
+    attachList$help <- .vsc.help
+    attachList$`?` <- .vsc.questionMark
+  }
+
   # attach functions
   if(length(attachList)>0){
     attach(attachList, name = session$rStrings$attachName, warn.conflicts = FALSE)
@@ -338,6 +343,7 @@ handleDebugConfig <- function(args){
   session$supportsWriteToStdinEvent <- lget(args, 'supportsWriteToStdinEvent', FALSE)
   session$supportsShowingPromptRequest <- lget(args, 'supportsShowingPromptRequest', FALSE)
   session$supportsStdoutReading <- lget(args, 'supportsStdoutReading', FALSE)
+  session$supportsHelpViewer <- lget(args, 'supportsHelpViewer', FALSE)
   session$useCustomSocket <- lget(args, 'useCustomSocket', FALSE)
   session$customPort <- lget(args, 'customPort', 0)
   session$customHost <- lget(args, 'customHost', 'localhost')

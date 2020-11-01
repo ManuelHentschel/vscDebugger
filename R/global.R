@@ -68,6 +68,7 @@ session <- local({
   supportsWriteToStdinEvent <- FALSE
   supportsShowingPromptRequest <- FALSE
   supportsStdoutReading <- FALSE
+  supportsHelpViewer <- FALSE
 
   # state:
   # (is managed by the debugger itself and might change frequently)

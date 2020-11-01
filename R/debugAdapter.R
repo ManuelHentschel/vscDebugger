@@ -174,7 +174,11 @@ makeCustomEvent <- function(reason=NULL, body=list()){
   event
 }
 sendCustomEvent <- function(reason=NULL, body=list()){
-  sendEvent(makeCustomEvent(reason, body))
+  if(reason == "viewHelp" && !session$supportsHelpViewer){
+    FALSE
+  } else{
+    sendEvent(makeCustomEvent(reason, body))
+  }
 }
 
 makeInvalidatedEvent <- function(areas=list('all'), threadId=NULL, stackFrameId=NULL){

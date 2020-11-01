@@ -92,9 +92,10 @@ export interface Session {
   }
 
   // custom events/requests:
-  supportsWriteToStdinEvent?: boolean;
-  supportsShowingPromptRequest?: boolean;
-  supportsStdoutReading?: boolean;
+  supportsWriteToStdinEvent: boolean;
+  supportsShowingPromptRequest: boolean;
+  supportsStdoutReading: boolean;
+  supportsHelpViewer: boolean;
 
   // state:
   // (is managed by the debugger itself and might change frequently)
