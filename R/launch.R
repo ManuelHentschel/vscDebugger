@@ -159,22 +159,35 @@ launchRequest <- function(response, args, request){
   } 
 
   
-  if(response$success && length(session$debuggedPackages)>0){
+  if(response$success && (length(session$debuggedPackages)>0 || length(session$loadPackages)>0)){
+    allPackages <- unique(c(session$debuggedPackages, session$loadPackages))
     # load debugged packages
     session$state$changeBaseState('loadLib', startRunning=TRUE)
-    for(pkg in session$debuggedPackages){
-      ret <- try(
-        library(package=pkg, character.only=TRUE)
-      )
-      avoidLazyLoading(pkg)
+    hasPkgload <- ('pkgload' %in% rownames(installed.packages()))
+    for(pkg in allPackages){
+      if(pkg %in% session$loadPackages){
+        if(hasPkgload){
+          ret <- try({
+            pkgInfo <- pkgload::load_all(path=pkg)
+            ns <- pkgInfo$env
+          })
+        } else{
+          message(paste0('Could not load package: ', pkg, ' (package pkgload not installed)'))
+        }
+      } else{
+        ret <- try(
+          library(package=pkg, character.only=TRUE)
+        )
+        avoidLazyLoading(pkg)
+        ns <- getNamespace(pkg)
+      }
       if(inherits(ret, 'try-error')){
         response$success <- FALSE
         response$message <- paste0("Package not found: ", pkg)
-        break
+        next
       }
 
       # overwrite print/cat in packages
-      ns <- getNamespace(pkg)
       if(session$overwritePrint){
         try(
           assignOverBinding('print', .vsc.print, ns, FALSE),
@@ -258,7 +271,7 @@ configurationDoneRequest <- function(response, args, request){
   }
 
   # set breakpoints
-  if(session$debugMode == 'function' || length(session$debuggedPackages)>0){
+  if(session$debugMode == 'function' || length(session$debuggedPackages)>0 || length(session$loadPackages)>0){
     setStoredBreakpoints()
   }
 
@@ -334,6 +347,7 @@ handleDebugConfig <- function(args){
   session$overwriteSource <- lget(args, 'overwriteSource', getOption('vsc.defaultOverwriteSource', TRUE))
   session$splitOverwrittenOutput <- lget(args, 'splitOverwrittenOutput', FALSE)
   session$debuggedPackages <- lget(args, 'debuggedPackages', character(0))
+  session$loadPackages <- lget(args, 'loadPackages', character(0))
   session$noDebug <- lget(args, 'noDebug', FALSE)
   session$supportsWriteToStdinEvent <- lget(args, 'supportsWriteToStdinEvent', FALSE)
   session$supportsShowingPromptRequest <- lget(args, 'supportsShowingPromptRequest', FALSE)
