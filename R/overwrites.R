@@ -182,9 +182,11 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
     ret <- pkgload::load_all(...)
     ns <- ret$env
     s <- format(ns)
-    pkgName <- substring(s, 25, nchar(s)-1)
+    pkgName <- sub('^<environment: (?:package|namespace):(.*)>$', '\\1', s)
+    session$debuggedPackages <- unique(c(session$debuggedPackages, pkgName))
+
+    # refresh breakpoints in package
     exports <- as.environment(paste0('package:', pkgName))
-    storeBreakpointEnv(ns, exports)
     .vsc.refreshBreakpoints(list(ns, exports))
   } else{
     NULL
