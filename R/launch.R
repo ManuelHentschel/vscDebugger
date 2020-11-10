@@ -229,6 +229,33 @@ launchRequest <- function(response, args, request){
   sendResponse(response)
 }
 
+makeAttachList <- function(args){
+  # overwrite requested functions
+  attachList <- list()
+
+  if (!is.null(args$overwritePrint) && args$overwritePrint) {
+    attachList$print <- .vsc.print
+  }
+
+  if (!is.null(args$overwriteCat) && args$overwriteCat) {
+    attachList$cat <- .vsc.cat
+  }
+
+  if (!is.null(args$overwriteStr) && args$overwriteStr) {
+    attachList$str <- .vsc.str
+  }
+
+  if (!is.null(args$overwriteMessage) && args$overwriteMessage) {
+    attachList$message <- .vsc.message
+  }
+
+  if (!is.null(args$overwriteSource) && args$overwriteSource) {
+    attachList$source <- .vsc.debugSource
+  }
+
+  return(attachList)
+}
+
 
 # Sent at the end of the launch sequence
 # Indicates that all configuration is done and that debugging can start
@@ -242,34 +269,13 @@ configurationDoneRequest <- function(response, args, request){
   capabilities$supportsSetVariable <- getOption('vsc.supportSetVariable', TRUE)
   sendCapabilitesEvent(capabilities)
 
-  # overwrite requested functions
-  attachList <- list()
-
-  if (session$overwritePrint) {
-    attachList$print <- .vsc.print
-  }
-
-  if (session$overwriteCat) {
-    attachList$cat <- .vsc.cat
-  }
-
-  if (session$overwriteStr) {
-    attachList$str <- .vsc.str
-  }
-
-  if (session$overwriteMessage) {
-    attachList$message <- .vsc.message
-  }
-
-  if (session$overwriteSource) {
-    attachList$source <- .vsc.debugSource
-  }
+  # attach functions
+  attachList <- makeAttachList(session)
 
   if (isInstalled('pkgload')){
     attachList$load_all <- .vsc.load_all
   }
 
-  # attach functions
   if(length(attachList)>0){
     attach(attachList, name = session$rStrings$attachName, warn.conflicts = FALSE)
   }
@@ -287,7 +293,7 @@ configurationDoneRequest <- function(response, args, request){
   )
 
   # disable just-in-time compilation (messes with source info etc.)
-  compiler::enableJIT(0)
+  compiler::enableJIT(getOption('vsc.enableJIT', 0))
 
   # send response before launching main/debugSource!
   ret <- sendResponse(response)

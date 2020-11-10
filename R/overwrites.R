@@ -179,8 +179,21 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 #' @export
 .vsc.load_all <- function(...){
   if(isInstalled('pkgload')){
+    # normal load_all
     ret <- pkgload::load_all(...)
     ns <- ret$env
+
+    # attach overwritten print/cat etc.
+    attachList <- makeAttachList(list(
+      overwritePrint = session$overwritePrint,
+      overwriteCat = session$overwriteCat,
+      overwriteMessage = session$overwriteMessage
+    ))
+    attachEnv <- as.environment(attachList)
+    parent.env(attachEnv) <- parent.env(ns)
+    parent.env(ns) <- attachEnv
+
+    # store pkgname
     s <- format(ns)
     pkgName <- sub('^<environment: (?:package|namespace):(.*)>$', '\\1', s)
     session$debuggedPackages <- unique(c(session$debuggedPackages, pkgName))
