@@ -3,17 +3,9 @@
 setBreakpoints <- function(
   sourceBreakpoints,
   unsetBreakpoints=FALSE,
-  includeAllPackages=FALSE,
-  additionalEnvs=list(),
-  stackFrames=list(),
+  envs=list(),
   inNormalEnvs=TRUE
 ){
-  if(includeAllPackages){
-    lastenv <- emptyenv()
-  } else{
-    lastenv <- globalenv()
-  }
-
   path <- sourceBreakpoints$source$path
   bps <- sourceBreakpoints$breakpoints
   refList <- list()
@@ -22,20 +14,9 @@ setBreakpoints <- function(
     bp <- bps[[i]]
     line <- bp$requestedLine
 
-    # find line numbers in functions
-    # might return multiple refs
-    if(inNormalEnvs){
-      refs <- findLineNum(path, line, nameonly = FALSE, lastenv = lastenv)
-    } else{
-      refs <- list()
-    }
-
     # find line number in additional envs (= debugged packages)
-    for(env in additionalEnvs){
-      newRefs <- findLineNum(path, line, nameonly = FALSE, envir=env, lastenv=env)
-      refs <- c(refs, newRefs)
-    }
-    for(env in stackFrames){
+    refs <- list()
+    for(env in envs){
       newRefs <- try(
         findLineNum(path, line, nameonly = FALSE, envir=env, lastenv=env),
         silent = TRUE
@@ -45,7 +26,6 @@ setBreakpoints <- function(
       }
     }
 
-
     # store occurences of line (for R)
     refList <- c(refList, refs)
 
@@ -53,8 +33,9 @@ setBreakpoints <- function(
     if (length(refs) > 0) {
       bp$verified <- !unsetBreakpoints
       bp$line <- refs[[1]]$line
+      bp$changed <- TRUE
     } else {
-      bp$verified <- FALSE
+      # bp$verified <- FALSE
       # bp$line <- 0
     }
     bp$attempted <- TRUE
@@ -96,7 +77,7 @@ setBreakpoints <- function(
   }
 
   # send breakpoints to vsc
-  sendBreakpoints(bps)
+  bps <- sendBreakpoints(bps)
 
   sourceBreakpoints$breakpoints <- bps
 
@@ -105,8 +86,12 @@ setBreakpoints <- function(
 
 sendBreakpoints <- function(bps) {
   for (bp in bps) {
-    sendBreakpointEvent("changed", bp)
+    if(!is.null(bp$changed) && bp$changed){
+      sendBreakpointEvent("changed", bp)
+    }
+    bp$changed <- FALSE
   }
+  return(bps)
 }
 
 summarizeRefs <- function(refList){

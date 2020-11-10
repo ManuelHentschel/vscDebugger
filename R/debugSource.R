@@ -35,9 +35,12 @@
 
     # check if bps were found and confirm breakpoints to vsc
     for (i in seq_along(bps)) {
-      bps[[i]]$verified <- length(ats[[i]]) > 0
+      if(length(ats[[i]]) > 0){
+        bps[[i]]$verified <- TRUE
+        bps[[i]]$changed <- TRUE
+      }
     }
-    sendBreakpoints(bps)
+    bps <- sendBreakpoints(bps)
 
     sourceBreakpoints$breakpoints <- bps
     storeSourceBreakpoints(sourceBreakpoints)
