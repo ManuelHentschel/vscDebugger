@@ -161,3 +161,34 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 
   sendOutputEvent(category, output = output, line=line, source=source)
 }
+
+
+
+
+#' Refresh Breakpoints
+#' 
+#' Refresh breakpoints known to the debugger
+#' Can be used if breakpoints were invalidated by e.g. `load_all()` or `source()`
+#' @export
+.vsc.refreshBreakpoints <- function(envs=NULL){
+  setStoredBreakpoints(envs)
+}
+
+
+#' Modified version of `pkgload::load_all()`
+#' @export
+.vsc.load_all <- function(...){
+  if(isInstalled('pkgload')){
+    ret <- pkgload::load_all(...)
+    ns <- ret$env
+    s <- format(ns)
+    pkgName <- substring(s, 25, nchar(s)-1)
+    exports <- as.environment(paste0('package:', pkgName))
+    storeBreakpointEnv(ns, exports)
+    .vsc.refreshBreakpoints(list(ns, exports))
+  } else{
+    NULL
+  }
+}
+
+

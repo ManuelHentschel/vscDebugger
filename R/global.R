@@ -89,6 +89,7 @@ session <- local({
   rootNode <- NULL
   sourceBreakpointsList <- list()
   sources <- list()
+  breakpointEnvironments <- list()
 
 
   # lock and return the environment:

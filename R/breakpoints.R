@@ -5,7 +5,8 @@ setBreakpoints <- function(
   unsetBreakpoints=FALSE,
   includeAllPackages=FALSE,
   additionalEnvs=list(),
-  stackFrames=list()
+  stackFrames=list(),
+  inNormalEnvs=TRUE
 ){
   if(includeAllPackages){
     lastenv <- emptyenv()
@@ -23,7 +24,11 @@ setBreakpoints <- function(
 
     # find line numbers in functions
     # might return multiple refs
-    refs <- findLineNum(path, line, nameonly = FALSE, lastenv = lastenv)
+    if(inNormalEnvs){
+      refs <- findLineNum(path, line, nameonly = FALSE, lastenv = lastenv)
+    } else{
+      refs <- list()
+    }
 
     # find line number in additional envs (= debugged packages)
     for(env in additionalEnvs){

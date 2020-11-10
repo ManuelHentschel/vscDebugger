@@ -265,6 +265,10 @@ configurationDoneRequest <- function(response, args, request){
     attachList$source <- .vsc.debugSource
   }
 
+  if (isInstalled('pkgload')){
+    attachList$load_all <- .vsc.load_all
+  }
+
   # attach functions
   if(length(attachList)>0){
     attach(attachList, name = session$rStrings$attachName, warn.conflicts = FALSE)
@@ -281,6 +285,9 @@ configurationDoneRequest <- function(response, args, request){
     sessionFinalizer,
     onexit = TRUE
   )
+
+  # disable just-in-time compilation (messes with source info etc.)
+  compiler::enableJIT(0)
 
   # send response before launching main/debugSource!
   ret <- sendResponse(response)
