@@ -35,6 +35,7 @@ export interface Session {
   setBreakpointsInPackages: boolean;
   debuggedPackages: RVector<string>;
   loadPackages: RVector<string>;
+  loadSilently: boolean;
   assignToAns: boolean;
 
   previousOptions?: {

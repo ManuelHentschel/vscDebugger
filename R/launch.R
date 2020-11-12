@@ -167,10 +167,17 @@ launchRequest <- function(response, args, request){
     for(pkg in allPackages){
       if(pkg %in% session$loadPackages){
         if(hasPkgload){
-          ret <- try({
-            pkgInfo <- pkgload::load_all(path=pkg)
-            ns <- pkgInfo$env
-          })
+          if(session$loadSilently){
+            ret <- suppressMessages(try({
+              pkgInfo <- pkgload::load_all(path=pkg)
+              ns <- pkgInfo$env
+            }))
+          } else{
+            ret <- try({
+              pkgInfo <- pkgload::load_all(path=pkg)
+              ns <- pkgInfo$env
+            })
+          }
         } else{
           message(paste0('Could not load package: ', pkg, ' (package pkgload not installed)'))
         }
@@ -361,6 +368,7 @@ handleDebugConfig <- function(args){
   session$splitOverwrittenOutput <- lget(args, 'splitOverwrittenOutput', FALSE)
   session$debuggedPackages <- lget(args, 'debuggedPackages', character(0))
   session$loadPackages <- lget(args, 'loadPackages', character(0))
+  session$loadSilently <- lget(args, 'loadSilently', FALSE)
   session$noDebug <- lget(args, 'noDebug', FALSE)
   session$supportsWriteToStdinEvent <- lget(args, 'supportsWriteToStdinEvent', FALSE)
   session$supportsShowingPromptRequest <- lget(args, 'supportsShowingPromptRequest', FALSE)

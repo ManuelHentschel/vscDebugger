@@ -24,6 +24,7 @@ session <- local({
   setBreakpointsInPackages <- FALSE
   debuggedPackages <- character(0)
   loadPackages <- character(0)
+  loadSilently <- FALSE
   assignToAns <- TRUE
 
   previousOptions <- list()
