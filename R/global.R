@@ -57,6 +57,10 @@ session <- local({
   customHost <- 'localhost'
   customSocketConnection <- NULL
 
+  socketServer <- FALSE
+  svName <- ''
+  restOfWs <- ''
+
   threadId <- 1
 
   rStrings <- list(

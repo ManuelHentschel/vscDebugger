@@ -9,58 +9,65 @@
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
   commandKnown <- TRUE
-  ret <- if(command == 'stackTrace'){
-    stackTraceRequest(response, args, request)
-  } else if(command == 'scopes'){
-    scopesRequest(response, args, request)
-  } else if(command == 'variables'){
-    variablesRequest(response, args, request)
-  } else if(command == 'source'){
-    sourceRequest(response, args, request)
-  } else if(command == 'setVariable'){
-    setVariableRequest(response, args, request)
-  } else if(command == 'setExpression'){
-    setExpressionRequest(response, args, request)
-  } else if(command == 'evaluate'){
-    evaluateRequest(response, args, request)
-  } else if(command == 'setExceptionBreakpoints'){
-    setExceptionBreakPointsRequest(response, args, request)
-  } else if(command == 'completions'){
-    completionsRequest(response, args, request)
-  } else if(command == 'threads'){
-    threadsRequest(response, args, request)
-  } else if(command == 'setBreakpoints'){
-    setBreakpointsRequest(response, args, request)
-  } else if(command == 'initialize'){
-    initializeRequest(response, args, request)
-  } else if(command == 'configurationDone'){
-    configurationDoneRequest(response, args, request)
-  } else if(command == 'launch'){
-    launchRequest(response, args, request)
-  } else if(command == 'continue'){
-    continueRequest(response, args, request)
-  } else if(command == 'next'){
-    nextRequest(response, args, request)
-  } else if(command == 'stepIn'){
-    stepInRequest(response, args, request)
-  } else if(command == 'stepOut'){
-    stepOutRequest(response, args, request)
-  } else if(command == 'reverseContinue'){
-    reverseContinueRequest(response, args, request)
-  } else if(command == 'restart'){
-    restartRequest(response, args, request)
-  } else if(command == 'terminate'){
-    terminateRequest(response, args, request)
-  } else if(command == 'disconnect'){
-    disconnectRequest(response, args, request)
-  } else if(command == 'attach'){
-    attachRequest(response, args, request)
-  } else if(command == 'custom'){
-    customRequest(response, args, request)
-  } else {
-    commandKnown <- FALSE
+  ret <- try({
+    if(command == 'stackTrace'){
+      stackTraceRequest(response, args, request)
+    } else if(command == 'scopes'){
+      scopesRequest(response, args, request)
+    } else if(command == 'variables'){
+      variablesRequest(response, args, request)
+    } else if(command == 'source'){
+      sourceRequest(response, args, request)
+    } else if(command == 'setVariable'){
+      setVariableRequest(response, args, request)
+    } else if(command == 'setExpression'){
+      setExpressionRequest(response, args, request)
+    } else if(command == 'evaluate'){
+      evaluateRequest(response, args, request)
+    } else if(command == 'setExceptionBreakpoints'){
+      setExceptionBreakPointsRequest(response, args, request)
+    } else if(command == 'completions'){
+      completionsRequest(response, args, request)
+    } else if(command == 'threads'){
+      threadsRequest(response, args, request)
+    } else if(command == 'setBreakpoints'){
+      setBreakpointsRequest(response, args, request)
+    } else if(command == 'initialize'){
+      initializeRequest(response, args, request)
+    } else if(command == 'configurationDone'){
+      configurationDoneRequest(response, args, request)
+    } else if(command == 'launch'){
+      launchRequest(response, args, request)
+    } else if(command == 'continue'){
+      continueRequest(response, args, request)
+    } else if(command == 'next'){
+      nextRequest(response, args, request)
+    } else if(command == 'stepIn'){
+      stepInRequest(response, args, request)
+    } else if(command == 'stepOut'){
+      stepOutRequest(response, args, request)
+    } else if(command == 'reverseContinue'){
+      reverseContinueRequest(response, args, request)
+    } else if(command == 'restart'){
+      restartRequest(response, args, request)
+    } else if(command == 'terminate'){
+      terminateRequest(response, args, request)
+    } else if(command == 'disconnect'){
+      disconnectRequest(response, args, request)
+    } else if(command == 'attach'){
+      attachRequest(response, args, request)
+    } else if(command == 'custom'){
+      customRequest(response, args, request)
+    } else {
+      commandKnown <- FALSE
+      response$success <- FALSE
+      sendResponse(response)
+    }
+  })
+  if(inherits(ret, 'try-error')){
     response$success <- FALSE
     sendResponse(response)
+    ret <- FALSE
   }
   unregisterEntryFrame()
   # return success (boolean) of sendResponse(...)

@@ -191,7 +191,12 @@
 sendToVsc <- function(body = "", useCustomSocket = FALSE) {
   json <- getJson(body)
   success <- TRUE
-  if(useCustomSocket){
+  if(session$socketServer){
+    msg <- makeDapMessage(json, '')
+    logCat('\nSending to socket ', session$svName, ':\n', msg, '\n', sep='')
+    svSocket::sendSocketClients(msg, session$svName, serverport = session$dapPort)
+    success <- TRUE #?
+  } else if(useCustomSocket){
     if(session$useCustomSocket){
       base::cat(json, '\n', sep='', file=session$customSocketConnection)
       logCat('Sent json (custom): ', json, '\n', sep='')
@@ -213,12 +218,15 @@ sendToVsc <- function(body = "", useCustomSocket = FALSE) {
   return(success)
 }
 
-makeDapMessage <- function(json){
+makeDapMessage <- function(json, cr = '\r'){
   contentLength <- nchar(json, type='bytes')
   paste0(
     'Content-Length: ',
     toString(contentLength),
-    '\r\n\r\n',
+    cr,
+    '\n',
+    cr,
+    '\n',
     json
   )
 }

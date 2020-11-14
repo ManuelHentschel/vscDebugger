@@ -115,6 +115,16 @@ initializeRequest <- function(response, args, request){
   session$ppid <- getPpid()
   session$terminalId <- Sys.getenv('VSCODE_R_DEBUGGER_TERMINAL_ID')
 
+  # add taskCallback
+  if(session$socketServer){
+    addTaskCallback(function(...){
+      registerEntryFrame()
+      sendContinuedEvent()
+      sendStoppedEvent('step')
+      TRUE
+    })
+  }
+
   # prepare and send response
   response$body <- body
   response$packageInfo <- packageDescription('vscDebugger')
