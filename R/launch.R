@@ -178,6 +178,9 @@ launchRequest <- function(response, args, request){
               ns <- pkgInfo$env
             })
           }
+          s <- format(ns)
+          pkgName <- sub('^<environment: (?:package|namespace):(.*)>$', '\\1', s)
+          session$debuggedPackages <- unique(c(session$debuggedPackages, pkgName))
         } else{
           message(paste0('Could not load package: ', pkg, ' (package pkgload not installed)'))
         }
