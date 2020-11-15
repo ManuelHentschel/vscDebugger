@@ -178,32 +178,46 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 #' Modified version of `pkgload::load_all()`
 #' @export
 .vsc.load_all <- function(...){
-  if(isInstalled('pkgload')){
-    # normal load_all
-    ret <- pkgload::load_all(...)
-    ns <- ret$env
+  internalLoadAll(..., refreshBreakpoints = TRUE)
+}
 
-    # attach overwritten print/cat etc.
-    attachList <- makeAttachList(list(
-      overwritePrint = session$overwritePrint,
-      overwriteCat = session$overwriteCat,
-      overwriteMessage = session$overwriteMessage
-    ))
+internalLoadAll <- function(..., refreshBreakpoints=FALSE, loadSilently=FALSE){
+  if(!requireNamespace('pkgload', quietly = TRUE)){
+    stop('Package pkgload must be installed!')
+  }
+
+  # normal load_all
+  if(loadSilently){
+    suppressMessages(ret <- pkgload::load_all(...))
+  } else{
+    ret <- pkgload::load_all(...)
+  }
+  ns <- ret$env
+
+  # attach overwritten print/cat etc.
+  attachList <- makeAttachList(list(
+    overwritePrint = session$overwritePrint,
+    overwriteCat = session$overwriteCat,
+    overwriteMessage = session$overwriteMessage
+  ))
+  if(length(attachList)>0){
     attachEnv <- as.environment(attachList)
     parent.env(attachEnv) <- parent.env(ns)
     parent.env(ns) <- attachEnv
+  }
 
-    # store pkgname
-    s <- format(ns)
-    pkgName <- sub('^<environment: (?:package|namespace):(.*)>$', '\\1', s)
-    session$debuggedPackages <- unique(c(session$debuggedPackages, pkgName))
+  # store pkgname
+  s <- format(ns)
+  pkgName <- sub('^<environment: (?:package|namespace):(.*)>$', '\\1', s)
+  session$debuggedPackages <- unique(c(session$debuggedPackages, pkgName))
 
-    # refresh breakpoints in package
+  # refresh breakpoints (used if called curing session, not launch)
+  if(refreshBreakpoints){
     exports <- as.environment(paste0('package:', pkgName))
     .vsc.refreshBreakpoints(list(ns, exports))
-  } else{
-    NULL
   }
-}
 
+  # return output from normal load_all
+  invisible(ret)
+}
 

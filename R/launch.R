@@ -159,68 +159,60 @@ launchRequest <- function(response, args, request){
   } 
 
   
-  if(response$success && (length(session$debuggedPackages)>0 || length(session$loadPackages)>0)){
-    allPackages <- unique(c(session$debuggedPackages, session$loadPackages))
-    # load debugged packages
+  if(response$success && length(session$debuggedPackages)>0){
     session$state$changeBaseState('loadLib', startRunning=TRUE)
-    hasPkgload <- ('pkgload' %in% rownames(installed.packages()))
+    # only load packages from installation that are not loaded from source
+    allPackages <- setdiff(session$debuggedPackages, session$loadPackages)
     for(pkg in allPackages){
-      if(pkg %in% session$loadPackages){
-        if(hasPkgload){
-          if(session$loadSilently){
-            ret <- suppressMessages(try({
-              pkgInfo <- pkgload::load_all(path=pkg)
-              ns <- pkgInfo$env
-            }))
-          } else{
-            ret <- try({
-              pkgInfo <- pkgload::load_all(path=pkg)
-              ns <- pkgInfo$env
-            })
-          }
-          s <- format(ns)
-          pkgName <- sub('^<environment: (?:package|namespace):(.*)>$', '\\1', s)
-          session$debuggedPackages <- unique(c(session$debuggedPackages, pkgName))
-        } else{
-          message(paste0('Could not load package: ', pkg, ' (package pkgload not installed)'))
-        }
-      } else{
-        ret <- try(
-          library(package=pkg, character.only=TRUE)
-        )
-        avoidLazyLoading(pkg)
-        ns <- getNamespace(pkg)
-      }
+      # try to load package
+      ret <- try(
+        library(package=pkg, character.only=TRUE)
+      )
+
+      # abort launch if package not found
       if(inherits(ret, 'try-error')){
         response$success <- FALSE
         response$message <- paste0("Package not found: ", pkg)
-        next
+        break
       }
 
-      # overwrite print/cat in packages
-      if(session$overwritePrint){
+      # get() every item from package to avoid strange behaviour with lazyLoading
+      avoidLazyLoading(pkg)
+
+      # overwrite print, str, etc. in package
+      ns <- getNamespace(pkg)
+      attachList <- makeAttachList(session, overwriteLoadAll = FALSE)
+      for(fncName in names(attachList)){
         try(
-          assignOverBinding('print', .vsc.print, ns, FALSE),
+          assignOverBinding(fncName, attachList[[fncName]], ns, FALSE),
           silent = TRUE
         )
       }
-      if(session$overwriteCat){
-        try(
-          assignOverBinding('cat', .vsc.cat, ns, FALSE),
-          silent = TRUE
-        )
-      }
-      if(session$overwriteStr){
-        try(
-          assignOverBinding('str', .vsc.str, ns, FALSE),
-          silent = TRUE
-        )
-      }
-      if(session$overwriteMessage){
-        try(
-          assignOverBinding('message', .vsc.message, ns, FALSE),
-          silent = TRUE
-        )
+    }
+    session$state$changeBaseState('starting', startPaused=TRUE)
+  }
+
+  if(response$success && length(session$loadPackages)>0){
+    session$state$changeBaseState('loadLib', startRunning=TRUE)
+    # pkgload is 
+    if(!requireNamespace('pkgload', quietly = TRUE)){
+      response$message <- 'Could not load packages: package pkgload not installed!'
+      response$success <- FALSE
+    } else{
+      for(pkg in session$loadPackages){
+        ret <- try({
+          pkgInfo <- internalLoadAll(
+            path=pkg,
+            refreshBreakpoints = FALSE,
+            loadSilently = session$loadSilently
+          )
+          ns <- pkgInfo$env
+        })
+        if(inherits(ret, 'try-error')){
+          response$success <- FALSE
+          response$message <- paste0('Failed to load package: ', pkg)
+          break
+        }
       }
     }
     session$state$changeBaseState('starting', startPaused=TRUE)
@@ -239,28 +231,43 @@ launchRequest <- function(response, args, request){
   sendResponse(response)
 }
 
-makeAttachList <- function(args){
-  # overwrite requested functions
+makeAttachList <- function(args, ...){
+  # use ... to overwrite individual entries of args
+  overwriteArgs <- list(...)
+
+  getArg <- function(name){
+    if(name %in% names(overwriteArgs)){
+      isTRUE(overwriteArgs[[name]])
+    } else{
+      isTRUE(args[[name]])
+    }
+  }
+
+  # make list containing the requested functions
   attachList <- list()
 
-  if (!is.null(args$overwritePrint) && args$overwritePrint) {
+  if (getArg("overwritePrint")) {
     attachList$print <- .vsc.print
   }
 
-  if (!is.null(args$overwriteCat) && args$overwriteCat) {
+  if (getArg("overwriteCat")) {
     attachList$cat <- .vsc.cat
   }
 
-  if (!is.null(args$overwriteStr) && args$overwriteStr) {
+  if (getArg("overwriteStr")) {
     attachList$str <- .vsc.str
   }
 
-  if (!is.null(args$overwriteMessage) && args$overwriteMessage) {
+  if (getArg("overwriteMessage")) {
     attachList$message <- .vsc.message
   }
 
-  if (!is.null(args$overwriteSource) && args$overwriteSource) {
+  if (getArg("overwriteSource")) {
     attachList$source <- .vsc.debugSource
+  }
+
+  if (getArg("overwriteLoadAll")) {
+    attachList$load_all <- .vsc.load_all
   }
 
   return(attachList)
