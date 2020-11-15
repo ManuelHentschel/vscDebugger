@@ -235,6 +235,13 @@ sessionFinalizer <- function(...){
   logPrint(session$state$baseState)
   if(session$state$baseState != 'quitting'){
     options(error = NULL)
+    if(session$supportsHelpViewer && !is.null(session$print_help_files_with_topic_0)){
+      try(suppressWarnings(.S3method(
+        "print",
+        "help_files_with_topic",
+        session$print_help_files_with_topic_0
+      )))
+    }
     try(detach(session$rStrings$attachName, character.only = TRUE), silent = TRUE)
     try(sendExitedEvent(), silent = TRUE)
     try(sendTerminatedEvent(), silent = TRUE)

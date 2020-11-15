@@ -253,8 +253,12 @@ configurationDoneRequest <- function(response, args, request){
   }
 
   if (session$supportsHelpViewer){
-    attachList$help <- .vsc.help
-    attachList$`?` <- .vsc.questionMark
+    session$print_help_files_with_topic_0 <- getS3method('print', 'help_files_with_topic')
+    suppressWarnings(.S3method(
+      "print",
+      "help_files_with_topic",
+      .vsc.print.help_files_with_topic
+    ))
   }
 
   # attach functions

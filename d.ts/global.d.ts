@@ -115,6 +115,7 @@ export interface Session {
   rootNode: StackTree.RootNode;
   sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
   sources: InternalSource[];
+  print_help_files_with_topic_0: RFunction | null;
 }
 
 export type BaseState = "starting"|"loadLib"|"sourceMain"|"runMain"|"runFile"|"workspace"|"quitting"|"attached"|"detached";

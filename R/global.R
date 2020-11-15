@@ -89,6 +89,7 @@ session <- local({
   rootNode <- NULL
   sourceBreakpointsList <- list()
   sources <- list()
+  print_help_files_with_topic_0 <- NULL
 
 
   # lock and return the environment:
