@@ -183,7 +183,7 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 
 internalLoadAll <- function(..., refreshBreakpoints=FALSE, loadSilently=FALSE){
   if(!requireNamespace('pkgload', quietly = TRUE)){
-    stop('Package pkgload must be installed!')
+    stop('Package pkgload must be installed to use load_all!')
   }
 
   # normal load_all

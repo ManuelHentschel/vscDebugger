@@ -289,10 +289,6 @@ configurationDoneRequest <- function(response, args, request){
   # attach functions
   attachList <- makeAttachList(session)
 
-  if (isInstalled('pkgload')){
-    attachList$load_all <- .vsc.load_all
-  }
-
   if(length(attachList)>0){
     attach(attachList, name = session$rStrings$attachName, warn.conflicts = FALSE)
   }
@@ -375,6 +371,7 @@ handleDebugConfig <- function(args){
   session$overwriteStr <- lget(args, 'overwriteStr', getOption('vsc.defaultOverwriteStr', TRUE))
   session$overwritePrint <- lget(args, 'overwritePrint', getOption('vsc.defaultOverwritePrint', TRUE))
   session$overwriteSource <- lget(args, 'overwriteSource', getOption('vsc.defaultOverwriteSource', TRUE))
+  session$overwriteLoadAll <- lget(args, 'overwriteLoadAll', getOption('vsc.defaultOverwriteLoadAll', TRUE))
   session$splitOverwrittenOutput <- lget(args, 'splitOverwrittenOutput', FALSE)
   session$debuggedPackages <- lget(args, 'debuggedPackages', character(0))
   session$loadPackages <- lget(args, 'loadPackages', character(0))

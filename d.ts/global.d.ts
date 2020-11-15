@@ -23,6 +23,7 @@ export interface Session {
   overwriteCat: boolean;
   overwriteMessage: boolean;
   overwriteSource: boolean;
+  overwriteLoadAll: boolean;
   splitOverwrittenOutput: boolean;
 
   supportsInvalidatedEvent: boolean;
