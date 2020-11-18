@@ -196,7 +196,12 @@ launchRequest <- function(response, args, request){
     session$state$changeBaseState('loadLib', startRunning=TRUE)
     # pkgload is 
     if(!requireNamespace('pkgload', quietly = TRUE)){
-      response$message <- 'Could not load packages: package pkgload not installed!'
+      response$message <- paste(
+        'Could not load packages!',
+        'Please install the package "pkgload" or',
+        'remove "loadPackages" from the launch configuration!',
+        sep = '\n'
+      )
       response$success <- FALSE
     } else{
       for(pkg in session$loadPackages){
