@@ -23,6 +23,7 @@ export interface Session {
   overwriteCat: boolean;
   overwriteMessage: boolean;
   overwriteSource: boolean;
+  overwriteLoadAll: boolean;
   splitOverwrittenOutput: boolean;
 
   supportsInvalidatedEvent: boolean;
@@ -34,6 +35,8 @@ export interface Session {
   includePackageScopes: boolean;
   setBreakpointsInPackages: boolean;
   debuggedPackages: RVector<string>;
+  loadPackages: RVector<string>;
+  loadSilently: boolean;
   assignToAns: boolean;
 
   previousOptions?: {
@@ -114,6 +117,7 @@ export interface Session {
   rootNode: StackTree.RootNode;
   sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
   sources: InternalSource[];
+  breakpointEnvironments: REnvironment[];
 }
 
 export type BaseState = "starting"|"loadLib"|"sourceMain"|"runMain"|"runFile"|"workspace"|"quitting"|"attached"|"detached";

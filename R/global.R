@@ -12,6 +12,7 @@ session <- local({
   overwriteMessage <- TRUE
   overwriteStr <- TRUE
   overwriteSource <- TRUE
+  overwriteLoadAll <- TRUE
   splitOverwrittenOutput <- FALSE
 
   supportsInvalidatedEvent <- FALSE
@@ -23,6 +24,8 @@ session <- local({
   includePackageScopes <- FALSE
   setBreakpointsInPackages <- FALSE
   debuggedPackages <- character(0)
+  loadPackages <- character(0)
+  loadSilently <- FALSE
   assignToAns <- TRUE
 
   previousOptions <- list()
@@ -88,6 +91,7 @@ session <- local({
   rootNode <- NULL
   sourceBreakpointsList <- list()
   sources <- list()
+  breakpointEnvironments <- list()
 
 
   # lock and return the environment:

@@ -72,3 +72,9 @@ avoidLazyLoading <- function(package){
   }
   invisible(NULL)
 }
+
+
+
+isInstalled <- function(pkg){
+  pkg %in% rownames(installed.packages())
+}
