@@ -163,6 +163,25 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 }
 
 
+#' @export
+.vsc.print.help_files_with_topic <- function(h, ...) {
+  success <- FALSE
+  if (length(h) >= 1 && is.character(h)) {
+    file <- h[1]
+    path <- dirname(file)
+    dirpath <- dirname(path)
+    pkgname <- basename(dirpath)
+    requestPath <- paste0(
+      "/library/",
+      pkgname,
+      "/html/",
+      basename(file),
+      ".html"
+    )
+    success <- sendCustomEvent('viewHelp', list(requestPath = requestPath))
+  }
+  invisible(h)
+}
 
 
 #' Refresh Breakpoints

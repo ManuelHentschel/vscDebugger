@@ -24,6 +24,7 @@ export interface Session {
   overwriteMessage: boolean;
   overwriteSource: boolean;
   overwriteLoadAll: boolean;
+  overwriteHelp: boolean;
   splitOverwrittenOutput: boolean;
 
   supportsInvalidatedEvent: boolean;
@@ -95,9 +96,10 @@ export interface Session {
   }
 
   // custom events/requests:
-  supportsWriteToStdinEvent?: boolean;
-  supportsShowingPromptRequest?: boolean;
-  supportsStdoutReading?: boolean;
+  supportsWriteToStdinEvent: boolean;
+  supportsShowingPromptRequest: boolean;
+  supportsStdoutReading: boolean;
+  supportsHelpViewer: boolean;
 
   // state:
   // (is managed by the debugger itself and might change frequently)
@@ -117,6 +119,7 @@ export interface Session {
   rootNode: StackTree.RootNode;
   sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
   sources: InternalSource[];
+  print_help_files_with_topic_0: RFunction | null;
   breakpointEnvironments: REnvironment[];
 }
 

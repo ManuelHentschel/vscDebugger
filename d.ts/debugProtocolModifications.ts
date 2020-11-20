@@ -1,8 +1,14 @@
 
 
 // import { DebugProtocol } from 'vscode-debugprotocol';
+// @ts-ignore
 import * as VsCode from 'vscode';
 import { DebugProtocol } from './debugProtocol';
+
+
+//
+// Regular extension of the DAP:
+//
 
 export type DebugMode = "function"|"file"|"workspace";
 
@@ -42,6 +48,7 @@ export interface DebugConfiguration extends VsCode.DebugConfiguration {
     supportsWriteToStdinEvent?: boolean;
     supportsShowingPromptRequest?: boolean;
     supportsStdoutReading?: boolean;
+    supportsHelpViewer?: boolean;
     ignoreFlowControl?: boolean;
 
     useCustomSocket?: boolean;
@@ -87,6 +94,16 @@ export interface RStrings {
     packageName?: string;
 }
 
+
+
+
+//
+// Non standard extension/modification of the DAP:
+// 
+
+export interface InitializeRequest extends DebugProtocol.InitializeRequest {
+    arguments: InitializeRequestArguments;
+}
 export interface InitializeRequestArguments extends DebugProtocol.InitializeRequestArguments {
     rStrings?: RStrings;
     threadId?: number;
@@ -99,27 +116,22 @@ export interface InitializeRequestArguments extends DebugProtocol.InitializeRequ
     extensionVersion?: string;
 }
 
-export interface InitializeRequest extends DebugProtocol.InitializeRequest {
-    arguments: InitializeRequestArguments;
+export interface InitializeResponse extends DebugProtocol.InitializeResponse {
+    packageInfo?: PackageInfo;
 }
-
 export interface PackageInfo {
     Package: string;
     Version: string;
 };
 
-export interface InitializeResponse extends DebugProtocol.InitializeResponse {
-    packageInfo?: PackageInfo;
+export interface ContinueRequest extends DebugProtocol.ContinueRequest {
+    arguments: ContinueArguments;
 }
-
 export interface ContinueArguments extends DebugProtocol.ContinueArguments {
     callDebugSource?: boolean;
     source?: DebugProtocol.Source;
 }
 
-export interface ContinueRequest extends DebugProtocol.ContinueRequest {
-    arguments: ContinueArguments;
-}
 
 export interface ResponseWithBody extends DebugProtocol.Response {
     body?: { [key: string]: any; };
@@ -131,6 +143,15 @@ export interface CustomEvent extends DebugProtocol.Event {
     body: {
         reason: string;
     }
+}
+
+// Request help panel
+export interface ViewHelpEvent extends CustomEvent {
+    body: ViewHelpBody;
+}
+export interface ViewHelpBody {
+    reason: "viewHelp";
+    requestPath: string;
 }
 
 // Indicate that VS-Code should write a given text to R's stdin
