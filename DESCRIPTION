@@ -1,6 +1,6 @@
 Package: vscDebugger
 Title: Support for Visual Studio Code Debugger
-Version: 0.4.1
+Version: 0.4.2
 Authors@R: 
     person(given = "Manuel",
            family = "Hentschel",
@@ -17,4 +17,5 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports:
     jsonlite(>= 1.6.0), R6
+Suggests: pkgload
 NeedsCompilation: yes

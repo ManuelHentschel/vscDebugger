@@ -84,3 +84,7 @@ avoidLazyLoading <- function(package){
   registerS3method(generic, class, method, envir = parent.frame())
   invisible(NULL)
 }
+
+isInstalled <- function(pkg){
+  pkg %in% rownames(installed.packages())
+}

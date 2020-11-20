@@ -363,8 +363,8 @@ FrameNode <- R6::R6Class(
       }
       self$id <- self$frameIdVsc
 
-      if(!getOption('vsc.includeFrameColumn', TRUE)){
-        self$column <- 0
+      if(!getOption('vsc.includeFrameColumn', FALSE)){
+        self$column <- 1
         self$endColumn <- NULL
         if(!is.null(self$endLine) && self$endLine > self$line){
           self$endLine <- self$endLine + 1
