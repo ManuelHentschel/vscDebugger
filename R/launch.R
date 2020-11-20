@@ -311,7 +311,7 @@ configurationDoneRequest <- function(response, args, request){
   )
 
   # enable custom help
-  if (session$supportsHelpViewer){
+  if(session$overwriteHelp){
     session$print_help_files_with_topic_0 <- getS3method('print', 'help_files_with_topic')
     suppressWarnings(.S3method(
       "print",
@@ -387,6 +387,7 @@ handleDebugConfig <- function(args){
   session$overwritePrint <- lget(args, 'overwritePrint', getOption('vsc.defaultOverwritePrint', TRUE))
   session$overwriteSource <- lget(args, 'overwriteSource', getOption('vsc.defaultOverwriteSource', TRUE))
   session$overwriteLoadAll <- lget(args, 'overwriteLoadAll', getOption('vsc.defaultOverwriteLoadAll', TRUE))
+  session$overwriteHelp <- lget(args, 'overwriteHelp', getOption('vsc.defaultOverwriteHelp', FALSE)) # set to FALSE since helpviewer isn't always available
   session$splitOverwrittenOutput <- lget(args, 'splitOverwrittenOutput', FALSE)
   session$debuggedPackages <- lget(args, 'debuggedPackages', character(0))
   session$loadPackages <- lget(args, 'loadPackages', character(0))
@@ -395,7 +396,6 @@ handleDebugConfig <- function(args){
   session$supportsWriteToStdinEvent <- lget(args, 'supportsWriteToStdinEvent', FALSE)
   session$supportsShowingPromptRequest <- lget(args, 'supportsShowingPromptRequest', FALSE)
   session$supportsStdoutReading <- lget(args, 'supportsStdoutReading', FALSE)
-  session$supportsHelpViewer <- lget(args, 'supportsHelpViewer', FALSE)
   session$useCustomSocket <- lget(args, 'useCustomSocket', FALSE)
   session$customPort <- lget(args, 'customPort', 0)
   session$customHost <- lget(args, 'customHost', 'localhost')

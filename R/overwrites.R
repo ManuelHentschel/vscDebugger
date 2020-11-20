@@ -180,9 +180,6 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
     )
     success <- sendCustomEvent('viewHelp', list(requestPath = requestPath))
   }
-  if(!success){
-    utils:::print.help_files_with_topic(h, ...)
-  }
   invisible(h)
 }
 

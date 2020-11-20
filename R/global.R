@@ -13,6 +13,7 @@ session <- local({
   overwriteStr <- TRUE
   overwriteSource <- TRUE
   overwriteLoadAll <- TRUE
+  overwriteHelp <- TRUE
   splitOverwrittenOutput <- FALSE
 
   supportsInvalidatedEvent <- FALSE
