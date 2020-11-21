@@ -12,6 +12,8 @@ session <- local({
   overwriteMessage <- TRUE
   overwriteStr <- TRUE
   overwriteSource <- TRUE
+  overwriteLoadAll <- TRUE
+  overwriteHelp <- TRUE
   splitOverwrittenOutput <- FALSE
 
   supportsInvalidatedEvent <- FALSE
@@ -23,6 +25,8 @@ session <- local({
   includePackageScopes <- FALSE
   setBreakpointsInPackages <- FALSE
   debuggedPackages <- character(0)
+  loadPackages <- character(0)
+  loadSilently <- FALSE
   assignToAns <- TRUE
 
   previousOptions <- list()
@@ -72,6 +76,7 @@ session <- local({
   supportsWriteToStdinEvent <- FALSE
   supportsShowingPromptRequest <- FALSE
   supportsStdoutReading <- FALSE
+  supportsHelpViewer <- FALSE
 
   # state:
   # (is managed by the debugger itself and might change frequently)
@@ -92,6 +97,8 @@ session <- local({
   rootNode <- NULL
   sourceBreakpointsList <- list()
   sources <- list()
+  print_help_files_with_topic_0 <- NULL
+  breakpointEnvironments <- list()
 
 
   # lock and return the environment:

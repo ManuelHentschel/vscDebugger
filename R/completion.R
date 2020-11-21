@@ -17,7 +17,7 @@ completionsRequest <- function(response, args, request) {
     # use our completion tools
     targets <- c(targets, .vsc.getCompletion(frameIdVsc, text, column, line))
   }
-  if(getOption('vsc.completionsFromUtils', TRUE)){
+  if(getOption('vsc.completionsFromUtils', FALSE)){
     # use the completion tools from package utils
     targets <- c(targets, getCompletionsFromUtils(text, column, line))
   }

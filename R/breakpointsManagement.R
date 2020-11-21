@@ -28,38 +28,26 @@ setBreakpointsRequest <- function(response, args, request){
 }
 
 
-setStoredBreakpoints <- function(){
+setStoredBreakpoints <- function(envs=NULL){
   session$sourceBreakpointsList <- lapply(
     session$sourceBreakpointsList,
-    setSourceBreakpoints
+    setSourceBreakpoints,
+    envs=envs
   )
 }
 
-setSourceBreakpoints <- function(sbps, oldSbps=NULL){
+setSourceBreakpoints <- function(sbps, oldSbps=NULL, envs=NULL){
   if(!session$noDebug){
-    # get options
-    includeAllPackages <- session$setBreakpointsInPackages
-    additionalEnvs <- lapply(session$debuggedPackages, getNamespace)
-    tmp <- lapply(session$debuggedPackages, function(pkg) {
-      as.environment(paste0('package:', pkg))
-    })
-    additionalEnvs <- c(additionalEnvs, tmp)
-    if(getOption('vsc.setBreakpointsInStack', TRUE)){
-      externalFrames <- getExternalFrames()
-      stackFrames <- lapply(externalFrames, sys.frame)
-    } else{
-      stackFrames <- list()
+    if(is.null(envs)){
+      envs <- getBreakpointEnvs()
     }
-
 
     # remove old bps
     if(!is.null(oldSbps)){
       setBreakpoints(
         oldSbps,
         unsetBreakpoints = TRUE,
-        includeAllPackages = includeAllPackages,
-        additionalEnvs = additionalEnvs,
-        stackFrames = stackFrames
+        envs = envs
       )
     }
 
@@ -67,13 +55,83 @@ setSourceBreakpoints <- function(sbps, oldSbps=NULL){
     sbps <- setBreakpoints(
       sbps,
       unsetBreakpoints = FALSE,
-      includeAllPackages = includeAllPackages,
-      additionalEnvs = additionalEnvs,
-      stackFrames = stackFrames
+      envs = envs
     )
   }
   return(sbps)
 }
+
+getBreakpointEnvs <- function(){
+  # always serach globalenv:
+  globalEnv <- list(globalenv())
+
+  # search (non default) packages, if specified:
+  packageEnvs <- list()
+  if(session$setBreakpointsInPackages){
+    env <- parent.env(globalenv())
+    # default packages (base, utils, ...) -> ignore:
+    defaultPackages <- getOption('defaultPackages')
+
+    # go down the environment hierarchy and check/add each environment:
+    while(!identical(env, emptyenv())){
+      # check if env is the package environment of a default package:
+      envName <- attr(env, 'name')
+      if(!is.null(envName)){
+        envName <- sub('package:', '', envName)
+        if(envName %in% defaultPackages){
+          break
+        }
+      }
+      # add package to list and continue to parent.env
+      packageEnvs <- c(packageEnvs, list(env))
+      env <- parent.env(env)
+    }
+  }
+
+  # explicitly add namespaces and exports of debugged packages:
+  pkgNamespaces <- list()
+  pkgExports <- list()
+  for(pkg in session$debuggedPackages){
+    try({
+      env <- getNamespace(pkg)
+      pkgNamespaces <- c(pkgNamespaces, list(env))
+    })
+    try({
+      env <- as.environment(paste0('package:', pkg))
+      pkgExports <- c(pkgExports, list(env))
+    })
+  }
+  packageEnvs <- c(packageEnvs, pkgNamespaces, pkgExports)
+
+  # add manually stored environments
+  bpEnvs <- list()
+  for(env in session$breakpointEnvironments){
+    # check if env is still attached?
+    bpEnvs <- c(bpEnvs, list(env))
+  }
+
+  # add environments from stack
+  if(getOption('vsc.setBreakpointsInStack', TRUE)){
+    externalFrames <- getExternalFrames()
+    stackFrames <- lapply(externalFrames, sys.frame)
+  } else{
+    stackFrames <- list()
+  }
+
+  envs <- unique(c(globalEnv, packageEnvs, stackFrames, bpEnvs))
+  return(envs)
+}
+
+
+storeBreakpointEnv <- function(...){
+  for(env in list(...)){
+    session$breakpointEnvironments <- c(
+      session$breakpointEnvironments,
+      list(env)
+    )
+  }
+}
+
 
 storeSourceBreakpoints <- function(sbps){
   for(i in rev(seq_along(session$sourceBreakpointsList))){

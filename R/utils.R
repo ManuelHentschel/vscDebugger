@@ -72,3 +72,19 @@ avoidLazyLoading <- function(package){
   }
   invisible(NULL)
 }
+
+
+# Copied from R 4.x.x
+# Otherwise not available in R 3.x.x
+.S3method <- function(generic, class, method) {
+  if (missing(method)) {
+    method <- paste(generic, class, sep = ".")
+  }
+  method <- match.fun(method)
+  registerS3method(generic, class, method, envir = parent.frame())
+  invisible(NULL)
+}
+
+isInstalled <- function(pkg){
+  pkg %in% rownames(installed.packages())
+}

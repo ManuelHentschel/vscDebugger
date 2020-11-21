@@ -170,44 +170,64 @@ launchRequest <- function(response, args, request){
 
   
   if(response$success && length(session$debuggedPackages)>0){
-    # load debugged packages
     session$state$changeBaseState('loadLib', startRunning=TRUE)
-    for(pkg in session$debuggedPackages){
+    # only load packages from installation that are not loaded from source
+    allPackages <- setdiff(session$debuggedPackages, session$loadPackages)
+    for(pkg in allPackages){
+      # try to load package
       ret <- try(
         library(package=pkg, character.only=TRUE)
       )
-      avoidLazyLoading(pkg)
+
+      # abort launch if package not found
       if(inherits(ret, 'try-error')){
         response$success <- FALSE
         response$message <- paste0("Package not found: ", pkg)
         break
       }
 
-      # overwrite print/cat in packages
+      # get() every item from package to avoid strange behaviour with lazyLoading
+      avoidLazyLoading(pkg)
+
+      # overwrite print, str, etc. in package
       ns <- getNamespace(pkg)
-      if(session$overwritePrint){
+      attachList <- makeAttachList(session, overwriteLoadAll = FALSE)
+      for(fncName in names(attachList)){
         try(
-          assignOverBinding('print', .vsc.print, ns, FALSE),
+          assignOverBinding(fncName, attachList[[fncName]], ns, FALSE),
           silent = TRUE
         )
       }
-      if(session$overwriteCat){
-        try(
-          assignOverBinding('cat', .vsc.cat, ns, FALSE),
-          silent = TRUE
-        )
-      }
-      if(session$overwriteStr){
-        try(
-          assignOverBinding('str', .vsc.str, ns, FALSE),
-          silent = TRUE
-        )
-      }
-      if(session$overwriteMessage){
-        try(
-          assignOverBinding('message', .vsc.message, ns, FALSE),
-          silent = TRUE
-        )
+    }
+    session$state$changeBaseState('starting', startPaused=TRUE)
+  }
+
+  if(response$success && length(session$loadPackages)>0){
+    session$state$changeBaseState('loadLib', startRunning=TRUE)
+    # pkgload is 
+    if(!requireNamespace('pkgload', quietly = TRUE)){
+      response$message <- paste(
+        'Could not load packages!',
+        'Please install the package "pkgload" or',
+        'remove "loadPackages" from the launch configuration!',
+        sep = '\n'
+      )
+      response$success <- FALSE
+    } else{
+      for(pkg in session$loadPackages){
+        ret <- try({
+          pkgInfo <- internalLoadAll(
+            path=pkg,
+            refreshBreakpoints = FALSE,
+            loadSilently = session$loadSilently
+          )
+          ns <- pkgInfo$env
+        })
+        if(inherits(ret, 'try-error')){
+          response$success <- FALSE
+          response$message <- paste0('Failed to load package: ', pkg)
+          break
+        }
       }
     }
     session$state$changeBaseState('starting', startPaused=TRUE)
@@ -226,6 +246,48 @@ launchRequest <- function(response, args, request){
   sendResponse(response)
 }
 
+makeAttachList <- function(args, ...){
+  # use ... to overwrite individual entries of args
+  overwriteArgs <- list(...)
+
+  getArg <- function(name){
+    if(name %in% names(overwriteArgs)){
+      isTRUE(overwriteArgs[[name]])
+    } else{
+      isTRUE(args[[name]])
+    }
+  }
+
+  # make list containing the requested functions
+  attachList <- list()
+
+  if (getArg("overwritePrint")) {
+    attachList$print <- .vsc.print
+  }
+
+  if (getArg("overwriteCat")) {
+    attachList$cat <- .vsc.cat
+  }
+
+  if (getArg("overwriteStr")) {
+    attachList$str <- .vsc.str
+  }
+
+  if (getArg("overwriteMessage")) {
+    attachList$message <- .vsc.message
+  }
+
+  if (getArg("overwriteSource")) {
+    attachList$source <- .vsc.debugSource
+  }
+
+  if (getArg("overwriteLoadAll")) {
+    attachList$load_all <- .vsc.load_all
+  }
+
+  return(attachList)
+}
+
 
 # Sent at the end of the launch sequence
 # Indicates that all configuration is done and that debugging can start
@@ -239,36 +301,15 @@ configurationDoneRequest <- function(response, args, request){
   capabilities$supportsSetVariable <- getOption('vsc.supportSetVariable', TRUE)
   sendCapabilitesEvent(capabilities)
 
-  # overwrite requested functions
-  attachList <- list()
-
-  if (session$overwritePrint) {
-    attachList$print <- .vsc.print
-  }
-
-  if (session$overwriteCat) {
-    attachList$cat <- .vsc.cat
-  }
-
-  if (session$overwriteStr) {
-    attachList$str <- .vsc.str
-  }
-
-  if (session$overwriteMessage) {
-    attachList$message <- .vsc.message
-  }
-
-  if (session$overwriteSource) {
-    attachList$source <- .vsc.debugSource
-  }
-
   # attach functions
+  attachList <- makeAttachList(session)
+
   if(length(attachList)>0){
     attach(attachList, name = session$rStrings$attachName, warn.conflicts = FALSE)
   }
 
   # set breakpoints
-  if(session$debugMode == 'function' || length(session$debuggedPackages)>0){
+  if(session$debugMode == 'function' || length(session$debuggedPackages)>0 || length(session$loadPackages)>0){
     setStoredBreakpoints()
   }
 
@@ -278,6 +319,19 @@ configurationDoneRequest <- function(response, args, request){
     sessionFinalizer,
     onexit = TRUE
   )
+
+  # enable custom help
+  if(session$overwriteHelp){
+    session$print_help_files_with_topic_0 <- getS3method('print', 'help_files_with_topic')
+    suppressWarnings(.S3method(
+      "print",
+      "help_files_with_topic",
+      .vsc.print.help_files_with_topic
+    ))
+  }
+
+  # disable just-in-time compilation (messes with source info etc.)
+  compiler::enableJIT(getOption('vsc.enableJIT', 0))
 
   # send response before launching main/debugSource!
   ret <- sendResponse(response)
@@ -342,8 +396,12 @@ handleDebugConfig <- function(args){
   session$overwriteStr <- lget(args, 'overwriteStr', getOption('vsc.defaultOverwriteStr', TRUE))
   session$overwritePrint <- lget(args, 'overwritePrint', getOption('vsc.defaultOverwritePrint', TRUE))
   session$overwriteSource <- lget(args, 'overwriteSource', getOption('vsc.defaultOverwriteSource', TRUE))
+  session$overwriteLoadAll <- lget(args, 'overwriteLoadAll', getOption('vsc.defaultOverwriteLoadAll', TRUE))
+  session$overwriteHelp <- lget(args, 'overwriteHelp', getOption('vsc.defaultOverwriteHelp', FALSE)) # set to FALSE since helpviewer isn't always available
   session$splitOverwrittenOutput <- lget(args, 'splitOverwrittenOutput', FALSE)
   session$debuggedPackages <- lget(args, 'debuggedPackages', character(0))
+  session$loadPackages <- lget(args, 'loadPackages', character(0))
+  session$loadSilently <- lget(args, 'loadSilently', FALSE)
   session$noDebug <- lget(args, 'noDebug', FALSE)
   session$supportsWriteToStdinEvent <- lget(args, 'supportsWriteToStdinEvent', FALSE)
   session$supportsShowingPromptRequest <- lget(args, 'supportsShowingPromptRequest', FALSE)

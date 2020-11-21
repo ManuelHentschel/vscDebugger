@@ -161,3 +161,82 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 
   sendOutputEvent(category, output = output, line=line, source=source)
 }
+
+
+#' @export
+.vsc.print.help_files_with_topic <- function(h, ...) {
+  success <- FALSE
+  if (length(h) >= 1 && is.character(h)) {
+    file <- h[1]
+    path <- dirname(file)
+    dirpath <- dirname(path)
+    pkgname <- basename(dirpath)
+    requestPath <- paste0(
+      "/library/",
+      pkgname,
+      "/html/",
+      basename(file),
+      ".html"
+    )
+    success <- sendCustomEvent('viewHelp', list(requestPath = requestPath))
+  }
+  invisible(h)
+}
+
+
+#' Refresh Breakpoints
+#' 
+#' Refresh breakpoints known to the debugger
+#' Can be used if breakpoints were invalidated by e.g. `load_all()` or `source()`
+#' @export
+.vsc.refreshBreakpoints <- function(envs=NULL){
+  setStoredBreakpoints(envs)
+}
+
+
+#' Modified version of `pkgload::load_all()`
+#' @export
+.vsc.load_all <- function(...){
+  internalLoadAll(..., refreshBreakpoints = TRUE)
+}
+
+internalLoadAll <- function(..., refreshBreakpoints=FALSE, loadSilently=FALSE){
+  if(!requireNamespace('pkgload', quietly = TRUE)){
+    stop('Package pkgload must be installed to use load_all!')
+  }
+
+  # normal load_all
+  if(loadSilently){
+    suppressMessages(ret <- pkgload::load_all(...))
+  } else{
+    ret <- pkgload::load_all(...)
+  }
+  ns <- ret$env
+
+  # attach overwritten print/cat etc.
+  attachList <- makeAttachList(list(
+    overwritePrint = session$overwritePrint,
+    overwriteCat = session$overwriteCat,
+    overwriteMessage = session$overwriteMessage
+  ))
+  if(length(attachList)>0){
+    attachEnv <- as.environment(attachList)
+    parent.env(attachEnv) <- parent.env(ns)
+    parent.env(ns) <- attachEnv
+  }
+
+  # store pkgname
+  s <- format(ns)
+  pkgName <- sub('^<environment: (?:package|namespace):(.*)>$', '\\1', s)
+  session$debuggedPackages <- unique(c(session$debuggedPackages, pkgName))
+
+  # refresh breakpoints (used if called curing session, not launch)
+  if(refreshBreakpoints){
+    exports <- as.environment(paste0('package:', pkgName))
+    .vsc.refreshBreakpoints(list(ns, exports))
+  }
+
+  # return output from normal load_all
+  invisible(ret)
+}
+
