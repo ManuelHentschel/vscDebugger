@@ -4,17 +4,18 @@
 registerEntryFrame <- function(skipCalls=0, entryFrames = NULL){
   if(is.null(entryFrames)){
     parentFrame <- sys.nframe()-1
-    session$entryFrames <- c(session$entryFrames, parentFrame - skipCalls)
+    ef <- c(session$entryFrames, parentFrame - skipCalls)
   } else{
-    session$entryFrames <- entryFrames
+    ef <- entryFrames
   }
+  session$entryFrames <- unique(sort(ef))
   invisible(session$entryFrames)
 }
 
 # Is used to avoid showing internal frames in the stack tree
-unregisterEntryFrame <- function(all=FALSE){
+unregisterEntryFrame <- function(skipCalls=0, all=FALSE){
   ret <- session$entryFrames
-  n <- sys.nframe() - 1
+  n <- sys.nframe() - 1 - skipCalls
   unregisterFrame(n, all)
   invisible(ret)
 }
@@ -22,16 +23,17 @@ unregisterEntryFrame <- function(all=FALSE){
 registerLaunchFrame <- function(skipCalls=0, launchFrames = NULL){
   if(is.null(launchFrames)){
     parentFrame <- sys.nframe()-1
-    session$launchFrames <- c(session$launchFrames, parentFrame + skipCalls)
+    lf <- c(session$launchFrames, parentFrame + skipCalls)
   } else{
-    session$launchFrames <- launchFrames
+    lf <- launchFrames
   }
+  session$launchFrames <- unique(sort(lf))
   invisible(session$launchFrames)
 }
 
-unregisterLaunchFrame <- function(all=FALSE){
+unregisterLaunchFrame <- function(skipCalls=0, all=FALSE){
   ret <- session$launchFrames
-  n <- sys.nframe() - 1
+  n <- sys.nframe() - 1 - skipCalls
   unregisterFrame(n, all)
   invisible(ret)
 }
@@ -46,8 +48,8 @@ unregisterFrame <- function(upto=sys.nframe()-1, all=FALSE){
     lf <- lf[lf < upto]
     ef <- ef[ef < upto]
   }
-  session$launchFrames <- lf
-  session$entryFrames <- ef
+  session$launchFrames <- unique(sort(lf))
+  session$entryFrames <- unique(sort(ef))
 }
 
 getSkipFromBottom <- function(){

@@ -121,6 +121,7 @@ initializeRequest <- function(response, args, request){
       registerEntryFrame()
       sendContinuedEvent()
       sendStoppedEvent('step')
+      unregisterEntryFrame()
       TRUE
     })
   }

@@ -15,25 +15,14 @@
     port = port,
     procfun = tmpHandleDAP
   )
-
-  # s <- httpuv::startServer(host, port, list(
-  #   onWSOpen = function(ws) {
-  #     cat('Websocket has connection.')
-  #     session$ws <- ws
-  #     ws$onMessage(function(binary, message) {
-  #       tmpHandleDAP(message)
-  #     })
-  #   },
-  #   onWSMessage = function(msg) {
-  #     print(msg)
-  #   }
-  # ))
 }
 
 
 tmpHandleDAP <- function(s, socket, ...){
 
-  registerEntryFrame()
+  SKIPPED_FRAMES <- 6
+
+  registerEntryFrame(SKIPPED_FRAMES)
 
   session$svName <- socket
   s <- paste0(session$restOfWs, s)
@@ -61,6 +50,6 @@ tmpHandleDAP <- function(s, socket, ...){
 
     .vsc.handleJson(json)
   }
-  unregisterEntryFrame()
+  unregisterEntryFrame(SKIPPED_FRAMES)
   return('')
 }
