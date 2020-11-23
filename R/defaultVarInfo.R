@@ -410,6 +410,9 @@ getDefaultVarInfos <- function() {
         if(is.numeric(v) || is.logical(v) || is.character(v)){
           names(v) <- NULL
         }
+        if(is.integer(v) && getOption('vsc.showIntegerAsNumber', TRUE)){
+          v <- as.numeric(v)
+        }
         paste(deparse(v), collapse = '\n', sep = ';')
       },
       childVars = list(),
