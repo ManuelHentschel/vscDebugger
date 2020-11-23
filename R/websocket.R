@@ -9,6 +9,14 @@
   port = session$dapPort,
   host = '127.0.0.1'
 ){
+  supportsIncompleteLines <- tryCatch(
+    svSocket::supportsIncompleteLines(),
+    error = function(...) FALSE
+  )
+  if(!supportsIncompleteLines){
+    informAboutSvSocket()
+    return(FALSE)
+  }
   cat('Starting server on port: ', port, '\n', sep='')
   session$dapPort <- port
   session$socketServer <- svSocket::startSocketServer(
@@ -52,4 +60,26 @@ tmpHandleDAP <- function(s, socket, ...){
   }
   unregisterEntryFrame(SKIPPED_FRAMES)
   return('')
+}
+
+
+
+informAboutSvSocket <- function(){
+  url <- 'https://github.com/ManuelHentschel/svSocket/tree/forVscDebugger'
+  installCommand <- paste0(
+    '\tremotes::install_github("',
+    url,
+    '")'
+  )
+  s <- paste(
+    "\nThis functionality is experimental!",
+    "It depends on a modified version of the R package svSocket.",
+    "The modified version can be downloaded from GitHub:\n",
+    installCommand,
+    "\nThis package modification is only meant as a temporary workaround and will be replaced.\n",
+    sep = '\n'
+  )
+  message(s)
+  stop('To use this function install the modified version of svSocket!')
+  invisible(NULL)
 }

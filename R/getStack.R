@@ -22,9 +22,11 @@ stackTraceRequest <- function(response, args, request){
     isError = FALSE,
     forceDummyStack = FALSE,
     dummyFile = '',
-    refresh = (startFrame == 0)
+    refresh = session$clearStackTree # (startFrame == 0)
   )
   stackNode <- session$rootNode$getStackNode(stackArgs)
+
+  session$clearStackTree <- FALSE
 
   if(levels>=0){
     frameIds <- startFrame:(startFrame+levels)
@@ -38,7 +40,7 @@ stackTraceRequest <- function(response, args, request){
   # return:
   response[['body']] <- list(
     stackFrames = stackFrames,
-    totalFrames = length(frameIdsR)
+    totalFrames = max(length(frameIdsR), 1)
   )
   sendResponse(response)
 }

@@ -91,13 +91,14 @@ export declare module StackTree {
     public getParent(): Node;
     public getAncestors(includeStartingNode?: boolean): Node[];
     public getChildren(args?: GetChildrenArgs): Node[];
+    public clearChildren(): boolean;
     public getContent(args?: GetContentArgs): Content;
     public initialize(args?: InitializeArgs, parent?: Node): void;
     public findChildNode(args?: FindChildNodeArgs): Node|null;
     public getNewVarRef(): number;
 
     protected parent: Node;
-    protected children: Node[];
+    protected children?: Node[];
     protected content?: Content;
     protected newVarRef: number;
     protected childrenVarRefs: number[];
@@ -107,7 +108,10 @@ export declare module StackTree {
 
   class RootNode extends MetaNode {
     public getStackNode(args?: GetChildrenArgs): StackNode;
+    public clearStackNode(): boolean;
     public getEvalRootNode(args?: GetChildrenArgs): EvalRootNode;
+    public clearEvalRootNode(): boolean;
+    public clearVariables(): boolean;
   }
 
   class EvalRootNode extends MetaNode {
@@ -128,9 +132,10 @@ export declare module StackTree {
     public initialize(args: StackArgs): void;
     public getChildren(args: GetFramesArgs): FrameNode[];
     public getContent(args: GetStackArgs): Stack;
+    public clearVariables(): boolean;
 
     protected parent: RootNode;
-    protected children: FrameNode[];
+    protected children?: FrameNode[];
   }
 
   class FrameNode extends Node {
@@ -158,7 +163,7 @@ export declare module StackTree {
     public getContent(args: GetFrameArgs): Frame;
 
     protected parent: StackNode;
-    protected children: ScopeNode[];
+    protected children?: ScopeNode[];
   }
 
   class VariableNode extends Node {
@@ -185,7 +190,7 @@ export declare module StackTree {
     public getContent(args: GetVariableArgs): Variable | Scope;
 
     protected parent: ScopeNode | VariableNode | EvalRootNode;
-    protected children: [];
+    protected children?: VariableNode[];
 
     protected attrVars: {
       filter: 'named';

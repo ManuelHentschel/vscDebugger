@@ -29,7 +29,7 @@ export interface Session {
 
   supportsInvalidatedEvent: boolean;
   noDebug: boolean; 
-  debugMode: ("function" | "file" | "workspace" | "attached" | "")
+  debugMode: ("function" | "file" | "workspace" | "attached" | "background" | "")
   workingDirectory: string;
   file: string;
   mainFunction: string;
@@ -109,6 +109,7 @@ export interface Session {
   launchFrames: number[];
   breakpointId: number;
   stopListeningOnPort: boolean;
+  clearStackTree: boolean;
   restOfLine: string;
 
   state: State;

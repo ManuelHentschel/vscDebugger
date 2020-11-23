@@ -80,6 +80,13 @@ Node <- R6::R6Class(
     # Should return all children if no arguments are supplied
     # Should not cause extra computation if args$lazy==TRUE
     getChildren = function(args=list()) private$children,
+    # Delete childNodes of a node
+    # Should return a boolean that is TRUE iff there were children to be cleared
+    clearChildren = function(){
+      ret <- !is.null(private$children)
+      private$children <- NULL
+      return(ret)
+    },
     # Get the content of a node
     # Meant to be overloaded
     getContent = function(args=list()) private$content,
@@ -173,16 +180,33 @@ RootNode <- R6::R6Class(
   classname = "RootNode",
   public = list(
     getStackNode = function(args=list()) {
-      if(lget(args, 'refresh', FALSE)){
+      if(lget(args, 'refresh', FALSE) || is.null(private$children$stackNode)){
         private$children$stackNode <- StackNode$new(args, self)
       }
       return(private$children$stackNode)
+    },
+    clearStackNode = function(){
+      ret <- !is.null(private$children$stackNode)
+      private$children$stackNode <- NULL
+      return(ret)
+    },
+    clearVariables = function(){
+      if(!is.null(private$children$stackNode)){
+        private$children$stackNode$clearVariables()
+      } else{
+        FALSE
+      }
     },
     getEvalRootNode = function(args=list()) {
       if(lget(args, 'refresh', FALSE) || is.null(private$children$evalRootNode)){
         private$children$evalRootNode <- EvalRootNode$new(args, self)
       }
       return(private$children$evalRootNode)
+    },
+    clearEvalRootNode = function() {
+      ret <- !is.null(private$children$evalRootNode)
+      private$children$evalRootNode <- NULL
+      return(ret)
     },
 
     initialize = function(args=list(), parent=NULL){
@@ -282,6 +306,18 @@ StackNode <- R6::R6Class(
         ind <- seq_along(private$children)
       }
       return(private$children[ind])
+    },
+
+    clearVariables = function(){
+      ret <- FALSE
+      for(frame in private$children){
+        for(scope in frame$children){
+          if(!is.null(scope)){
+            ret <- scope$clearChildren() || ret
+          }
+        }
+      }
+      return(ret)
     },
 
     getContent = function(args=list()) list(

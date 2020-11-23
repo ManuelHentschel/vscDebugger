@@ -86,6 +86,7 @@ session <- local({
   launchFrames <- c()
   breakpointId <- 1
   stopListeningOnPort <- FALSE
+  clearStackTree <- FALSE
   restOfLine <- ''
 
   state <- NULL
