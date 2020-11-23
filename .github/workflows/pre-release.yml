@@ -1,4 +1,4 @@
-name: Release
+name: Pre-Release
 
 # runs when a tag v* is pushed
 # creates a release draft with the binaries
@@ -55,7 +55,7 @@ jobs:
         path: ${{ steps.filenames.outputs.file_out }}
 
   release:
-    name: Release
+    name: Pre-Release
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
