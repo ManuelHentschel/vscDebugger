@@ -7,7 +7,7 @@ evaluateRequest <- function(response, args, request){
 
   # do not evaluate clipboard context
   # -> uses the already known string representation from the stack tree
-  if(context == 'clipboard'){
+  if(context == 'clipboard' || expr == ''){
     response$success <- FALSE
     sendResponse(response)
     return(invisible(NULL))
