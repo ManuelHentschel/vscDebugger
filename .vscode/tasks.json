@@ -4,22 +4,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Test package",
-            "type": "shell",
-            "command": "R",
-            "args": [
-                "--file=tests/test.R",
-                "--silent",
-                "--no-save",
-                "--no-restore"
-            ],
-            "problemMatcher": [],
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            }
-        },
-        {
             "label": "Build and install package for testing (QUICK)",
             "type": "shell",
             "command": "Rscript build.R --args quick",
@@ -28,6 +12,12 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Build and install package for testing (WHILE LOADED)",
+            "type": "shell",
+            "command": "R CMD REMOVE vscDebugger & R CMD INSTALL . --no-libs --no-lock --no-exec --no-multiarch --no-staged-install --no-html --no-byte-compile",
+            "problemMatcher": []
         },
         {
             "label": "Build and install package for testing (SLOW)",
