@@ -1,0 +1,79 @@
+name: Pre-Release
+
+# runs when a tag v* is pushed
+# creates a release draft with the binaries
+
+on:
+  push:
+    branches: ["master"]
+
+jobs:
+  build: # same as main.yml
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true # abort pre-release if one build fails
+      matrix:
+        include:
+          - os: windows-latest
+            extension_out: .*\.zip
+            r_cmd: Rcmd
+          - os: ubuntu-latest
+            extension_out: .*\.tar\.gz
+            r_cmd: R CMD
+          - os: macos-latest
+            extension_out: .*\.tgz
+            r_cmd: R CMD
+    runs-on: ${{ matrix.os }}
+    env:
+      EXTENSION_IN: "*.tar.gz" # wildcards as used by R CMD
+      EXTENSION_OUT: ${{ matrix.extension_out }} # wildcards as used by grep
+      RCMD: ${{ matrix.r_cmd }}
+      PKG_NAME: vscDebugger
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v1
+    - name: Setup R
+      uses: r-lib/actions/setup-r@master
+    - name: Install Dependencies
+      run: |
+        Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
+        Rscript -e "remotes::install_deps(dependencies = TRUE)"
+    - name: Build Package
+      run: $RCMD build .
+    - name: Compile Code
+      run: $RCMD INSTALL $PKG_NAME$EXTENSION_IN --build
+    - name: Identify output file # can be retrieved as steps.filenames.outputs.file_out
+      id: filenames
+      run: echo "::set-output name=file_out::$(ls | grep $PKG_NAME$EXTENSION_OUT | head -1)"
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ steps.filenames.outputs.file_out }}
+        path: ${{ steps.filenames.outputs.file_out }}
+
+  release:
+    name: Pre-Release
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: "artifacts/"
+      - name: Get version from tag
+        id: get_version
+        run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\/v/}
+      - name: Create release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Development Build"
+          automatic_release_tag: "latest"
+          files: "artifacts/*/*"
+          prerelease: true
+          draft: false # add .vsix and change description before release
