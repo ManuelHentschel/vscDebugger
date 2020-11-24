@@ -1,6 +1,6 @@
 Package: vscDebugger
 Title: Support for Visual Studio Code Debugger
-Version: 0.4.2
+Version: 0.4.3
 Authors@R: 
     person(given = "Manuel",
            family = "Hentschel",
