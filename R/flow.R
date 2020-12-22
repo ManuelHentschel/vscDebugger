@@ -242,6 +242,13 @@ sessionFinalizer <- function(...){
         session$print_help_files_with_topic_0
       )))
     }
+    if(session$supportsHelpViewer && !is.null(session$print_hsearch_0)){
+      try(suppressWarnings(.S3method(
+        "print",
+        "hsearch",
+        session$print_hsearch_0
+      )))
+    }
     try(detach(session$rStrings$attachName, character.only = TRUE), silent = TRUE)
     try(sendExitedEvent(), silent = TRUE)
     try(sendTerminatedEvent(), silent = TRUE)

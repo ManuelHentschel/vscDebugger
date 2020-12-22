@@ -318,6 +318,12 @@ configurationDoneRequest <- function(response, args, request){
       "help_files_with_topic",
       .vsc.print.help_files_with_topic
     ))
+    session$print_hsearch_0 <- getS3method('print', 'hsearch')
+    suppressWarnings(.S3method(
+      "print",
+      "hsearch",
+      .vsc.print.hsearch
+    ))
   }
 
   # disable just-in-time compilation (messes with source info etc.)

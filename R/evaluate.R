@@ -53,7 +53,10 @@ evaluateRequest <- function(response, args, request){
   if(
     valueAndVisible$visible
     && context != 'watch'
-    && identical(class(valueAndVisible$value), 'help_files_with_topic')
+    && (
+      identical(class(valueAndVisible$value), 'help_files_with_topic')
+      || identical(class(valueAndVisible$value), 'hsearch')
+    )
   ){
     valueAndVisible$visible <- FALSE
     base::print(valueAndVisible$value)

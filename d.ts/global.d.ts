@@ -120,6 +120,7 @@ export interface Session {
   sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
   sources: InternalSource[];
   print_help_files_with_topic_0: RFunction | null;
+  print_hsearch_0: RFunction | null;
   breakpointEnvironments: REnvironment[];
 }
 

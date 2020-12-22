@@ -165,8 +165,8 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 
 #' @export
 .vsc.print.help_files_with_topic <- function(h, ...) {
-  success <- FALSE
-  if (length(h) >= 1 && is.character(h)) {
+  viewer <- getOption("vsc.helpPanel", "Two")
+  if (!identical(FALSE, viewer) && length(h) >= 1 && is.character(h)) {
     file <- h[1]
     path <- dirname(file)
     dirpath <- dirname(path)
@@ -178,11 +178,53 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
       basename(file),
       ".html"
     )
-    success <- sendCustomEvent('viewHelp', list(requestPath = requestPath))
+    success <- sendCustomEvent('viewHelp', list(requestPath = requestPath, viewer = viewer))
+  } else{
+    utils:::print.help_files_with_topic(h, ...)
   }
   invisible(h)
 }
 
+
+#' @export
+.vsc.print.hsearch <- function(x, ...){
+  viewer <- getOption("vsc.helpPanel", "Two")
+  if (!identical(FALSE, viewer) && length(x) >= 1) {
+    requestPath <- paste0(
+      "/doc/html/Search?pattern=",
+      tools:::escapeAmpersand(x$pattern),
+      paste0("&fields.", x$fields, "=1",
+        collapse = ""
+      ),
+      if (!is.null(x$agrep)) paste0("&agrep=", x$agrep),
+      if (!x$ignore.case) "&ignore.case=0",
+      if (!identical(
+        x$types,
+        getOption("help.search.types")
+      )) {
+        paste0("&types.", x$types, "=1",
+          collapse = ""
+        )
+      },
+      if (!is.null(x$package)) {
+        paste0(
+          "&package=",
+          paste(x$package, collapse = ";")
+        )
+      },
+      if (!identical(x$lib.loc, .libPaths())) {
+        paste0(
+          "&lib.loc=",
+          paste(x$lib.loc, collapse = ";")
+        )
+      }
+    )
+    success <- sendCustomEvent('viewHelp', list(requestPath = requestPath, viewer = viewer))
+  } else{
+    utils:::print.hsearch(x, ...)
+  }
+  invisible(x)
+}
 
 #' Refresh Breakpoints
 #' 
