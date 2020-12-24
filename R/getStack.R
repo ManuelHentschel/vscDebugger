@@ -38,7 +38,7 @@ stackTraceRequest <- function(response, args, request){
   # return:
   response[['body']] <- list(
     stackFrames = stackFrames,
-    totalFrames = length(frameIdsR)
+    totalFrames = max(length(frameIdsR), 1)
   )
   sendResponse(response)
 }

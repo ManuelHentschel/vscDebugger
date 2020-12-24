@@ -78,6 +78,7 @@ getDefaultVarInfos <- function() {
       name = '.Random.seed',
       doesApply = function(v) !is.null(v) && identical(v, get0(".Random.seed", globalenv())),
       childVars = list(),
+      evaluateName = '.Random.seed',
       nChildVars = 0
     ),
     # R6 (TODO: display public/private properties etc.)

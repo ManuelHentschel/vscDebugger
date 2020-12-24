@@ -1,3 +1,21 @@
+
+
+
+
+#' vscDebugger
+#' 
+#' Implementation of the Debug Adapter Protocol for R
+#' 
+#' @docType package
+#' @name vscDebugger-package
+#' 
+#' @aliases vscDebugger2
+#' 
+NULL
+
+
+
+
 # create environment for global data used by package functions
 session <- local({
   # settings:
@@ -94,6 +112,7 @@ session <- local({
   sourceBreakpointsList <- list()
   sources <- list()
   print_help_files_with_topic_0 <- NULL
+  print_hsearch_0 <- NULL
   breakpointEnvironments <- list()
 
 
