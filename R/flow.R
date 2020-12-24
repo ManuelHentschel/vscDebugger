@@ -31,6 +31,7 @@
     }
     body <- list(message=message)
     sendWriteToStdinEvent('', when='browserPrompt', count=0)
+    session$clearStackTree <- TRUE
     sendStoppedEvent('exception', description = 'Stopped on Exception', text = message)
     # unregisterEntryFrame()
     browser() # must be last command!
@@ -131,6 +132,9 @@ continueRequest <- function(response, args, request){
     logPrint(session$state$export())
     response$success <- FALSE
   }
+  if(response$success){
+    session$clearStackTree <- TRUE
+  }
   sendResponse(response)
 }
 
@@ -140,6 +144,7 @@ genericStepRequest <- function(response, textToStdin){
     response$success <- success
     session$stopListeningOnPort <- success
     if(success){
+      session$clearStackTree <- TRUE
       session$state$startRunning()
     }
   } else{
@@ -207,6 +212,7 @@ terminateRequest <- function(response, args, request){
     sendContinuedEvent()
     sendStoppedEvent('step')
   } else{
+    session$clearStackTree <- TRUE
     sendResponse(response)
     sendTerminatedEvent()
   }
@@ -215,11 +221,13 @@ terminateRequest <- function(response, args, request){
 
 reverseContinueRequest <- function(response, args, request){
   if(isCalledFromBrowser()){
-    success <- sendWriteToStdinForFlowControl('Q')
-    session$stopListeningOnPort <- success
-    response$success <- success
+    response$success <- sendWriteToStdinForFlowControl('Q')
   } else{
     response$success <- FALSE
+  }
+  if(response$success){
+    session$stopListeningOnPort <- TRUE
+    session$clearStackTree <- TRUE
   }
   sendResponse(response)
 }

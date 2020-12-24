@@ -79,6 +79,10 @@ session <- local({
   customHost <- 'localhost'
   customSocketConnection <- NULL
 
+  socketServer <- FALSE
+  svName <- ''
+  restOfWs <- ''
+
   threadId <- 1
 
   rStrings <- list(
@@ -100,6 +104,7 @@ session <- local({
   launchFrames <- c()
   breakpointId <- 1
   stopListeningOnPort <- FALSE
+  clearStackTree <- FALSE
   restOfLine <- ''
 
   state <- NULL
