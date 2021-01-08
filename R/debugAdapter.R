@@ -9,7 +9,7 @@
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
   commandKnown <- TRUE
-  ret <- try({
+  ret <- ({
     if(command == 'stackTrace'){
       stackTraceRequest(response, args, request)
     } else if(command == 'scopes'){
