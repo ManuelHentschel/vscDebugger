@@ -1,7 +1,7 @@
 name: Release
 
 # runs when a tag v* is pushed
-# creates a release draft with the binaries
+# creates a release with the binaries
 
 on:
   push:
@@ -74,4 +74,3 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           files: "artifacts/*/*"
           prerelease: false
-          draft: true # add .vsix and change description before release
