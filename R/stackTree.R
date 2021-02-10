@@ -376,8 +376,8 @@ FrameNode <- R6::R6Class(
         self$name <- "Global Workspace"
         self$presentationHint <- "label"
         self$source <- NULL
-        self$line <- 0
-        self$column <- 0
+        self$line <- NULL
+        self$column <- NULL
         self$endLine <- NULL
         self$endColumn <- NULL
       } else {
@@ -385,8 +385,8 @@ FrameNode <- R6::R6Class(
         self$firstenv <- sys.frame(self$frameIdR)
         self$name <- getFrameName(self$call)
         self$presentationHint <- "normal"
-        self$line <- 0 # to be overwritten by line from source
-        self$column <- 0 # to be overwritten by column from source
+        self$line <- NULL # to be overwritten by line from source
+        self$column <- NULL # to be overwritten by column from source
         source <- getSource(sys.call(self$frameIdR + 1), self$frameIdR + 1)
         # source <- getSource(sys.call(self$frameIdR), self$frameIdR)
         if(!is.null(source)){
@@ -399,7 +399,7 @@ FrameNode <- R6::R6Class(
       }
       self$id <- self$frameIdVsc
 
-      if(!getOption('vsc.includeFrameColumn', FALSE)){
+      if(!getOption('vsc.includeFrameColumn', FALSE) && !is.null(self$source)){
         self$column <- 1
         self$endColumn <- NULL
         if(!is.null(self$endLine) && self$endLine > self$line){
