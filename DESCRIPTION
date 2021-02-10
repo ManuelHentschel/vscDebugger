@@ -9,7 +9,7 @@ Authors@R:
            )
 Description: Provides support for a visual studio code debugger
 License: MIT + file LICENSE
-URL: https://github.com/ManuelHentschel/vscDebugger
+URL: https://ManuelHentschel.github.io/vscDebugger/, https://github.com/ManuelHentschel/vscDebugger
 BugReports: https://github.com/ManuelHentschel/vscDebugger/issues
 Encoding: UTF-8
 LazyData: true
