@@ -5,3 +5,6 @@
 ^\.vscode$
 ^build\.bat$
 ^lib$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
