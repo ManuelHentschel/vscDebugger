@@ -54,26 +54,31 @@ jobs:
         name: ${{ steps.filenames.outputs.file_out }}
         path: ${{ steps.filenames.outputs.file_out }}
 
-  release:
+  pre-release:
     name: Pre-Release
-    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
 
     steps:
+      - name: Update tag
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
           path: "artifacts/"
-      - name: Get version from tag
-        id: get_version
-        run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\/v/}
-      - name: Create release
-        uses: marvinpinto/action-automatic-releases@latest
+      - name: Upload artifacts
+        uses: meeDamian/github-release@2.0
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Development Build"
-          automatic_release_tag: "latest"
-          files: "artifacts/*/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          commitish: master
+          name: Development Build
+          body: Contains the binaries from the latest push to master.
           prerelease: true
-          draft: false # add .vsix and change description before release
+          files: "artifacts/*/*"
+          gzip: false
+          allow_override: true
