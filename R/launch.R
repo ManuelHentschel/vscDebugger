@@ -7,7 +7,7 @@ initializeRequest <- function(response, args, request){
   body$supportsRestartRequest <- FALSE
 
   # support delayed stackTraceResponse
-  body$supportsDelayedStackTraceLoading <- TRUE
+  body$supportsDelayedStackTraceLoading <- FALSE
 
   # support terminate: can be used to exit function without terminating R session
   # only works ONCE (!)

@@ -171,6 +171,9 @@ encloseBody <- function(body) {
 }
 
 prependDummySrcref <- function(srcref) {
+  if(length(srcref) == 0){
+    return(NULL)
+  }
   # used to make a new srcref that contains a dummy for the call to '{'
   dummySrcref <- c(1, 1, 1, 1, 1, 1, 1, 1)
   attributes(dummySrcref) <- attributes(srcref[[1]])
