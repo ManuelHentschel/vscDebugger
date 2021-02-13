@@ -29,7 +29,7 @@ stackTraceRequest <- function(response, args, request){
   session$clearStackTree <- FALSE
 
   if(levels>=0){
-    frameIds <- startFrame:(startFrame+levels)
+    frameIds <- startFrame:(startFrame+levels-1)
     frameNodes <- stackNode$getChildren(list(frameIdsVsc = frameIds))
   } else{
     frameNodes <- stackNode$getChildren()
