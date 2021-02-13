@@ -5,17 +5,22 @@ Authors@R:
     person(given = "Manuel",
            family = "Hentschel",
            role = c("aut", "cre"),
-           email = "Manuel.Hentschel@outlook.com"
-           )
-Description: Provides support for a visual studio code debugger
+           email = "Manuel.Hentschel@outlook.com")
+Description: Provides support for a visual studio code
+    debugger
 License: MIT + file LICENSE
-URL: https://github.com/ManuelHentschel/vscDebugger
-BugReports: https://github.com/ManuelHentschel/vscDebugger/issues
+URL: https://ManuelHentschel.github.io/vscDebugger/,
+    https://github.com/ManuelHentschel/vscDebugger
+BugReports: 
+    https://github.com/ManuelHentschel/vscDebugger/issues
+Imports:
+    jsonlite,
+    R6,
+    svSocket
+Suggests: 
+    pkgload
 Encoding: UTF-8
 LazyData: true
+NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
-Imports:
-    jsonlite, R6, svSocket
-Suggests: pkgload
-NeedsCompilation: yes
