@@ -1,14 +1,26 @@
 Package: vscDebugger
 Title: Support for Visual Studio Code Debugger
 Version: 0.4.5
-Authors@R: 
-    person(given = "Manuel",
-           family = "Hentschel",
-           role = c("aut", "cre"),
-           email = "Manuel.Hentschel@outlook.com")
+Authors@R: c(
+    person(
+        given = "Manuel",
+        family = "Hentschel",
+        role = c("aut", "cre"),
+        email = "Manuel.Hentschel@outlook.com"
+    ),
+    person(
+        given = "Kun",
+        family = "Ren",
+        role = "ctb"
+    ),
+    person(
+        given = "Denes",
+        family = "Toth",
+        role = "ctb"
+    ))
 Description: Provides support for a visual studio code
     debugger
-License: MIT + file LICENSE
+License: MIT
 URL: https://ManuelHentschel.github.io/vscDebugger/,
     https://github.com/ManuelHentschel/vscDebugger
 BugReports: 
