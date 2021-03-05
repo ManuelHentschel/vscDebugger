@@ -1,13 +1,35 @@
 
 
-#' Modified version of `base::cat()` for vsc
-#'
-#' Captures the output of `base::cat(...)` and sends it to vsc together with information about the sourcefile and line
+
+
+#' Modified Output Functions
+#' 
+#' @description 
+#' Modified versions of core R functions that add debugger specific functionality.
+#' With the default debug configuration, the normal R functions are overwritten with these
+#' (using [`attach()`]).
+#' 
+#' The modified functions are designed to be mostly interchangeable with their counterparts.
+#' If the overwrites are not required, they can be toggled using the launch config entries
+#' `overwriteCat`, `overwritePrint`, `overwriteStr`, and `overwriteMessage`.
+#' 
+#' 
+#' @name .vsc.cat
+#' @rdname outputOverwrites
+#' 
+#' @param ... Further arguments that are passed to the original function
+#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be useful e.g. inside a log function.
+#' @param showSource Whether to show the calling source file and line
+#' 
+#' @return These functions return the same value as the overwritten functions themselves.
+#' 
+#' @family overwrites
+NULL
+
+
+#' @rdname outputOverwrites
+#' @seealso [base::cat()]
 #' @export
-#' @param ... Arguments passed to base::cat()
-#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
-#' @param showSource Whether to show the calling source file and line.
-#' @return NULL (invisible)
 .vsc.cat <- function(..., skipCalls=0, showSource=TRUE) {
   # TODO: consider correct environment for base::print(...)?
   # env <- sys.frame(-1)
@@ -41,14 +63,10 @@
 }
 
 
-#' Modified version of `base::print()` for vsc
-#'
-#' Captures the output of `base::print(...)` and sends it to vsc together with information about the sourcefile and line
+#' @rdname outputOverwrites
+#' @param x Same as in [base::print()]
+#' @seealso [base::print()]
 #' @export
-#' @param ... Arguments passed to `base::cat()`
-#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
-#' @param showSource Whether to show the calling source file and line.
-#' @return `invisible(x)`
 .vsc.print <- function(x, ..., skipCalls=0, showSource=TRUE) {
   # TODO: consider correct environment for base::print(...)?
   # env <- sys.frame(-1)
@@ -64,15 +82,10 @@
   invisible(x)
 }
 
-
-#' Modified version of `base::message(...)` for vsc
-#' 
-#' Same as `base::message()` but uses `.vsc.cat` instead of `base::cat`
-#' @param ... Same as `base::message`
-#' @param domain Same as `base::message`
-#' @param appendLF Same as `base::message`
-#' @param showSource Whether to show the calling source file and line.
-#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
+#' @rdname outputOverwrites
+#' @param domain Same as in [base::message()]
+#' @param appendLF Same as in [base::message()]
+#' @seealso [base::message()]
 #' @export
 .vsc.message <- function(..., domain = NULL, appendLF = TRUE, showSource=TRUE, skipCalls=0){
   args <- list(...)
@@ -100,14 +113,9 @@
 }
 
 
-#' Modified version of `utils::str(...)` for vsc
-#' 
-#' Same as `utils::str` but uses VS Codes structured variable output.
-#' 
-#' @param object Same as `utils::str`
-#' @param ... Same as `utils::str`
-#' @param showSource Whether to show the calling source file and line.
-#' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
+#' @rdname outputOverwrites
+#' @param object Same as in [utils::str()]
+#' @seealso [utils::str()]
 #' @export
 .vsc.str <- function(object, ..., skipCalls=0, showSource=TRUE){
   args <- list(
@@ -142,15 +150,17 @@
 
 #' Internal function to print to vsc
 #' 
-#' Sends text to vsc, together with source information
+#' Sends text to vsc, together with source information.
+#' Is used by e.g. [.vsc.print], [.vsc.cat]
 #' 
 #' @param ret The text to be sent
 #' @param skipCalls The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.
 #' @param category The output category ("stdout", "stderr", ...)
 #' @param showSource Whether to show the calling source file and line.
+#' 
+#' @keywords internal
 printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
   output <- paste0(ret, collapse = "\n")
-
   if(showSource){
     source <- getSource(sys.call(-skipCalls))
     line <- lget(source, 'line', 0)
@@ -158,7 +168,6 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
     source <- NULL
     line <- NULL
   }
-
   sendOutputEvent(category, output = output, line=line, source=source)
 }
 
@@ -237,6 +246,7 @@ printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
 
 
 #' Modified version of `pkgload::load_all()`
+#' @family overwrites
 #' @export
 .vsc.load_all <- function(...){
   internalLoadAll(..., refreshBreakpoints = TRUE)

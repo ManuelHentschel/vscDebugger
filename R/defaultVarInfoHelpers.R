@@ -47,11 +47,13 @@ getIndices2 <- function(rows='', cols=''){
 
 #' Get variable from environment
 #' 
-#' Is basically a wrapper for `get(name, envir=env)`, but does not forces promises.
+#' Is basically a wrapper for `get(name, envir=env)`, but does not force promises.
 #' 
 #' @param name The name of the variable
 #' @param env The environment in which to evaluate
 #' @return Returns the value of the variable or a representation of a promise as returned by `getPromiseVar`
+#' 
+#' @keywords internal
 getVarInEnv <- function(name, env) {
   # get Info about a variable in an environment
   # separate from getVariable(), since environments might contain promises
@@ -122,6 +124,8 @@ getInfoVar <- function(text, type='Warning: the variable value is just an info f
 #'   expression that will be evaluated, 
 #'   the environment where it will be evaluated, and the string 
 #'   representation of the expression.
+#' 
+#' @keywords internal
 getDotVars <- function(env) {
   ## Note: substitute(...()) is officially not supported, but it 
   ## works as intended for all relevant R versions (at least from R 3.0.0)
@@ -137,7 +141,13 @@ getDotVars <- function(env) {
 #' @aliases .vsc.promise
 #' @param name The name of the variable
 #' @param env The environment in which to evaluate
-#' @return An object of class \code{".vsc.promise"}; a named list containing the expression that will be evaluated, the status whether the promise has already been evaluated, the value if it has already been evaluated, and the environment in which the unevaluated promise will be evaluated. 
+#' @return
+#' An object of class `.vsc.promise`;
+#' a named list containing the expression that will be evaluated,
+#' the status whether the promise has already been evaluated,
+#' the value if it has already been evaluated,
+#' and the environment in which the unevaluated promise will be evaluated. 
+#' 
 #' @examples 
 #' ## create a promise
 #' e <- new.env()
@@ -154,6 +164,7 @@ getDotVars <- function(env) {
 #' ## get info again
 #' vscDebugger:::getPromiseVar("x", e)
 #' 
+#' @keywords internal
 getPromiseVar <- function(name, env) {
   structure(
     getPromiseInfo(name, env),
@@ -166,12 +177,11 @@ getPromiseVar <- function(name, env) {
 #' @param name The name of the variable
 #' @param env The environment in which to evaluate
 #' @return A named list: 
-#' \itemize{
-#'   \item{\code{code}: }{the expression that will be evaluated}
-#'   \item{\code{environment}: }{the environment where the promise is evaluated}
-#'   \item{\code{evaluated}: }{logical flag if the promise has been already evaluated}
-#'   \item{\code{value}: }{optional node; the value of the evaluated promise}
-#' }
+#' * `code`: the expression that will be evaluated
+#' * `environment`: the environment where the promise is evaluated
+#' * `evaluated`: logical flag if the promise has been already evaluated
+#' * `value`: optional node; the value of the evaluated promise
+#' 
 #' @keywords internal
 #' @useDynLib vscDebugger c_promise_info 
 getPromiseInfo <- function(name, env) {
@@ -179,15 +189,16 @@ getPromiseInfo <- function(name, env) {
   .Call(c_promise_info, sym, env)
 }
 
-#' Test if in object is a promise
+#' Test if an object is a promise
 #' 
 #' @param name `character(1L)` the name of the object
-#' @param env [environment] the environment of the object 
+#' @param env [`environment`] the environment of the object 
 #' @param strict `logical(1L)` if \code{strict} is \code{TRUE} 
 #'   (the default), evaluated promises return with \code{FALSE}
-#' @useDynLib vscDebugger c_is_promise
+#' @return `TRUE` or `FALSE`
+#' 
 #' @keywords internal
-#' @return \code{TRUE} or \code{FALSE}
+#' @useDynLib vscDebugger c_is_promise
 isPromise <- function(name, env, strict = TRUE) {
   sym <- as.name(name)
   .Call(c_is_promise, sym, env, strict)

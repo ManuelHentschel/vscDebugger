@@ -9,8 +9,6 @@
 #' @docType package
 #' @name vscDebugger-package
 #' 
-#' @aliases vscDebugger2
-#' 
 NULL
 
 

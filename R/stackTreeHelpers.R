@@ -27,6 +27,8 @@ sourceRequest <- function(response, args, request){
 #' 
 #' @param frameIdR A frame id (as used by R) that can be passed to sys.call
 #' @return A named list containing info about the source file
+#' 
+#' @keywords internal
 getSource <- function(call, frameIdR = 0) {
   # get call if not provided
   if(is.null(call)){
@@ -139,6 +141,7 @@ getEmptySource <- function(){
 #' Get the frame name of a given call
 #'
 #' Get the frame name of a given call
+#' @keywords internal
 getFrameName <- function(call) {
   name <- varToStringWithCaptureOutput(call)
   # name <- substr(name, 1, 16)
@@ -171,6 +174,8 @@ varToStringWithCaptureOutput <- function(v) {
 #' 
 #' @param firstenv The top environment of the current frame
 #' @param lastenv The last environment to be considered. By default .GlobalEnv, use emptyenv() to consider package environments
+#' 
+#' @keywords internal
 getScopeEnvs <- function(firstenv = parent.frame(), lastenv = .GlobalEnv) {
   env <- firstenv
   scopes <- list(env)

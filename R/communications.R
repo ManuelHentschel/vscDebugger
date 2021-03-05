@@ -188,6 +188,8 @@
 #' Sends a json to vsc
 #'
 #' @param body The body of the message. Must be convertible to JSON. Usually named lists.
+#' 
+#' @keywords internal
 sendToVsc <- function(body = "", useCustomSocket = FALSE) {
   json <- getJson(body)
   success <- TRUE
