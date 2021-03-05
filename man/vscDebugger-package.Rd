@@ -3,7 +3,6 @@
 \docType{package}
 \name{vscDebugger-package}
 \alias{vscDebugger-package}
-\alias{vscDebugger2}
 \title{vscDebugger}
 \description{
 Implementation of the Debug Adapter Protocol for R

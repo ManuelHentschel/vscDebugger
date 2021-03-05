@@ -12,3 +12,4 @@ sendToVsc(body = "", useCustomSocket = FALSE)
 \description{
 Sends a json to vsc
 }
+\keyword{internal}
