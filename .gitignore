@@ -1,20 +1,32 @@
+# Workspace config
 .Rproj.user
 .Rhistory
 .RData
 .vscode
+.lintr
 
+# Scripts
 build.R
+
+# Build config/artifacts
 src/*.so
 src/*.o
 *.dll
 src-i386/
 src-x64/
-.lintr
 
+# Temp files
 *.temp
 *.tmp
 tmp.*
 temp.*
 tmp
 temp
+
+# Docs
 docs
+inst/doc
+doc
+Meta
+vignettes/*.R
+vignettes/*.html
