@@ -1,8 +1,10 @@
 pandoc: 2.7.3
 pkgdown: 1.6.1
 pkgdown_sha: ~
-articles: {}
-last_built: 2021-02-13T10:24Z
+articles:
+  configuration: configuration.html
+  vscode-R-Debugger: vscode-R-Debugger.html
+last_built: 2021-03-06T17:05Z
 urls:
   reference: https://ManuelHentschel.github.io/vscDebugger//reference
   article: https://ManuelHentschel.github.io/vscDebugger//articles

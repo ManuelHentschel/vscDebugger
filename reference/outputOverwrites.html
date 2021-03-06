@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Converts the frame id — convertFrameId • vscDebugger</title>
+<title>Modified Output Functions — .vsc.cat • vscDebugger</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,13 @@
 
 
 
-<meta property="og:title" content="Converts the frame id — convertFrameId" />
-<meta property="og:description" content="Converts the frame id from R to vsc or viceversa" />
+<meta property="og:title" content="Modified Output Functions — .vsc.cat" />
+<meta property="og:description" content="Modified versions of core R functions that add debugger specific functionality.
+With the default debug configuration, the normal R functions are overwritten with these
+(using attach()).
+The modified functions are designed to be mostly interchangeable with their counterparts.
+If the overwrites are not required, they can be toggled using the launch config entries
+overwriteCat, overwritePrint, overwriteStr, and overwriteMessage." />
 
 
 
@@ -123,33 +128,79 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Converts the frame id</h1>
-    <small class="dont-index">Source: <a href='https://github.com/ManuelHentschel/vscDebugger/blob/master/R/frameManagement.R'><code>R/frameManagement.R</code></a></small>
-    <div class="hidden name"><code>convertFrameId.Rd</code></div>
+    <h1>Modified Output Functions</h1>
+    <small class="dont-index">Source: <a href='https://github.com/ManuelHentschel/vscDebugger/blob/master/R/overwrites.R'><code>R/overwrites.R</code></a></small>
+    <div class="hidden name"><code>outputOverwrites.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Converts the frame id from R to vsc or viceversa</p>
+    <p>Modified versions of core R functions that add debugger specific functionality.
+With the default debug configuration, the normal R functions are overwritten with these
+(using <code><a href='https://rdrr.io/r/base/attach.html'>attach()</a></code>).</p>
+<p>The modified functions are designed to be mostly interchangeable with their counterparts.
+If the overwrites are not required, they can be toggled using the launch config entries
+<code>overwriteCat</code>, <code>overwritePrint</code>, <code>overwriteStr</code>, and <code>overwriteMessage</code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>convertFrameId</span><span class='op'>(</span>vsc <span class='op'>=</span> <span class='cn'>NULL</span>, R <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>.vsc.cat</span><span class='op'>(</span><span class='va'>...</span>, skipCalls <span class='op'>=</span> <span class='fl'>0</span>, showSource <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+
+<span class='fu'>.vsc.print</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span>, skipCalls <span class='op'>=</span> <span class='fl'>0</span>, showSource <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+
+<span class='fu'>.vsc.message</span><span class='op'>(</span>
+  <span class='va'>...</span>,
+  domain <span class='op'>=</span> <span class='cn'>NULL</span>,
+  appendLF <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  showSource <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  skipCalls <span class='op'>=</span> <span class='fl'>0</span>
+<span class='op'>)</span>
+
+<span class='fu'>.vsc.str</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>...</span>, skipCalls <span class='op'>=</span> <span class='fl'>0</span>, showSource <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>vsc</th>
-      <td><p>The frame id as used by vsc</p></td>
+      <th>...</th>
+      <td><p>Further arguments that are passed to the original function</p></td>
     </tr>
     <tr>
-      <th>R</th>
-      <td><p>The frame id as used by R</p></td>
+      <th>skipCalls</th>
+      <td><p>The number of calls to skip when reporting the calling file and line. Can be useful e.g. inside a log function.</p></td>
+    </tr>
+    <tr>
+      <th>showSource</th>
+      <td><p>Whether to show the calling source file and line</p></td>
+    </tr>
+    <tr>
+      <th>x</th>
+      <td><p>Same as in <code><a href='https://rdrr.io/r/base/print.html'>base::print()</a></code></p></td>
+    </tr>
+    <tr>
+      <th>domain</th>
+      <td><p>Same as in <code><a href='https://rdrr.io/r/base/message.html'>base::message()</a></code></p></td>
+    </tr>
+    <tr>
+      <th>appendLF</th>
+      <td><p>Same as in <code><a href='https://rdrr.io/r/base/message.html'>base::message()</a></code></p></td>
+    </tr>
+    <tr>
+      <th>object</th>
+      <td><p>Same as in <code><a href='https://rdrr.io/r/utils/str.html'>utils::str()</a></code></p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>The frame id as used by the other program</p>
+    <p>These functions return the same value as the overwritten functions themselves.</p>
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code><a href='https://rdrr.io/r/base/cat.html'>base::cat()</a></code></p>
+<p><code><a href='https://rdrr.io/r/base/print.html'>base::print()</a></code></p>
+<p><code><a href='https://rdrr.io/r/base/message.html'>base::message()</a></code></p>
+<p><code><a href='https://rdrr.io/r/utils/str.html'>utils::str()</a></code></p>
+<p>Other overwrites: 
+<code><a href='.vsc.debugSource.html'>.vsc.debugSource</a>()</code>,
+<code><a href='.vsc.load_all.html'>.vsc.load_all</a>()</code></p></div>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
