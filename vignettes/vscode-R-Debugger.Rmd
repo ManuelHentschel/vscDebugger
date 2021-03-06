@@ -166,7 +166,7 @@ If you have problems, suggestions, bug fixes etc. feel free to open an
 or submit a pull request.
 Any feedback or support is appreciated!
 Special thanks to
-[ @tdeenes](https://github.com/tdeenes)
+[@tdeenes](https://github.com/tdeenes)
 for providing the C code used in the R package, and
 [@renkun-ken](https://github.com/renkun-ken)
 for his numerous contributions and feedback!
