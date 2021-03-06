@@ -22,3 +22,4 @@ Modified version of \code{base::seq}
 \details{
 Basically the same as \code{base::seq}, but returns an empty vector if \code{(to-from)*by<0}.
 }
+\keyword{internal}

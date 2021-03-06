@@ -14,3 +14,4 @@ getScopeEnvs(firstenv = parent.frame(), lastenv = .GlobalEnv)
 \description{
 Gets the scopes corresponding to a frame
 }
+\keyword{internal}

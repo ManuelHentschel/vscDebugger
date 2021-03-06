@@ -10,6 +10,8 @@
 #'
 #' @details
 #' Basically the same as `base::seq`, but returns an empty vector if `(to-from)*by<0`.
+#' 
+#' @keywords internal
 seq2 <- function(from, to = NULL, by = 1) {
   if (is.null(to)) {
     to <- from

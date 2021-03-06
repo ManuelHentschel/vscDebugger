@@ -15,5 +15,6 @@ convertFrameId(vsc = NULL, R = NULL)
 The frame id as used by the other program
 }
 \description{
-Converts the frame id form R to vsc or viceversa
+Converts the frame id from R to vsc or viceversa
 }
+\keyword{internal}

@@ -16,5 +16,7 @@ printToVsc(ret, skipCalls = 0, category = "stdout", showSource = TRUE)
 \item{showSource}{Whether to show the calling source file and line.}
 }
 \description{
-Sends text to vsc, together with source information
+Sends text to vsc, together with source information.
+Is used by e.g. \link{.vsc.print}, \link{.vsc.cat}
 }
+\keyword{internal}

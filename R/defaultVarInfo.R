@@ -346,20 +346,26 @@ getDefaultVarInfos <- function() {
       childVars = function(v, ind=NULL) {
         names <- slotNames(v)
         values <- lapply(names, function(s) slot(v, s))
-        unsummarizeLists(list(rValue = values, name = names))
+        return(lapply(names, function(name) list(
+          name = name,
+          rValue = slot(v, name)
+        )))
       },
       nChildVars = function(v){
         length(slotNames(v))
       },
       type = 'S4',
       internalAttributes = function(v) {
+        if(getOption('vsc.groupAttributes', FALSE)){
+          return(list())
+        }
         attrs <- attributes(v)
         slots <- slotNames(v)
         nonslots <- setdiff(names(attrs), slots)
-        unsummarizeLists(list(
-          name = as.list(paste0("_", nonslots)),
-          rValue = attrs[nonslots]
-        ))
+        return(lapply(nonslots, function(ns) list(
+          name = paste0("_", ns),
+          rValue = attrs[ns]
+        )))
       }
     ),
     # non-standard class

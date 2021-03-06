@@ -15,3 +15,4 @@ A named list containing info about the source file
 \description{
 Gathers and returns a named list containing info about the name, path, and content of the source file of a frame
 }
+\keyword{internal}

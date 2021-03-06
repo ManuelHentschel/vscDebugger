@@ -9,3 +9,4 @@ getPpid()
 \description{
 Returns the pid of the parent process (on unix like systems) or 0 (on windows).
 }
+\keyword{internal}

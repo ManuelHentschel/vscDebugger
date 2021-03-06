@@ -13,7 +13,11 @@ getPromiseVar(name, env)
 \item{env}{The environment in which to evaluate}
 }
 \value{
-An object of class \code{".vsc.promise"}; a named list containing the expression that will be evaluated, the status whether the promise has already been evaluated, the value if it has already been evaluated, and the environment in which the unevaluated promise will be evaluated.
+An object of class \code{.vsc.promise};
+a named list containing the expression that will be evaluated,
+the status whether the promise has already been evaluated,
+the value if it has already been evaluated,
+and the environment in which the unevaluated promise will be evaluated.
 }
 \description{
 Gets a representation of a promise without forcing the promise
@@ -35,3 +39,4 @@ stopifnot(!vscDebugger:::isPromise("x", e, strict = TRUE))
 vscDebugger:::getPromiseVar("x", e)
 
 }
+\keyword{internal}

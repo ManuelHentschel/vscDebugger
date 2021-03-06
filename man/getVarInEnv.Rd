@@ -15,5 +15,6 @@ getVarInEnv(name, env)
 Returns the value of the variable or a representation of a promise as returned by \code{getPromiseVar}
 }
 \description{
-Is basically a wrapper for \code{get(name, envir=env)}, but does not forces promises.
+Is basically a wrapper for \code{get(name, envir=env)}, but does not force promises.
 }
+\keyword{internal}

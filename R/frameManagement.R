@@ -112,11 +112,13 @@ getExternalFrames <- function(){
 
 #' Converts the frame id
 #'
-#' Converts the frame id form R to vsc or viceversa
+#' Converts the frame id from R to vsc or viceversa
 #'
 #' @param vsc The frame id as used by vsc
 #' @param R The frame id as used by R
 #' @return The frame id as used by the other program
+#' 
+#' @keywords internal
 convertFrameId <- function(vsc = NULL, R = NULL) {
   if (is.null(vsc) && is.null(R)) {
     return(NULL)

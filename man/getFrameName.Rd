@@ -9,3 +9,4 @@ getFrameName(call)
 \description{
 Get the frame name of a given call
 }
+\keyword{internal}

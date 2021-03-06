@@ -2,14 +2,14 @@
 % Please edit documentation in R/defaultVarInfoHelpers.R
 \name{isPromise}
 \alias{isPromise}
-\title{Test if in object is a promise}
+\title{Test if an object is a promise}
 \usage{
 isPromise(name, env, strict = TRUE)
 }
 \arguments{
 \item{name}{\code{character(1L)} the name of the object}
 
-\item{env}{\link{environment} the environment of the object}
+\item{env}{\code{\link{environment}} the environment of the object}
 
 \item{strict}{\code{logical(1L)} if \code{strict} is \code{TRUE}
 (the default), evaluated promises return with \code{FALSE}}
@@ -18,6 +18,6 @@ isPromise(name, env, strict = TRUE)
 \code{TRUE} or \code{FALSE}
 }
 \description{
-Test if in object is a promise
+Test if an object is a promise
 }
 \keyword{internal}

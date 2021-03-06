@@ -4,11 +4,28 @@
 #       - instead: define function normally, then trace function (-> bp can be easily unset)
 # TODO: enable breakpoints in specific columns?
 
+
+#' Modified version of `base::source`
+#' 
+#' Modified version of `base::source` that honors breakpoints set by the debugger.
+#' 
+#' @param file String giving the name of the file to be sourced. Connections etc. are not supported!
+#' @param local Same as in [base::source()], can be overwritten by specifying an environment in `envir`.
+#' @param envir The environment in which to evaluate the sourced code. Overwrites `local`, if specified.
+#' @param chdir Whether to temporarily change the working directory to the location of `file`.
+#' @param encoding The encoding to be used by [base::parse()].
+#' @param ... Further arguments are ignored but allowed for compatibility with [base::source()].
+#' 
+#' @family overwrites
+#' 
 #' @export
 .vsc.debugSource <- function(
-  file, lines = list(), local = FALSE, envir = NULL, chdir = FALSE,
+  file,
+  local = FALSE,
+  envir = NULL,
+  chdir = FALSE,
   encoding = "unknown",
-  recursive = TRUE, ...
+  ...
 ) {
   # determine envir
   if(!is.null(envir)){
