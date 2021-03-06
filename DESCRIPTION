@@ -11,7 +11,8 @@ Authors@R: c(
     person(
         given = "Kun",
         family = "Ren",
-        role = "ctb"
+        role = "ctb",
+        email = "mail@renkun.me"
     ),
     person(
         given = "Denes",
