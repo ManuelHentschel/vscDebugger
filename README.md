@@ -20,4 +20,4 @@ install.packages(c('R6', 'jsonlite'))
 ```
 
 ## Usage
-Detailed information can be found in the readme of the VS Code extension.
+Detailed information can be found [here](https://manuelhentschel.github.io/vscDebugger/).

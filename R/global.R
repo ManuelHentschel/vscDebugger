@@ -4,7 +4,10 @@
 
 #' vscDebugger
 #' 
-#' Implementation of the Debug Adapter Protocol for R
+#' Implementation of the [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
+#' 
+#' Provides support for the vscode extension [vscode-R-Debugger](https://github.com/ManuelHentschel/VSCode-R-Debugger).
+#' 
 #' 
 #' @docType package
 #' @name vscDebugger-package

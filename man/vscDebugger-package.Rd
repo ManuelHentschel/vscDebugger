@@ -5,5 +5,8 @@
 \alias{vscDebugger-package}
 \title{vscDebugger}
 \description{
-Implementation of the Debug Adapter Protocol for R
+Implementation of the \href{https://microsoft.github.io/debug-adapter-protocol/}{Debug Adapter Protocol} for R
+}
+\details{
+Provides support for the vscode extension \href{https://github.com/ManuelHentschel/VSCode-R-Debugger}{vscode-R-Debugger}.
 }
