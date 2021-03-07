@@ -111,6 +111,17 @@ getDefaultVarInfos <- function() {
       },
       toString = format
     ),
+    # help file
+    list(
+      name = 'HelpFile',
+      doesApply = function(v){
+        identical(class(v), 'help_files_with_topic') ||
+        identical(class(v), 'hsearch')
+      },
+      printFunc = function(v) {
+        base::print
+      }
+    ),
     # factor
     list(
       name = 'Factor',
@@ -223,7 +234,14 @@ getDefaultVarInfos <- function() {
           paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
         }
       },
-      type = 'array'
+      type = 'array',
+      printFunc = function(v){
+        if(getOption('vsc.printArrays', FALSE)){
+          base::print
+        } else{
+          NULL
+        }
+      }
     ),
     # list
     list(
@@ -490,6 +508,13 @@ getDefaultVarInfos <- function() {
           ret <- '<Object too large>'
         }
         return(ret)
+      },
+      printFunc = function(v) {
+        if(identical(getOption('vsc.printEvalResponses', FALSE), TRUE)){
+          base::print
+        } else{
+          TRUE
+        }
       }
     )
   )
