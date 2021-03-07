@@ -125,6 +125,15 @@ evalInEnv <- function(
     }
   }
 
+  # return early if body is empty
+  if(length(body) == 0){
+    valueAndVisible <- list(
+      value = NULL,
+      visible = FALSE
+    )
+    return(valueAndVisible)
+  }
+
   # change state
   prevState <- session$state$startRunning('eval', evalSilent = !showOutput)
 
@@ -134,18 +143,12 @@ evalInEnv <- function(
     sendWriteToStdinEvent('c', when='browserPrompt', count=-1)
   }
     
-  valueAndVisible0 <- list(
-    value = NULL,
-    visible = FALSE
-  )
-
   # eval
   if(catchErrors && !showOutput){
     registerLaunchFrame(8)
     # wrap in try(), withVisible(), capture.output()
     valueAndVisible <- try(
       {
-        valueAndVisible <- valueAndVisible0
         for(exp in body){
           cl <- call('withVisible', exp)
           capture.output(valueAndVisible <- eval(cl, envir=env))
@@ -160,7 +163,6 @@ evalInEnv <- function(
     # wrap in try(), withVisible()
     valueAndVisible <- try(
       {
-        valueAndVisible <- valueAndVisible0
         for(exp in body){
           cl <- call('withVisible', exp)
           valueAndVisible <- eval(cl, envir=env)
@@ -173,7 +175,6 @@ evalInEnv <- function(
   } else{
     # wrap in withVisible()
     registerLaunchFrame(2)
-    valueAndVisible <- valueAndVisible0
     for(exp in body){
       cl <- call('withVisible', exp)
       valueAndVisible <- eval(cl, envir=env)
