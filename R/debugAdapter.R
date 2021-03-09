@@ -92,6 +92,8 @@ sendResponse <- function(response){
 customRequest <- function(response, args, request){
   if(lget(args, 'reason', '') == 'showingPrompt'){
     showingPromptRequest(response, args, request)
+  } else if(lget(args, 'reason', '') == 'showDataViewer') {
+    showDataViewerRequest(response, args, request)
   }
 }
 
