@@ -49,17 +49,17 @@ evaluateRequest <- function(response, args, request){
   # remove response
   session$pendingEvalResponses[1] <- NULL
 
-  # print help files -> opens the help page in browser
-  if(
-    valueAndVisible$visible
-    && context != 'watch'
-    && (
-      identical(class(valueAndVisible$value), 'help_files_with_topic')
-      || identical(class(valueAndVisible$value), 'hsearch')
-    )
-  ){
-    valueAndVisible$visible <- FALSE
-    base::print(valueAndVisible$value)
+  # use print function if specified
+  # (e.g. base::print for arrays, rather than structured eval response)
+  if(valueAndVisible$visible && context != 'watch'){
+    infos <- .vsc.applyVarInfos(valueAndVisible$value, infos = 'printFunc')
+    printFunc <- infos$printFunc
+    if(is.function(printFunc)){
+      printFunc(valueAndVisible$value)
+      valueAndVisible$visible <- FALSE
+    } else if(identical(printFunc, FALSE)){
+      valueAndVisible$visible <- FALSE
+    }
   }
 
   # prepare response body 
@@ -125,6 +125,15 @@ evalInEnv <- function(
     }
   }
 
+  # return early if body is empty
+  if(length(body) == 0){
+    valueAndVisible <- list(
+      value = NULL,
+      visible = FALSE
+    )
+    return(valueAndVisible)
+  }
+
   # change state
   prevState <- session$state$startRunning('eval', evalSilent = !showOutput)
 
@@ -133,7 +142,7 @@ evalInEnv <- function(
     ts <- eval(quote(tracingState(FALSE)), envir=env)
     sendWriteToStdinEvent('c', when='browserPrompt', count=-1)
   }
-
+    
   # eval
   if(catchErrors && !showOutput){
     registerLaunchFrame(8)

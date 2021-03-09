@@ -25,6 +25,8 @@ export interface VarInfo {
   type?: ValueOrFunction<string>;
   // Expression that can be evaluated to get the variable value. Used to copy variable as expression
   evaluateName?: ValueOrFunction<string>;
+  // function that can be used to print/show the variable in the debug console
+  printFunc?: RFunction | boolean;
 }
 
 export function _vsc_applyVarInfo(
