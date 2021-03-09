@@ -24,6 +24,7 @@
   local = FALSE,
   envir = NULL,
   chdir = FALSE,
+  print.eval = NULL,
   encoding = "unknown",
   ...
 ) {
@@ -36,6 +37,11 @@
     envir <- parent.frame()
   } else{
     envir <- globalenv()
+  }
+  
+  # check print.eval
+  if(is.null(print.eval)){
+    print.eval <- getOption('vsc.defaultPrintEval', 0)
   }
 
   # parse file:
@@ -75,7 +81,19 @@
   # actually run the code:
   # enclos <- baseenv()
   # ret <- .Internal(eval(body, envir, enclos))
-  ret <- eval(body, envir=envir)
+  for(i in seq_along(body)){
+    expr <- body[i]
+    # expr <- encloseBody(expr)
+    # ret <- eval(expr, envir=envir)
+    valueAndVisible <- withVisible(eval(expr, envir=envir))
+    ret <- valueAndVisible$value
+    if(print.eval>=2 || (valueAndVisible$visible && print.eval>=1)){
+      cl <- substitute(.vsc.print(ret))
+      attributes(cl) <- attributes(body[i])
+      cl <- encloseBody(cl)
+      eval(cl)
+    }
+  }
   # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
   unregisterLaunchFrame()
 
@@ -99,7 +117,13 @@ mySetBreakpoints <- function(body, ats = list(), finalize = TRUE) {
 
   # enclose entire body in {}:
   if (finalize) {
-    body <- encloseBody(body)
+    # body <- encloseBody(body)
+    for(i in seq_along(body)){
+      expr <- body[i]
+      if(body[[i]][[1]] != as.name('{')){
+        body[i] <- encloseBody(body[i])
+      }
+    }
   }
 
   return(body)

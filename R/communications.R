@@ -48,7 +48,7 @@
     # wait for first character, regularly checking for timeout
     char <- readChar(conn, nchars=1)
     while(length(char)==0 && !session$stopListeningOnPort){
-      if(timeout>=0 && as.numeric(Sys.time())-t > timeout){
+      if(timeout>=0 && as.numeric(Sys.time())-t >= timeout){
         session$stopListeningOnPort <- TRUE
       } else{
         Sys.sleep(0.001)
@@ -263,12 +263,16 @@ removeNonJsonElements <- function(v){
 
 # used for debugging
 logPrint <- function(...){
-  # base::print(...)
+  if(getOption('vsc.doLogPrint', FALSE)){
+    base::print(...)
+  }
 }
 
 # used for debugging
 logCat <- function(...){
-  # base::cat(...)
+  if(getOption('vsc.doLogPrint', FALSE)){
+    base::cat(...)
+  }
 }
 
 
