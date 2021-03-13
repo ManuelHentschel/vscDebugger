@@ -16,7 +16,7 @@ and [RTools](https://cran.r-project.org/bin/windows/Rtools/).
 Depending on the installation you might need to manually install the dependencies, as well
 (currently `R6` and `jsonlite`):
 ```r
-install.packages(c('R6', 'jsonlite'))
+install.packages(c('R6', 'jsonlite', 'svSocket'))
 ```
 
 ## Usage
