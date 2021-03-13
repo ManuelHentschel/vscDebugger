@@ -1,0 +1,98 @@
+---
+title: "Breakpoints"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Breakpoints}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Breakpoints
+
+**TLDR:**
+
+* Breakpoints work most reliable if they are set before launching the debugger
+* The debug mode *"Debug R-Function"* sometimes works better to set/unset breakpoints
+* To set breakpoints in packages, they need to be specified in the launch config entries *"debuggedPackages"* or *"loadPackages"*.
+
+
+## Setting breakpoints during debugging
+The most reliable way to use breakpoints is to set them before launching the debugger
+and not modifying them afterwards.
+
+Breakpoints can be (un)set in the UI while the debugger is running code,
+but they won't take effect until the debugger is stopped on a breakpoint
+or done running its current evaluation.
+
+(Un)setting breakpoints while the program is stopped on a breakpoint can be a bit hit or miss,
+since the body of the currently executed function cannot be modified
+(which is done to set breakpoints).
+Therefore, setting a breakpoint in the same function as the breakpoint where you're currently stopped usually won't work:
+``` r
+f <- function(){
+    print(1) # <-- Set breakpoint here
+    print(2)
+    print(3) # <-- Setting breakpoint here while stopped on first breakpoint won't work
+    print(4)
+}
+f()
+```
+
+If a function is called repeatedly, the new breakpoint should work on the next iteration though:
+*(This example works with debug mode "Debug R-Function")*
+``` r
+f <- function(){
+    print(1) # <-- Setting breakpoint here while stopped on the other breakpoint should work on the next iteration
+    print(2)
+    print(3) # <-- Set breakpoint here
+    print(4)
+}
+
+main <- function(){
+    for(i in 1:2){
+        f()
+    }
+}
+```
+
+Setting breakpoints in a function that is not being executed should always work:
+``` r
+f <- function(){
+    print(1) # <-- Set breakpoint here
+    print(2)
+    g()
+    print(4)
+}
+g <- function(){
+    print(3) # <-- Setting breakpoint here while stopped on the other breakpoint should work
+}
+f()
+```
+
+## Debug modes
+The debug modes *"Debug R-File"* and *"Launch Workspace"* use a custom version of `source()`,
+which makes changes to the R code in order to set breakpoints.
+To provide a somewhat 'cleaner' method of running code, the debug mode *"Debug R-Function"* can be used.
+In this mode, the specified file is executed using the default `source()` command
+and breakpoints are set by using R's `trace(..., tracer=browser)` function,
+which is more robust than the custom breakpoint mechanism.
+
+## Breakpoints in packages
+Packages can be debugged using `load_all()` from `pkgload`.
+To do so, it is required to install `pkgload` (part of `devtools`).
+By default, `load_all` will be masked by a modified version that automatically sets breakpoints
+in the loaded package and attaches the modified versions of `print`, `cat`, `message`.
+To always load a package when launching a debug session, you can specify an array of paths in the launch config entry `"loadPackages"`.
+
+If it is preferred to properly install a package before debugging,
+the package can be specified in the launch config entry `"debuggedPackages"`.
+To keep the required source information during installation, the following points might help:
+
+* The package must be installed from source code (not CRAN or `.tar.gz`)
+* The flag `--with-keep.source` should be set
+* Extensions containing C code might cause problems.
+Sometimes it helps to install the package using
+`devtools::install(quick=FALSE, ...)`
+to compile the binaries and again with
+`devtools::install(quick=TRUE, ...)`
+to retain the source information.
