@@ -56,6 +56,7 @@ export interface Session {
     // ...
     [key: string]: any;
   }
+  taskCallback: number | string;
 
   pid: number;
   ppid: number;

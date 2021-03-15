@@ -117,11 +117,17 @@ initializeRequest <- function(response, args, request){
 
   # add taskCallback
   if(session$socketServer){
-    addTaskCallback(function(...){
+    session$taskCallback <- addTaskCallback(function(...){
       registerEntryFrame()
       session$rootNode$clearVariables()
       sendInvalidatedEvent('variables')
       unregisterEntryFrame()
+      options(session$internalOptions)
+      TRUE
+    })
+  } else{
+    session$taskCallback <- addTaskCallback(function(...){
+      options(session$internalOptions)
       TRUE
     })
   }
