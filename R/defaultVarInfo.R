@@ -414,13 +414,15 @@ getDefaultVarInfos <- function() {
       name = 'Function',
       doesApply = is.function,
       customAttributes = function(v) {
-        list(
+        if(getOption('vsc.showFunctionBody', FALSE)){
           list(
-            name = '__body()',
-            rValue = body(v),
-            setter = quote(body(parent))
+            list(
+              name = '__body()',
+              rValue = body(v),
+              setter = quote(body(parent))
+            )
           )
-        )
+        }
       },
       type = 'function',
       toString = function(v) {

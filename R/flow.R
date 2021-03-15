@@ -243,6 +243,9 @@ sessionFinalizer <- function(...){
   logPrint(session$state$baseState)
   if(session$state$baseState != 'quitting'){
     options(error = NULL)
+    if(session$taskCallback != 0){
+      removeTaskCallback(session$taskCallback)
+    }
     if(session$supportsHelpViewer && !is.null(session$print_help_files_with_topic_0)){
       try(suppressWarnings(.S3method(
         "print",

@@ -30,7 +30,7 @@
       open = "r+b"
     )
     session$jsonSocketConnection <- conn 
-    session$jsonHosthost <- host
+    session$jsonHost <- host
     session$jsonPort <- port
     session$useJsonSocket <- TRUE
   } else{

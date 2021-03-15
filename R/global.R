@@ -50,6 +50,7 @@ session <- local({
 
   previousOptions <- list()
   internalOptions <- list()
+  taskCallback <- 0
 
   pid <- 0
   ppid <- 0
