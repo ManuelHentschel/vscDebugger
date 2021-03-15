@@ -24,6 +24,7 @@
   local = FALSE,
   envir = NULL,
   chdir = FALSE,
+  print.eval = NULL,
   encoding = "unknown",
   ...
 ) {
@@ -37,34 +38,15 @@
   } else{
     envir <- globalenv()
   }
+  
+  # check print.eval
+  if(is.null(print.eval)){
+    print.eval <- getOption('vsc.defaultPrintEval', 0)
+  }
 
   # parse file:
   path <- normalizePath(file)
-  body <- parse(path, encoding = encoding, keep.source = TRUE)
-
-  if(!session$noDebug){
-    sourceBreakpoints <- getSourceBreakpoints(path)
-    bps <- sourceBreakpoints$breakpoints
-    lines <- lapply(bps, '[[', 'line')
-
-    # find steps/expressions corresponding to the requested lines:
-    ats <- lapply(lines, lineFind, body)
-
-    # check if bps were found and confirm breakpoints to vsc
-    for (i in seq_along(bps)) {
-      if(length(ats[[i]]) > 0){
-        bps[[i]]$verified <- TRUE
-        bps[[i]]$changed <- TRUE
-      }
-    }
-    bps <- sendBreakpoints(bps)
-
-    sourceBreakpoints$breakpoints <- bps
-    storeSourceBreakpoints(sourceBreakpoints)
-
-    # set breakpoints:
-    body <- mySetBreakpoints(body, ats)
-  }
+  body0 <- parse(path, encoding = encoding, keep.source = TRUE)
 
   # store state
   if(chdir){
@@ -73,9 +55,20 @@
 
   registerLaunchFrame(1)
   # actually run the code:
-  # enclos <- baseenv()
-  # ret <- .Internal(eval(body, envir, enclos))
-  ret <- eval(body, envir=envir)
+  for(i in seq_along(body0)){
+    body <- setAndUpdateBreakpoints(body0, path)
+    expr <- body[i]
+    # expr <- encloseBody(expr)
+    # ret <- eval(expr, envir=envir)
+    valueAndVisible <- withVisible(eval(expr, envir=envir))
+    ret <- valueAndVisible$value
+    if(print.eval>=2 || (valueAndVisible$visible && print.eval>=1)){
+      cl <- substitute(.vsc.print(ret))
+      attributes(cl) <- attributes(body[i])
+      cl <- encloseBody(cl)
+      eval(cl)
+    }
+  }
   # is the same as eval(body, envir=envir), but without the extra stack frame inbetween
   unregisterLaunchFrame()
 
@@ -89,6 +82,34 @@
 }
 
 
+setAndUpdateBreakpoints <- function(body, path, line0=1){
+  sourceBreakpoints <- getSourceBreakpoints(path)
+  bps <- sourceBreakpoints$breakpoints
+  lines <- lapply(bps, '[[', 'line')
+
+  # find steps/expressions corresponding to the requested lines:
+  ats <- lapply(lines, lineFind, body)
+
+  # check if bps were found and confirm breakpoints to vsc
+  for (i in seq_along(bps)) {
+    if(lines[[i]] < line0){
+      next
+    }
+    verifiedBefore <- bps[[i]]$verified
+    verifiedNow <- (length(ats[[i]]) > 0)
+    bps[[i]]$verified <- verifiedNow
+    bps[[i]]$changed <- (verifiedNow != verifiedBefore)
+  }
+  bps <- sendBreakpoints(bps)
+
+  sourceBreakpoints$breakpoints <- bps
+  storeSourceBreakpoints(sourceBreakpoints)
+
+  # set breakpoints:
+  body <- mySetBreakpoints(body, ats)  
+  
+  return(body)
+}
 
 
 mySetBreakpoints <- function(body, ats = list(), finalize = TRUE) {
@@ -99,7 +120,13 @@ mySetBreakpoints <- function(body, ats = list(), finalize = TRUE) {
 
   # enclose entire body in {}:
   if (finalize) {
-    body <- encloseBody(body)
+    # body <- encloseBody(body)
+    for(i in seq_along(body)){
+      expr <- body[i]
+      if(body[[i]][[1]] != as.name('{')){
+        body[i] <- encloseBody(body[i])
+      }
+    }
   }
 
   return(body)

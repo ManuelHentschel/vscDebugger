@@ -9,6 +9,7 @@
   local = FALSE,
   envir = NULL,
   chdir = FALSE,
+  print.eval = NULL,
   encoding = "unknown",
   ...
 )
