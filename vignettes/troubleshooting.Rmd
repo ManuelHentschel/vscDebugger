@@ -1,0 +1,44 @@
+---
+title: "Troubleshooting"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Troubleshooting}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+If you have problems getting the debugger to launch,
+you can try the following steps to eliminate possible sources of errors:
+
+* Switch to an empty directory, create a single `test.R` containing something simple like `print('Hello world')`
+* Delete `./.vscode/launch.json` if present, and click `create a launch.json file`
+in the debug sidebar (`ctrl+shift+D`), to create a default launch config file.
+To avoid interference with other debug extensions, the workspace should only contain R files.
+* Add the entry `"commandLineArgs": ["--vanilla"]` to the debug config you are trying to launch.
+This disables your `.Rprofile` and stops any `.RData` files from being restored.
+
+If disabling you `.Rprofile` helps,
+you can selectively disable/enable code for vscode debug sessions using
+``` r
+if(Sys.getenv('VSCODE_DEBUG_SESSION')=='1'){
+    ### Debugger-specific code here
+} else {
+    ### Debugger-breaking code here
+}
+```
+
+Examples for code that might break things are
+
+* Anything that modifies the input prompt (e.g. `prompt::set_prompt()`)
+* Calls to `trace()`, `tracingState()` etc.
+* Custom error handlers set using `options(error = ...)`
+* Calls to `sys.calls()`, `sys.frames()` etc.
+* Use of `sink()`
+* Callbacks added using `addTaskCallback()` containing any of the above
+
+When launching the debugger, detailed logs are printed to the output channel
+"R Debugger" (`ctrl+shift+u` -> select `R Debugger` in the top right dropdown).
+These are not meant to be particularly descriptive for users, but might point you in the right direction.
+
+If you don't get the debugger running properly yourself,
+please don't hesitate to open an issue on github!

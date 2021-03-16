@@ -7,8 +7,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Configuration
-
 The behaviour of the debugger can be configured in four different ways:
 1. Regular VS Code settings
 2. Additional VS Code settings in `.vscode/settings.json`

@@ -7,8 +7,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# R Debugger
-
 This extension adds debugging capabilities for the
 [R](https://www.r-project.org/)
 programming language to Visual Studio Code
