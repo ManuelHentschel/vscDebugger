@@ -7,8 +7,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Breakpoints
-
 **TLDR:**
 
 * Breakpoints work most reliable if they are set before launching the debugger
