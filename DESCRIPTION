@@ -35,7 +35,8 @@ Imports:
 Suggests: 
     pkgload,
     knitr,
-    rmarkdown
+    rmarkdown,
+    markdown
 Encoding: UTF-8
 LazyData: true
 NeedsCompilation: yes
