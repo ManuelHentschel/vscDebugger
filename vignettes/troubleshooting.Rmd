@@ -40,5 +40,16 @@ When launching the debugger, detailed logs are printed to the output channel
 "R Debugger" (`ctrl+shift+u` -> select `R Debugger` in the top right dropdown).
 These are not meant to be particularly descriptive for users, but might point you in the right direction.
 
+Problems that might be caused by timing issues,
+e.g. a slow R startup or network delay when working with remote servers,
+can sometimes be mitigated by increasing the timeout related settings:
+``` json
+{
+  "r.debugger.timeouts.prompt": 0,
+  "r.debugger.timeouts.startup": 2000,
+  "r.debugger.timeouts.terminate": 50,
+}
+```
+
 If you don't get the debugger running properly yourself,
 please don't hesitate to open an issue on github!
