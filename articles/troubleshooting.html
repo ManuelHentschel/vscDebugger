@@ -124,6 +124,12 @@
 <li>Callbacks added using <code><a href="https://rdrr.io/r/base/taskCallback.html">addTaskCallback()</a></code> containing any of the above</li>
 </ul>
 <p>When launching the debugger, detailed logs are printed to the output channel “R Debugger” (<code>ctrl+shift+u</code> -&gt; select <code>R Debugger</code> in the top right dropdown). These are not meant to be particularly descriptive for users, but might point you in the right direction.</p>
+<p>Problems that might be caused by timing issues, e.g. a slow R startup or network delay when working with remote servers, can sometimes be mitigated by increasing the timeout related settings:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">{</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a>  <span class="dt">"r.debugger.timeouts.prompt"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a>  <span class="dt">"r.debugger.timeouts.startup"</span><span class="fu">:</span> <span class="dv">2000</span><span class="fu">,</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a>  <span class="dt">"r.debugger.timeouts.terminate"</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="fu">}</span></span></code></pre></div>
 <p>If you don’t get the debugger running properly yourself, please don’t hesitate to open an issue on github!</p>
   </div>
 

@@ -98,7 +98,7 @@
 
     
     
-<p>This extension adds debugging capabilities for the <a href="https://www.r-project.org/">R</a> programming language to Visual Studio Code and depends on the R package <a href="https://github.com/ManuelHentschel/vscDebugger">vscDebugger</a>. For further R support in VS Code see e.g. <a href="https://github.com/Ikuyadeu/vscode-R">vscode-R</a> and <a href="https://github.com/REditorSupport/vscode-r-lsp">R LSP</a>.</p>
+<p>The extension <a href="https://marketplace.visualstudio.com/items?itemName=RDebugger.r-debugger">vscode-R-debugger</a> adds debugging capabilities for the <a href="https://www.r-project.org/">R</a> programming language to Visual Studio Code and depends on the R package <a href="https://github.com/ManuelHentschel/vscDebugger">vscDebugger</a>. For further R support in VS Code see e.g. <a href="https://github.com/Ikuyadeu/vscode-R">vscode-R</a> and <a href="https://github.com/REditorSupport/vscode-r-lsp">R LSP</a>.</p>
 <div id="features" class="section level2">
 <h2 class="hasAnchor">
 <a href="#features" class="anchor"></a>Features</h2>
@@ -110,11 +110,10 @@
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
-<p>The latest “stable” version of the VS Code extension can be installed from the <a href="https://marketplace.visualstudio.com/items?itemName=RDebugger.r-debugger">marketplace</a>. After installing the extension, the R package can be installed using the command <code>r.debugger.updateRPackage</code>. If this does not work, you can find the source code and compiled binaries on the <a href="https://github.com/ManuelHentschel/VSCode-R-Debugger/releases">releases site</a>.</p>
-<p>The provided packages were built using R 4.0.2 and might be incompatible with older R versions. In these cases it is necessary to build the package from code.</p>
+<p>The latest version of the VS Code extension can be installed from the <a href="https://marketplace.visualstudio.com/items?itemName=RDebugger.r-debugger">marketplace</a>. After installing the extension, the R package can be installed using the command <code>r.debugger.updateRPackage</code>. If this does not work, you can find the source code and compiled binaries on the <a href="https://github.com/ManuelHentschel/VSCode-R-Debugger/releases">releases site</a>.</p>
+<p>The provided packages were built using the latest R release and might be incompatible with older R versions. In these cases it is necessary to build the package from code.</p>
 <p>If you want to install a development version, the VS Code extension can be installed from the .vsix-files found <a href="https://github.com/ManuelHentschel/VSCode-R-Debugger/actions?query=workflow%3Amain">here</a>. To download the correct file, filter the commits by branch, select the latest commit, and download the file <code>r-debugger.vsix</code> under the caption “Artifacts”. To install the latest development version of the required R-package from GitHub, run <code>devtools::install_github("ManuelHentschel/vscDebugger")</code> or install from the artifacts found <a href="https://github.com/ManuelHentschel/vscDebugger/actions">here</a>.</p>
 <p>If your R path is neither in the Windows registry nor the <code>PATH</code> environment variable, make sure to provide a valid path to the R executable in <code>r.rpath.xxx</code>.</p>
-<p><strong>Note on the package version:</strong> Since the debugger is still under initial development, both this extension and the accompanying R package are major version 0.y.z. The minor version (x.Y.z) is incremented when backward incompatible changes to the interface/communication between the VS Code extension and the R package are introduced. Compatibility between the two is only intended (“guaranteed”) if both have the same minor version. The patch version (x.y.Z) is incremented independently for all other changes that justify a new release.</p>
 </div>
 <div id="using-the-debugger" class="section level2">
 <h2 class="hasAnchor">
@@ -150,7 +149,7 @@
 <div id="configuration" class="section level2">
 <h2 class="hasAnchor">
 <a href="#configuration" class="anchor"></a>Configuration</h2>
-<p>For a detailed explanation of possible launch config entries and other settings, see <a href="./configuration.html">configuration.md</a> on github.</p>
+<p>For a detailed explanation of possible launch config entries and other settings, see <a href="https://manuelhentschel.github.io/vscDebugger/articles/configuration.html">Configuration</a>.</p>
 </div>
 <div id="how-it-works" class="section level2">
 <h2 class="hasAnchor">
@@ -172,7 +171,7 @@
 <div id="debugging-r-packages" class="section level2">
 <h2 class="hasAnchor">
 <a href="#debugging-r-packages" class="anchor"></a>Debugging R Packages</h2>
-<p><strong>New:</strong> Packages can now be debugged using <code>load_all</code> from <code>pkgload</code>. To do so, it is required to install <code>pkgload</code> (part of <code>devtools</code>). By default, <code>load_all</code> will be masked by a modified version that automatically sets breakpoints in the loaded package and attaches the modified versions of <code>print</code>, <code>cat</code>, <code>message</code>. To always load a package when launching a debug session, you can specify an array of paths in the launch config entry <code>"loadPackages"</code>. This is done (for the currently opened package) in the example debug config <code>"Debug R-Package"</code>.</p>
+<p>Packages can now be debugged using <code>load_all</code> from <code>pkgload</code>. To do so, it is required to install <code>pkgload</code> (part of <code>devtools</code>). By default, <code>load_all</code> will be masked by a modified version that automatically sets breakpoints in the loaded package and attaches the modified versions of <code>print</code>, <code>cat</code>, <code>message</code>. To always load a package when launching a debug session, you can specify an array of paths in the launch config entry <code>"loadPackages"</code>. This is done (for the currently opened package) in the example debug config <code>"Debug R-Package"</code>.</p>
 <p>Packages with a more complicated installation that might not be compatible with <code>load_all</code> can also be debugged. For this to work, the proper source information must be retained during the installation of the package (check <code><a href="https://rdrr.io/r/base/attr.html">attr(attr(FUNCTION_NAME, 'srcref'), 'srcfile')</a></code> for some function from the package):</p>
 <ul>
 <li>The package must be installed from source code (not CRAN or <code>.tar.gz</code>)</li>
@@ -189,20 +188,10 @@
 <span class="va">message</span> <span class="op">&lt;-</span> <span class="va">message</span></code></pre></div>
 <p>This assignment can be overwritten by the debugger with <code>.vsc.print</code>/<code>.vsc.cat</code>/<code>.vsc.message</code>, but has no effect when not using the debugger.</p>
 </div>
-<div id="warning" class="section level2">
+<div id="troubleshooting" class="section level2">
 <h2 class="hasAnchor">
-<a href="#warning" class="anchor"></a>Warning</h2>
-<p>In the following cases the debugger might not work correctly/as expected:</p>
-<ul>
-<li>Calls to <code><a href="https://rdrr.io/r/base/trace.html">trace()</a></code>, <code>tracingstate()</code>: These are used to implement breakpoints, so usage might interfere with the debugger’s breakpoints</li>
-<li>Custom <code><a href="https://rdrr.io/r/base/options.html">options(error=...)</a></code>: the debugger uses its own <code><a href="https://rdrr.io/r/base/options.html">options(error=...)</a></code> to show stack trace etc. on error</li>
-<li>Any form of (interactive) user input in the terminal during runtime (e.g. <code><a href="https://rdrr.io/r/base/readline.html">readline(stdin())</a></code>), since the debugger passes all user input through <code><a href="https://rdrr.io/r/base/eval.html">eval(...)</a></code>.</li>
-<li>Code that contains calls to <code><a href="https://rdrr.io/r/base/sys.parent.html">sys.calls()</a></code>, <code><a href="https://rdrr.io/r/base/sys.parent.html">sys.frames()</a></code>, <code><a href="https://rdrr.io/r/base/attr.html">attr(..., 'srcref')</a></code> etc.: Since pretty much all code is evaluated through calls to <code><a href="https://rdrr.io/r/base/eval.html">eval(...)</a></code> these results might be wrong. <!-- If required, input in the debug console can be sent directly to R's `stdin` by prepending `###stdin`. -->
-</li>
-<li>Extensive use of graphical output/input, stdio-redirecting, <code><a href="https://rdrr.io/r/base/sink.html">sink()</a></code>
-</li>
-<li>Extensive use of lazy evaluation, promises, side-effects: In the general case, the debugger recognizes unevaluated promises and preserves them. It might be possible, however, that the gathering of information about the stack/variables leads to unexpected side-effects. Especially watch-expressions must be safe to be evaluated in any frame, since these are passed to <code><a href="https://rdrr.io/r/base/eval.html">eval()</a></code> in the currently viewed frame any time the debugger hits a breakpoint or steps through the code.</li>
-</ul>
+<a href="#troubleshooting" class="anchor"></a>Troubleshooting</h2>
+<p>For troubleshooting info, see <a href="https://manuelhentschel.github.io/vscDebugger/articles/troubleshooting.html">Troubleshooting</a></p>
 </div>
 <div id="contributing" class="section level2">
 <h2 class="hasAnchor">
