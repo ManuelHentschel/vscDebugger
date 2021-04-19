@@ -86,7 +86,10 @@ evaluateRequest <- function(response, args, request){
   }
 
   if(!isWatch && session$assignToAns){
-    assign('.ans', valueAndVisible$value, envir = globalenv())
+    ans <- getOption('vsc.ansName', '.Last.value')
+    if(!is.null(ans) && !identical(ans, '')){
+      assign(ans, valueAndVisible$value, envir = globalenv())
+    }
   }
 
   sendResponse(response)
