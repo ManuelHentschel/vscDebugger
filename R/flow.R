@@ -66,6 +66,7 @@ showingPromptRequest <- function(response, args, request){
   } else{
     logPrint('starting paused!!!')
     session$state$startPaused('browser')
+    session$clearStackTree <- TRUE
     sendStoppedEvent(reason='step')
   }
 }

@@ -53,7 +53,7 @@
     tmpwd <- setwd(dirname(path))
   }
 
-  registerLaunchFrame(1)
+  registerLaunchFrame(2)
   # actually run the code:
   for(i in seq_along(body0)){
     body <- setAndUpdateBreakpoints(body0, path)

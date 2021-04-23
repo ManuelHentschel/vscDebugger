@@ -162,7 +162,7 @@ evalInEnv <- function(
     )
     unregisterLaunchFrame()
   } else if(catchErrors && showOutput){
-    registerLaunchFrame(8)
+    registerLaunchFrame(7)
     # wrap in try(), withVisible()
     valueAndVisible <- try(
       {

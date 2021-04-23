@@ -181,6 +181,7 @@ RootNode <- R6::R6Class(
   public = list(
     getStackNode = function(args=list()) {
       if(lget(args, 'refresh', FALSE) || is.null(private$children$stackNode)){
+        logPrint('Refreshing stack node')
         private$children$stackNode <- StackNode$new(args, self)
       }
       return(private$children$stackNode)
