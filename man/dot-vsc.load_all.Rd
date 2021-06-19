@@ -11,7 +11,7 @@ Modified version of \code{pkgload::load_all()}
 }
 \seealso{
 Other overwrites: 
-\code{\link{.vsc.cat}()},
-\code{\link{.vsc.debugSource}()}
+\code{\link{.vsc.debugSource}()},
+\code{\link{outputOverwrites}}
 }
 \concept{overwrites}

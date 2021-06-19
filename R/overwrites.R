@@ -14,7 +14,7 @@
 #' `overwriteCat`, `overwritePrint`, `overwriteStr`, and `overwriteMessage`.
 #' 
 #' 
-#' @name .vsc.cat
+#' @name outputOverwrites
 #' @rdname outputOverwrites
 #' 
 #' @param ... Further arguments that are passed to the original function

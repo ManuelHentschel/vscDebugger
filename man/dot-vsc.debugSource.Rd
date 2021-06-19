@@ -32,7 +32,7 @@ Modified version of \code{base::source} that honors breakpoints set by the debug
 }
 \seealso{
 Other overwrites: 
-\code{\link{.vsc.cat}()},
-\code{\link{.vsc.load_all}()}
+\code{\link{.vsc.load_all}()},
+\code{\link{outputOverwrites}}
 }
 \concept{overwrites}
