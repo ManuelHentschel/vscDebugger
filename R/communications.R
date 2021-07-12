@@ -211,6 +211,8 @@ sendToVsc <- function(body = "", useCustomSocket = FALSE) {
     logCat('Sent json (json): ', json, '\n', sep='')
   } else if(!is.null(session$dapSocketConnection)){
     msg <- makeDapMessage(json)
+    # This step should not be necessary, but the debugger does not work otherwise:
+    msg <- paste0(msg, '\r\n\r\n')
     base::cat(msg, file=session$dapSocketConnection)
     logCat('Sent json (dap): ', json, '\n', sep='')
   } else{

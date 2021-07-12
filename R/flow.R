@@ -180,6 +180,9 @@ disconnectRequest <- function(response, args, request){
       detach(session$rStrings$attachName, character.only = TRUE),
       silent = TRUE
     )
+    if(session$taskCallback != 0){
+      removeTaskCallback(session$taskCallback)
+    }
     session$state$changeBaseState('detached')
   } else if(isCalledFromBrowser()){
     logPrint('disconnect from browser')
