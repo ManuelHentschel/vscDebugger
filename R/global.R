@@ -92,7 +92,7 @@ session <- local({
     attachName = 'tools:vscDebugger'
   )
 
-  # cusotm events/requests:
+  # custom events/requests:
   supportsWriteToStdinEvent <- FALSE
   supportsShowingPromptRequest <- FALSE
   supportsStdoutReading <- FALSE

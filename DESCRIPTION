@@ -30,7 +30,8 @@ BugReports:
     https://github.com/ManuelHentschel/vscDebugger/issues
 Imports:
     jsonlite,
-    R6
+    R6,
+    tcltk
 Suggests: 
     pkgload,
     knitr,

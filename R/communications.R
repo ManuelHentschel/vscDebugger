@@ -1,11 +1,5 @@
 
 
-#' @export
-.vsc.listenOnPort <- function(...){
-  # DEPRECATED
-  .vsc.listenForJSON(...)
-}
-
 # Can be used to dispatch requests via tcp socket instead of stdin
 #' @export
 .vsc.listenForJSON <- function(

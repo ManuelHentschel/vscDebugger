@@ -122,6 +122,7 @@ initializeRequest <- function(response, args, request){
       session$rootNode$clearVariables()
       sendInvalidatedEvent('variables')
       unregisterEntryFrame()
+      sendStoppedEvent('step')
       options(session$internalOptions)
       TRUE
     })
