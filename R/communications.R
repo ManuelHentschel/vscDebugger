@@ -75,7 +75,8 @@
 .vsc.listenForDAP <- function(
   port = session$dapPort,
   host = session$dapHost,
-  timeout = -1
+  timeout = -1,
+  server = TRUE
 ){
   registerEntryFrame()
 
@@ -89,7 +90,7 @@
     conn <- socketConnection(
       host = host,
       port = port,
-      server = TRUE,
+      server = server,
       open = "r+b",
       blocking = FALSE
     )
@@ -206,7 +207,8 @@ sendToVsc <- function(body = "", useCustomSocket = FALSE) {
   } else if(!is.null(session$dapSocketConnection)){
     msg <- makeDapMessage(json)
     # This step should not be necessary, but the debugger does not work otherwise:
-    msg <- paste0(msg, '\r\n\r\n')
+    # msg <- paste0(msg, '\r\n\r\n')
+    msg <- paste0(msg)
     base::cat(msg, file=session$dapSocketConnection)
     logCat('Sent json (dap): ', json, '\n', sep='')
   } else{

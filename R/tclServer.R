@@ -8,7 +8,6 @@ startServer <- function(port, cb){
     tcltk::.Tcl('global sock')
     line <- tcltk::tclvalue('line')
     sock <- tcltk::tclvalue('sock')
-    cat(line)
     cb(line, sock)
   }
   tclCb <- tcltk::.Tcl.callback(cbFunc)

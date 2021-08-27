@@ -88,6 +88,21 @@ initializeRequest <- function(response, args, request){
       open = "r+b"
     )
   }
+  
+  # connect to DAP socket, if specified
+  session$useDapSocket <- lget(args, 'useDapSocket', FALSE)
+  session$dapPort <- lget(args, 'dapPort', 0)
+  session$dapHost <- lget(args, 'dapHost', '127.0.0.1')
+  if(session$useDapSocket){
+    session$dapSocketConnection <- socketConnection(
+      host = session$dapHost,
+      port = session$dapPort,
+      server = FALSE,
+      blocking = FALSE,
+      encoding = 'UTF-8',
+      open = "r+b"
+    )
+  }
 
   # connect to sink socket if specified
   session$useSinkSocket <- lget(args, 'useSinkSocket', FALSE)
@@ -132,6 +147,8 @@ initializeRequest <- function(response, args, request){
       TRUE
     })
   }
+  
+  base::print('init done!!!')
 
   # prepare and send response
   response$body <- body

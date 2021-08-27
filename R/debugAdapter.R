@@ -9,6 +9,7 @@
   command <- lget(request, 'command', '')
   args <- lget(request, 'arguments', list())
   commandKnown <- TRUE
+  base::cat('Request: ', command, '\n')
   ret <- ({
     if(command == 'stackTrace'){
       stackTraceRequest(response, args, request)

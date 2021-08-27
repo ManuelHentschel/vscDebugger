@@ -15,124 +15,130 @@
 NULL
 
 
-
+# make placeholder session object
+session <- new.env()
 
 # create environment for global data used by package functions
-session <- local({
-  # settings:
-  # (usually changed globally, persisting across debug sessions)
-  varInfos <- list()
+initSession <- function() {
+  eval(quote({
+    # settings:
+    # (usually changed globally, persisting across debug sessions)
+    varInfos <- list()
 
-  # debugSession:
-  # (set for this debug session)
-  allowGlobalDebugging <- FALSE
-  overwritePrint <- TRUE
-  overwriteCat <- TRUE
-  overwriteMessage <- TRUE
-  overwriteStr <- TRUE
-  overwriteSource <- TRUE
-  overwriteLoadAll <- TRUE
-  overwriteHelp <- TRUE
-  splitOverwrittenOutput <- FALSE
+    # debugSession:
+    # (set for this debug session)
+    allowGlobalDebugging <- FALSE
+    overwritePrint <- TRUE
+    overwriteCat <- TRUE
+    overwriteMessage <- TRUE
+    overwriteStr <- TRUE
+    overwriteSource <- TRUE
+    overwriteLoadAll <- TRUE
+    overwriteHelp <- TRUE
+    splitOverwrittenOutput <- FALSE
 
-  supportsInvalidatedEvent <- FALSE
-  noDebug <- FALSE
-  debugMode <- ''
-  workingDirectory <- ''
-  file <- ''
-  mainFunction <- 'main'
-  includePackageScopes <- FALSE
-  setBreakpointsInPackages <- FALSE
-  debuggedPackages <- character(0)
-  loadPackages <- character(0)
-  loadSilently <- FALSE
-  assignToAns <- TRUE
+    supportsInvalidatedEvent <- FALSE
+    noDebug <- FALSE
+    debugMode <- ''
+    workingDirectory <- ''
+    file <- ''
+    mainFunction <- 'main'
+    includePackageScopes <- FALSE
+    setBreakpointsInPackages <- FALSE
+    debuggedPackages <- character(0)
+    loadPackages <- character(0)
+    loadSilently <- FALSE
+    assignToAns <- TRUE
 
-  previousOptions <- list()
-  internalOptions <- list()
-  taskCallback <- 0
+    previousOptions <- list()
+    internalOptions <- list()
+    taskCallback <- 0
 
-  pid <- 0
-  ppid <- 0
-  terminalId <- ''
+    pid <- 0
+    ppid <- 0
+    terminalId <- ''
 
-  # server/communication:
-  # (set for this debug session)
-  # (should not influence the behaviour of the "R facing part" of the debugger)
+    # server/communication:
+    # (set for this debug session)
+    # (should not influence the behaviour of the "R facing part" of the debugger)
 
-  useDapSocket <- FALSE
-  dapPort <- 18721
-  dapHost <- 'localhost'
-  dapSocketConnection <- NULL
+    useDapSocket <- FALSE
+    dapPort <- 18721
+    dapHost <- 'localhost'
+    dapSocketConnection <- NULL
 
-  useJsonSocket <- FALSE
-  jsonPort <- 0
-  jsonHost <- 'localhost'
-  jsonSocketConnection <- NULL
+    useJsonSocket <- FALSE
+    jsonPort <- 0
+    jsonHost <- 'localhost'
+    jsonSocketConnection <- NULL
 
-  useSinkSocket <- FALSE
-  sinkPort <- 0
-  sinkHost <- 'localhost'
-  sinkSocketConnection <- NULL
-  sinkNumber <- 0
+    useSinkSocket <- FALSE
+    sinkPort <- 0
+    sinkHost <- 'localhost'
+    sinkSocketConnection <- NULL
+    sinkNumber <- 0
 
-  useCustomSocket <- FALSE
-  customPort <- 18720
-  customHost <- 'localhost'
-  customSocketConnection <- NULL
+    useCustomSocket <- FALSE
+    customPort <- 18720
+    customHost <- 'localhost'
+    customSocketConnection <- NULL
 
-  socketServer <- FALSE
-  svName <- ''
-  restOfWs <- ''
+    socketServer <- FALSE
+    svName <- ''
+    restOfWs <- ''
 
-  threadId <- 1
+    threadId <- 1
 
-  rStrings <- list(
-    packageName = 'vscDebugger',
-    attachName = 'tools:vscDebugger'
-  )
+    rStrings <- list(
+      packageName = 'vscDebugger',
+      attachName = 'tools:vscDebugger'
+    )
 
-  # custom events/requests:
-  supportsWriteToStdinEvent <- FALSE
-  supportsShowingPromptRequest <- FALSE
-  supportsStdoutReading <- FALSE
-  supportsHelpViewer <- FALSE
+    # custom events/requests:
+    supportsWriteToStdinEvent <- FALSE
+    supportsShowingPromptRequest <- FALSE
+    supportsStdoutReading <- FALSE
+    supportsHelpViewer <- FALSE
 
-  # state:
-  # (is managed by the debugger itself and might change frequently)
-  breakOnErrorFromConsole <- FALSE
-  breakOnErrorFromFile <- TRUE
-  entryFrames <- c()
-  launchFrames <- c()
-  breakpointId <- 1
-  stopListeningOnPort <- FALSE
-  clearStackTree <- FALSE
-  restOfLine <- ''
+    # state:
+    # (is managed by the debugger itself and might change frequently)
+    breakOnErrorFromConsole <- FALSE
+    breakOnErrorFromFile <- TRUE
+    entryFrames <- c()
+    launchFrames <- c()
+    breakpointId <- 1
+    stopListeningOnPort <- FALSE
+    clearStackTree <- FALSE
+    restOfLine <- ''
 
-  state <- NULL
-  pendingEvalResponses <- list()
-
-
-  # data:
-  # (like 'state', but contains longer lists etc.)
-  rootNode <- NULL
-  sourceBreakpointsList <- list()
-  sources <- list()
-  print_help_files_with_topic_0 <- NULL
-  print_hsearch_0 <- NULL
-  breakpointEnvironments <- list()
+    state <- NULL
+    pendingEvalResponses <- list()
 
 
-  # lock and return the environment:
-  lockEnvironment(environment())
-  environment()
-})
+    # data:
+    # (like 'state', but contains longer lists etc.)
+    rootNode <- NULL
+    sourceBreakpointsList <- list()
+    sources <- list()
+    print_help_files_with_topic_0 <- NULL
+    print_hsearch_0 <- NULL
+    breakpointEnvironments <- list()
 
-.onLoad <- function(...) {
-  options(error = traceback)
+
+    # lock and return the environment:
+    lockEnvironment(environment())
+  }), envir = session)
+
+  # initialize dynamic entries:
   session$varInfos <- getDefaultVarInfos()
   session$rootNode <- RootNode$new()
   session$state <- State$new()
+  invisible(NULL)
+}
+
+.onLoad <- function(...) {
+  options(error = traceback)
+  initSession()
 }
 
 #' @export
