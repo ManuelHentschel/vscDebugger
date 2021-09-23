@@ -44,6 +44,8 @@ jobs:
       run: |
         Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
         Rscript -e "remotes::install_deps(dependencies = TRUE)"
+    - name: Setup Pandoc
+      uses: r-lib/actions/setup-pandoc@v1
     - name: Build Package
       run: $RCMD build .
     - name: Compile Code
@@ -65,6 +67,8 @@ jobs:
       uses: actions/checkout@v1
     - name: Setup R
       uses: r-lib/actions/setup-r@master
+    - name: Setup Pandoc
+      uses: r-lib/actions/setup-pandoc@v1
     - name: Install packages
       run: |
         Rscript -e "install.packages(c('remotes', 'rcmdcheck'), repos = 'https://cloud.r-project.org')"
