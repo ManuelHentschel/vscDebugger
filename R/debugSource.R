@@ -123,7 +123,7 @@ mySetBreakpoints <- function(body, ats = list(), finalize = TRUE) {
     # body <- encloseBody(body)
     for(i in seq_along(body)){
       expr <- body[i]
-      if(body[[i]][[1]] != as.name('{')){
+      if(tryCatch(body[[i]][[1]] != as.name('{'), error = function(...) FALSE)){
         body[i] <- encloseBody(body[i])
       }
     }
