@@ -69,6 +69,8 @@ jobs:
       uses: r-lib/actions/setup-r@master
     - name: Setup Pandoc
       uses: r-lib/actions/setup-pandoc@v1
+    - name: Install apt package
+      run: sudo apt-get install libcurl4-openssl-dev 
     - name: Install packages
       run: |
         Rscript -e "install.packages(c('remotes', 'rcmdcheck'), repos = 'https://cloud.r-project.org')"
