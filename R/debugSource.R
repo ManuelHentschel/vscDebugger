@@ -54,6 +54,7 @@
   }
 
   registerLaunchFrame(2)
+  ret <- NULL
   # actually run the code:
   for(i in seq_along(body0)){
     body <- setAndUpdateBreakpoints(body0, path)
