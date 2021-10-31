@@ -98,7 +98,7 @@
 
     
     
-<p>The behaviour of the debugger can be configured in four different ways: 1. Regular VS Code settings 2. Additional VS Code settings in <code>.vscode/settings.json</code> 3. Launch config in <code>.vscode/launch.json</code> 4. Options in R, modified using <code><a href="https://rdrr.io/r/base/options.html">options(vsc.XXX=...)</a></code></p>
+<p>The behaviour of the debugger can be configured in four different ways: 1. Regular VS Code settings 2. Additional VS Code settings in <code>.vscode/settings.json</code> 3. Launch config in <code>.vscode/launch.json</code> 4. Options in R, modified using <code>options(vsc.XXX=...)</code></p>
 <div id="regular-vs-code-settings" class="section level2">
 <h2 class="hasAnchor">
 <a href="#regular-vs-code-settings" class="anchor"></a>1. Regular VS Code settings</h2>
@@ -143,7 +143,7 @@
 <li>
 <code>"file"</code>: Is pretty much equivalent to launching the debugger with <code>"workspace"</code> and immediately calling <code><a href="../reference/.vsc.debugSource.html">.vsc.debugSource()</a></code> on a file. Is hopefully the behaviour expected by users coming from R Studio etc.</li>
 <li>
-<code>"function"</code>: The above debug modes introduce significant overhead by passing all input through <code><a href="https://rdrr.io/r/base/eval.html">eval()</a></code> etc. and use a custom version of <code><a href="https://rdrr.io/r/base/source.html">source()</a></code>, which makes changes to the R code in order to set breakpoints. To provide a somewhat ‘cleaner’ method of running code, this debug mode can be used. The specified file is executed using the default <code>source</code> command and breakpoints are set by using R’s <code><a href="https://rdrr.io/r/base/trace.html">trace(..., tracer=browser)</a></code> function, which is more robust than the custom breakpoint mechanism. Finally, the specified main function (by default <code>main()</code>) is called.</li>
+<code>"function"</code>: The above debug modes introduce significant overhead by passing all input through <code><a href="https://rdrr.io/r/base/eval.html">eval()</a></code> etc. and use a custom version of <code><a href="https://rdrr.io/r/base/source.html">source()</a></code>, which makes changes to the R code in order to set breakpoints. To provide a somewhat ‘cleaner’ method of running code, this debug mode can be used. The specified file is executed using the default <code>source</code> command and breakpoints are set by using R’s <code>trace(..., tracer=browser)</code> function, which is more robust than the custom breakpoint mechanism. Finally, the specified main function (by default <code>main()</code>) is called.</li>
 </ul>
 <p>The remaining config entries are:</p>
 <ul>

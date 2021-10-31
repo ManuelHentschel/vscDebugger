@@ -100,7 +100,7 @@
     
 <p>If you have problems getting the debugger to launch, you can try the following steps to eliminate possible sources of errors:</p>
 <ul>
-<li>Switch to an empty directory, create a single <code>test.R</code> containing something simple like <code><a href="https://rdrr.io/r/base/print.html">print('Hello world')</a></code>
+<li>Switch to an empty directory, create a single <code>test.R</code> containing something simple like <code>print('Hello world')</code>
 </li>
 <li>Delete <code>./.vscode/launch.json</code> if present, and click <code>create a launch.json file</code> in the debug sidebar (<code>ctrl+shift+D</code>), to create a default launch config file. To avoid interference with other debug extensions, the workspace should only contain R files.</li>
 <li>Add the entry <code>"commandLineArgs": ["--vanilla"]</code> to the debug config you are trying to launch. This disables your <code>.Rprofile</code> and stops any <code>.RData</code> files from being restored.</li>
@@ -116,7 +116,7 @@
 <ul>
 <li>Anything that modifies the input prompt (e.g. <code>prompt::set_prompt()</code>)</li>
 <li>Calls to <code><a href="https://rdrr.io/r/base/trace.html">trace()</a></code>, <code><a href="https://rdrr.io/r/base/trace.html">tracingState()</a></code> etc.</li>
-<li>Custom error handlers set using <code><a href="https://rdrr.io/r/base/options.html">options(error = ...)</a></code>
+<li>Custom error handlers set using <code>options(error = ...)</code>
 </li>
 <li>Calls to <code><a href="https://rdrr.io/r/base/sys.parent.html">sys.calls()</a></code>, <code><a href="https://rdrr.io/r/base/sys.parent.html">sys.frames()</a></code> etc.</li>
 <li>Use of <code><a href="https://rdrr.io/r/base/sink.html">sink()</a></code>

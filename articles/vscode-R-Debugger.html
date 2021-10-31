@@ -172,7 +172,7 @@
 <h2 class="hasAnchor">
 <a href="#debugging-r-packages" class="anchor"></a>Debugging R Packages</h2>
 <p>Packages can now be debugged using <code>load_all</code> from <code>pkgload</code>. To do so, it is required to install <code>pkgload</code> (part of <code>devtools</code>). By default, <code>load_all</code> will be masked by a modified version that automatically sets breakpoints in the loaded package and attaches the modified versions of <code>print</code>, <code>cat</code>, <code>message</code>. To always load a package when launching a debug session, you can specify an array of paths in the launch config entry <code>"loadPackages"</code>. This is done (for the currently opened package) in the example debug config <code>"Debug R-Package"</code>.</p>
-<p>Packages with a more complicated installation that might not be compatible with <code>load_all</code> can also be debugged. For this to work, the proper source information must be retained during the installation of the package (check <code><a href="https://rdrr.io/r/base/attr.html">attr(attr(FUNCTION_NAME, 'srcref'), 'srcfile')</a></code> for some function from the package):</p>
+<p>Packages with a more complicated installation that might not be compatible with <code>load_all</code> can also be debugged. For this to work, the proper source information must be retained during the installation of the package (check <code>attr(attr(FUNCTION_NAME, 'srcref'), 'srcfile')</code> for some function from the package):</p>
 <ul>
 <li>The package must be installed from source code (not CRAN or <code>.tar.gz</code>)</li>
 <li>The flag <code>--with-keep.source</code> should be set</li>

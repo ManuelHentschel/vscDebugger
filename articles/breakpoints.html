@@ -148,7 +148,7 @@
 <div id="debug-modes" class="section level2">
 <h2 class="hasAnchor">
 <a href="#debug-modes" class="anchor"></a>Debug modes</h2>
-<p>The debug modes <em>“Debug R-File”</em> and <em>“Launch Workspace”</em> use a custom version of <code><a href="https://rdrr.io/r/base/source.html">source()</a></code>, which makes changes to the R code in order to set breakpoints. To provide a somewhat ‘cleaner’ method of running code, the debug mode <em>“Debug R-Function”</em> can be used. In this mode, the specified file is executed using the default <code><a href="https://rdrr.io/r/base/source.html">source()</a></code> command and breakpoints are set by using R’s <code><a href="https://rdrr.io/r/base/trace.html">trace(..., tracer=browser)</a></code> function, which is more robust than the custom breakpoint mechanism.</p>
+<p>The debug modes <em>“Debug R-File”</em> and <em>“Launch Workspace”</em> use a custom version of <code><a href="https://rdrr.io/r/base/source.html">source()</a></code>, which makes changes to the R code in order to set breakpoints. To provide a somewhat ‘cleaner’ method of running code, the debug mode <em>“Debug R-Function”</em> can be used. In this mode, the specified file is executed using the default <code><a href="https://rdrr.io/r/base/source.html">source()</a></code> command and breakpoints are set by using R’s <code>trace(..., tracer=browser)</code> function, which is more robust than the custom breakpoint mechanism.</p>
 </div>
 <div id="breakpoints-in-packages" class="section level2">
 <h2 class="hasAnchor">

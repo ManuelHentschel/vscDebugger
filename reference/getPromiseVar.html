@@ -162,51 +162,55 @@ the value if it has already been evaluated,
 and the environment in which the unevaluated promise will be evaluated.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='co'>## create a promise</span>
-<span class='va'>e</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/environment.html'>new.env</a></span><span class='op'>(</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/base/delayedAssign.html'>delayedAssign</a></span><span class='op'>(</span><span class='st'>"x"</span>, <span class='op'>{</span><span class='fu'><a href='https://rdrr.io/r/base/message.html'>message</a></span><span class='op'>(</span><span class='st'>"evaluating promise..."</span><span class='op'>)</span>; <span class='fl'>1L</span><span class='op'>}</span>, assign.env <span class='op'>=</span> <span class='va'>e</span><span class='op'>)</span>
-<span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'>getPromiseVar</span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; $code
-#&gt; {
-#&gt;     message("evaluating promise...")
-#&gt;     1L
-#&gt; }
-#&gt; 
-#&gt; $environment
-#&gt; &lt;environment: 0x7fb13d0d0038&gt;
-#&gt; 
-#&gt; $evaluated
-#&gt; [1] FALSE
-#&gt; 
-#&gt; attr(,"class")
-#&gt; [1] ".vsc.promise"       ".vsc.internalClass"</div><div class='input'>
-<span class='co'>## evaluate it...</span>
-<span class='fu'>base</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/r/base/print.html'>print</a></span><span class='op'>(</span><span class='va'>e</span><span class='op'>$</span><span class='va'>x</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>evaluating promise...</span></div><div class='output co'>#&gt; [1] 1</div><div class='input'>
-<span class='co'>## is it still a promise? (It depends...)</span>
-<span class='fu'><a href='https://rdrr.io/r/base/stopifnot.html'>stopifnot</a></span><span class='op'>(</span><span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'><a href='isPromise.html'>isPromise</a></span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span>, strict <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/base/stopifnot.html'>stopifnot</a></span><span class='op'>(</span><span class='op'>!</span><span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'><a href='isPromise.html'>isPromise</a></span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span>, strict <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span>
-
-<span class='co'>## get info again</span>
-<span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'>getPromiseVar</span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; $code
-#&gt; {
-#&gt;     message("evaluating promise...")
-#&gt;     1L
-#&gt; }
-#&gt; 
-#&gt; $environment
-#&gt; NULL
-#&gt; 
-#&gt; $evaluated
-#&gt; [1] TRUE
-#&gt; 
-#&gt; $value
-#&gt; [1] 1
-#&gt; 
-#&gt; attr(,"class")
-#&gt; [1] ".vsc.promise"       ".vsc.internalClass"</div><div class='input'>
-</div></pre>
+    <pre class="examples"><span class='r-in'><span class='co'>## create a promise</span></span>
+<span class='r-in'><span class='va'>e</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/environment.html'>new.env</a></span><span class='op'>(</span><span class='op'>)</span></span>
+<span class='r-in'><span class='fu'><a href='https://rdrr.io/r/base/delayedAssign.html'>delayedAssign</a></span><span class='op'>(</span><span class='st'>"x"</span>, <span class='op'>{</span><span class='fu'><a href='https://rdrr.io/r/base/message.html'>message</a></span><span class='op'>(</span><span class='st'>"evaluating promise..."</span><span class='op'>)</span>; <span class='fl'>1L</span><span class='op'>}</span>, assign.env <span class='op'>=</span> <span class='va'>e</span><span class='op'>)</span></span>
+<span class='r-in'><span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'>getPromiseVar</span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span><span class='op'>)</span></span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> $code</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> {</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     message("evaluating promise...")</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     1L</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> }</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> $environment</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;environment: 0x7fae49648ff0&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> $evaluated</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] FALSE</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> attr(,"class")</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] ".vsc.promise"       ".vsc.internalClass"</span>
+<span class='r-in'></span>
+<span class='r-in'><span class='co'>## evaluate it...</span></span>
+<span class='r-in'><span class='fu'>base</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/r/base/print.html'>print</a></span><span class='op'>(</span><span class='va'>e</span><span class='op'>$</span><span class='va'>x</span><span class='op'>)</span></span>
+<span class='r-msg co'><span class='r-pr'>#&gt;</span> evaluating promise...</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] 1</span>
+<span class='r-in'></span>
+<span class='r-in'><span class='co'>## is it still a promise? (It depends...)</span></span>
+<span class='r-in'><span class='fu'><a href='https://rdrr.io/r/base/stopifnot.html'>stopifnot</a></span><span class='op'>(</span><span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'><a href='isPromise.html'>isPromise</a></span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span>, strict <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span><span class='op'>)</span></span>
+<span class='r-in'><span class='fu'><a href='https://rdrr.io/r/base/stopifnot.html'>stopifnot</a></span><span class='op'>(</span><span class='op'>!</span><span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'><a href='isPromise.html'>isPromise</a></span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span>, strict <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span></span>
+<span class='r-in'></span>
+<span class='r-in'><span class='co'>## get info again</span></span>
+<span class='r-in'><span class='fu'>vscDebugger</span><span class='fu'>:::</span><span class='fu'>getPromiseVar</span><span class='op'>(</span><span class='st'>"x"</span>, <span class='va'>e</span><span class='op'>)</span></span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> $code</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> {</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     message("evaluating promise...")</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     1L</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> }</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> $environment</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> NULL</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> $evaluated</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] TRUE</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> $value</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] 1</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> attr(,"class")</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] ".vsc.promise"       ".vsc.internalClass"</span>
+<span class='r-in'></span>
+</pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
