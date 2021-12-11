@@ -104,7 +104,7 @@ Node <- R6::R6Class(
         if(varRef < 0){
           return(NULL)
         }
-        if(lget(self, 'variablesReference', 0) == varRef){
+        if(lgetSafe(self, 'variablesReference', 0) == varRef){
           return(self)
         }
         if(varRef %in% private$childrenVarRefs){
@@ -130,7 +130,7 @@ Node <- R6::R6Class(
           return(NULL)
         }
         childNodes <- node2$getChildren(list(lazy=TRUE))
-        names <- lapply(childNodes, function(child) lget(child, 'name', ''))
+        names <- lapply(childNodes, function(child) lgetSafe(child, 'name', ''))
         names <- unlist(names)
         ind <- which(names == name)[1]
         if(is.na(ind)){

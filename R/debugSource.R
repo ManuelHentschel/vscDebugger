@@ -54,6 +54,7 @@
   }
 
   registerLaunchFrame(2)
+  ret <- NULL
   # actually run the code:
   for(i in seq_along(body0)){
     body <- setAndUpdateBreakpoints(body0, path)
@@ -123,7 +124,7 @@ mySetBreakpoints <- function(body, ats = list(), finalize = TRUE) {
     # body <- encloseBody(body)
     for(i in seq_along(body)){
       expr <- body[i]
-      if(body[[i]][[1]] != as.name('{')){
+      if(tryCatch(body[[i]][[1]] != as.name('{'), error = function(...) FALSE)){
         body[i] <- encloseBody(body[i])
       }
     }
