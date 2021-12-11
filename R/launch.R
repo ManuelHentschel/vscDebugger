@@ -88,6 +88,7 @@ initializeRequest <- function(response, args, request){
       open = "r+b"
     )
   }
+
   
   # connect to DAP socket, if specified
   session$useDapSocket <- lget(args, 'useDapSocket', FALSE)
@@ -147,8 +148,6 @@ initializeRequest <- function(response, args, request){
       TRUE
     })
   }
-  
-  base::print('init done!!!')
 
   # prepare and send response
   response$body <- body
