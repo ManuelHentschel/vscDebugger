@@ -2,7 +2,7 @@
 
 
 #' @export
-.vsc.startWebsocket <- function(
+.vsc.startTclServer <- function(
   port = session$dapPort,
   host = '127.0.0.1'
 ){
