@@ -4,11 +4,13 @@
 
 startServer <- function(port, cb){
   cbFunc <- function(){
+    registerEntryFrame(skipCalls = 5)
     tcltk::.Tcl('global line')
     tcltk::.Tcl('global sock')
     line <- tcltk::tclvalue('line')
     sock <- tcltk::tclvalue('sock')
     cb(line, sock)
+    # unregisterEntryFrame()
   }
   tclCb <- tcltk::.Tcl.callback(cbFunc)
 
