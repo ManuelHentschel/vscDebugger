@@ -11,6 +11,7 @@
   chdir = FALSE,
   print.eval = NULL,
   encoding = "unknown",
+  isRmd = NULL,
   ...
 )
 }
