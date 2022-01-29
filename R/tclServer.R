@@ -10,14 +10,11 @@
   session$dapPort <- port
   session$socketServer <- startServer(
     port = port,
-    cb = .vsc.handleDap
+    cb = tclCallback
   )
 }
 
-
-#' @export
-.vsc.handleDap <- function(s, socket='tclSocket', ...){
-  
+tclCallback <- function(s, socket='tclSocket', ...){
   # SKIPPED_FRAMES <- 6
   SKIPPED_FRAMES <- 1
 
@@ -25,32 +22,43 @@
 
   session$svName <- socket
   s <- paste0(session$restOfWs, s)
+  
+  s <- .vsc.handleDap(s)
 
+  session$restOfWs <- s
+
+  unregisterEntryFrame(SKIPPED_FRAMES)
+}
+
+#' @export
+.vsc.handleDap <- function(s){
+  registerEntryFrame()
   while(TRUE){
     # identify content-length
     m <- regexec('^Content-Length: (\\d+)\r?\n\r?\n', s)
     rm <- regmatches(s, m)
 
+    # break if header is not complete
     if(length(rm[[1]]) == 0){
-      session$restOfWs <- s
-      break
+      return(invisible(s))
     }
 
+    # read content-length
     contentLength <- as.numeric(rm[[1]][2])
     headerLength <- nchar(rm[[1]][1])
 
+    # break if message is not complete
     if(nchar(s)<contentLength+headerLength){
-      session$restOfWs <- s
-      break
+      return(invisible(s))
     }
 
+    # extract message and remove from string
     json <- substring(s, headerLength+1, headerLength + contentLength)
     s <- substring(s, headerLength+contentLength+1, length(s))
 
+    # handle message
     .vsc.handleJson(json)
   }
-  unregisterEntryFrame(SKIPPED_FRAMES)
-  return('')
 }
 
 

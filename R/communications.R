@@ -86,7 +86,7 @@
     stop('This Debug session receives messages via JSON socket.')
   } else if(is.null(session$dapSocketConnection)){
     # new session (also applies for disconnected sessions)
-    base::cat('Listening on ', host, ':', toString(port), '\n', sep='')
+    logCat('Listening on ', host, ':', toString(port), '\n', sep='')
     conn <- socketConnection(
       host = host,
       port = port,
@@ -103,7 +103,7 @@
     port <- session$dapPort
     host <- session$dapHost
     conn <- session$dapSocketConnection
-    base::cat('Listening on ', host, ':', toString(port), '\n', sep='')
+    logCat('Listening on ', host, ':', toString(port), '\n', sep='')
     sendStoppedEvent('step')
     session$previousOptions <- options(session$internalOptions)
   }
