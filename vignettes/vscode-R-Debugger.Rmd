@@ -18,6 +18,7 @@ For further R support in VS Code see e.g. [vscode-R](https://github.com/Ikuyadeu
 ![features.png](images/features.png)
 
 The debugger includes the following features:
+
 1. Run and debug R Code by launching a new R process or attaching to a running one.
 2. View scopes and variables of the currently selected stack frame.
 For many variables it is also possible to assign a new value to the variable or individual entries/attributes in this view.
