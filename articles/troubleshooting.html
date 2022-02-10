@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,18 +33,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">vscDebugger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.4.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.4.7</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
@@ -70,7 +66,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/ManuelHentschel/vscDebugger/">
+  <a href="https://github.com/ManuelHentschel/vscDebugger/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -91,7 +87,7 @@
       <h1 data-toc-skip>Troubleshooting</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ManuelHentschel/vscDebugger/blob/master/vignettes/troubleshooting.Rmd"><code>vignettes/troubleshooting.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ManuelHentschel/vscDebugger/blob/HEAD/vignettes/troubleshooting.Rmd" class="external-link"><code>vignettes/troubleshooting.Rmd</code></a></small>
       <div class="hidden name"><code>troubleshooting.Rmd</code></div>
 
     </div>
@@ -107,7 +103,7 @@
 </ul>
 <p>If disabling you <code>.Rprofile</code> helps, you can selectively disable/enable code for vscode debug sessions using</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html">Sys.getenv</a></span><span class="op">(</span><span class="st">'VSCODE_DEBUG_SESSION'</span><span class="op">)</span><span class="op">==</span><span class="st">'1'</span><span class="op">)</span><span class="op">{</span>
+<code class="sourceCode R"><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">'VSCODE_DEBUG_SESSION'</span><span class="op">)</span><span class="op">==</span><span class="st">'1'</span><span class="op">)</span><span class="op">{</span>
     <span class="co">### Debugger-specific code here</span>
 <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
     <span class="co">### Debugger-breaking code here</span>
@@ -115,13 +111,13 @@
 <p>Examples for code that might break things are</p>
 <ul>
 <li>Anything that modifies the input prompt (e.g. <code>prompt::set_prompt()</code>)</li>
-<li>Calls to <code><a href="https://rdrr.io/r/base/trace.html">trace()</a></code>, <code><a href="https://rdrr.io/r/base/trace.html">tracingState()</a></code> etc.</li>
+<li>Calls to <code><a href="https://rdrr.io/r/base/trace.html" class="external-link">trace()</a></code>, <code><a href="https://rdrr.io/r/base/trace.html" class="external-link">tracingState()</a></code> etc.</li>
 <li>Custom error handlers set using <code>options(error = ...)</code>
 </li>
-<li>Calls to <code><a href="https://rdrr.io/r/base/sys.parent.html">sys.calls()</a></code>, <code><a href="https://rdrr.io/r/base/sys.parent.html">sys.frames()</a></code> etc.</li>
-<li>Use of <code><a href="https://rdrr.io/r/base/sink.html">sink()</a></code>
+<li>Calls to <code><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">sys.calls()</a></code>, <code><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">sys.frames()</a></code> etc.</li>
+<li>Use of <code><a href="https://rdrr.io/r/base/sink.html" class="external-link">sink()</a></code>
 </li>
-<li>Callbacks added using <code><a href="https://rdrr.io/r/base/taskCallback.html">addTaskCallback()</a></code> containing any of the above</li>
+<li>Callbacks added using <code><a href="https://rdrr.io/r/base/taskCallback.html" class="external-link">addTaskCallback()</a></code> containing any of the above</li>
 </ul>
 <p>When launching the debugger, detailed logs are printed to the output channel “R Debugger” (<code>ctrl+shift+u</code> -&gt; select <code>R Debugger</code> in the top right dropdown). These are not meant to be particularly descriptive for users, but might point you in the right direction.</p>
 <p>Problems that might be caused by timing issues, e.g. a slow R startup or network delay when working with remote servers, can sometimes be mitigated by increasing the timeout related settings:</p>
@@ -142,11 +138,13 @@
 
 
       <footer><div class="copyright">
-  <p>Developed by Manuel Hentschel.</p>
+  <p></p>
+<p>Developed by Manuel Hentschel.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
       </footer>
@@ -154,6 +152,8 @@
 
   
 
+
+  
 
   </body>
 </html>

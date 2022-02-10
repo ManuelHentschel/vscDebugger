@@ -20,6 +20,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -32,18 +34,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">vscDebugger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.4.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.4.7</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="reference/index.html">Reference</a>
 </li>
@@ -71,7 +67,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/ManuelHentschel/vscDebugger/">
+  <a href="https://github.com/ManuelHentschel/vscDebugger/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -88,68 +84,79 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-<div id="vscdebugger" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#vscdebugger" class="anchor"></a>vscDebugger</h1></div>
-<p>This package provides support for the VS Code extension <strong><a href="https://github.com/ManuelHentschel/VSCode-R-Debugger">R Debugger</a></strong>.</p>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
-<p>The package can be installed from the <a href="https://github.com/ManuelHentschel/vscDebugger/releases/latest">Releases</a> site. (Experimental) binaries for windows and macOS are provided as well. Should these not work, you can compile and install the package using e.g. <a href="https://cran.r-project.org/web/packages/devtools/index.html">devtools</a> and <a href="https://cran.r-project.org/bin/windows/Rtools/">RTools</a>.</p>
+<div class="section level1">
+<div class="page-header"><h1 id="vscdebugger">vscDebugger<a class="anchor" aria-label="anchor" href="#vscdebugger"></a>
+</h1></div>
+<p>This package provides support for the VS Code extension <strong><a href="https://github.com/ManuelHentschel/VSCode-R-Debugger" class="external-link">R Debugger</a></strong>.</p>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>The package can be installed from the <a href="https://github.com/ManuelHentschel/vscDebugger/releases/latest" class="external-link">Releases</a> site. (Experimental) binaries for windows and macOS are provided as well. Should these not work, you can compile and install the package using e.g. <a href="https://cran.r-project.org/web/packages/devtools/index.html" class="external-link">devtools</a> and <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">RTools</a>.</p>
 <p>Depending on the installation you might need to manually install the dependencies, as well (currently <code>R6</code> and <code>jsonlite</code>):</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'R6'</span>, <span class="st">'jsonlite'</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'R6'</span>, <span class="st">'jsonlite'</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="usage" class="section level2">
-<h2 class="hasAnchor">
-<a href="#usage" class="anchor"></a>Usage</h2>
-<p>Detailed information can be found <a href="https://manuelhentschel.github.io/vscDebugger/">here</a>.</p>
+<div class="section level2">
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
+</h2>
+<p>Detailed information can be found <a href="https://manuelhentschel.github.io/vscDebugger/" class="external-link">here</a>.</p>
 </div>
 </div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <div class="links">
-<h2>Links</h2>
+<h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li>Browse source code at <br><a href="https://github.com/ManuelHentschel/vscDebugger/">https://​github.com/​ManuelHentschel/​vscDebugger/​</a>
-</li>
-<li>Report a bug at <br><a href="https://github.com/ManuelHentschel/vscDebugger/issues">
-    https://​github.com/​ManuelHentschel/​vscDebugger/​issues</a>
-</li>
+<li><a href="https://github.com/ManuelHentschel/vscDebugger/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/ManuelHentschel/vscDebugger/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
+
 <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li><a href="LICENSE.html">Full license</a></li>
-<li><small><a href="https://opensource.org/licenses/mit-license.php">MIT</a></small></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a></small></li>
 </ul>
 </div>
+
 <div class="community">
-<h2>Community</h2>
+<h2 data-toc-skip>Community</h2>
 <ul class="list-unstyled">
 <li><a href="CONTRIBUTING.html">Contributing guide</a></li>
 </ul>
 </div>
-<div class="developers">
-<h2>Developers</h2>
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
 <ul class="list-unstyled">
-<li>Manuel Hentschel <br><small class="roles"> Author, maintainer </small>  </li>
-<li><a href="authors.html">All authors...</a></li>
+<li><a href="authors.html#citation">Citing vscDebugger</a></li>
 </ul>
 </div>
+
+<div class="developers">
+<h2 data-toc-skip>Developers</h2>
+<ul class="list-unstyled">
+<li>Manuel Hentschel <br><small class="roles"> Author, maintainer </small>  </li>
+<li><a href="authors.html">More about authors...</a></li>
+</ul>
+</div>
+
+
 
   </div>
 </div>
 
 
       <footer><div class="copyright">
-  <p>Developed by Manuel Hentschel.</p>
+  <p></p>
+<p>Developed by Manuel Hentschel.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
       </footer>
@@ -157,6 +164,8 @@
 
   
 
+
+  
 
   </body>
 </html>
