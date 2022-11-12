@@ -2,8 +2,12 @@
 .Rproj.user
 .Rhistory
 .RData
-.vscode
+.vscode/*
 .lintr
+
+# Allow launch/tasks
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # Scripts
 build.R

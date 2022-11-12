@@ -1,0 +1,42 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build and install package for testing (QUICK)",
+            "type": "shell",
+            "command": "Rscript build.R --args quick",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build and install package for testing (WHILE LOADED)",
+            "type": "shell",
+            "command": "R CMD REMOVE vscDebugger & R CMD INSTALL . --no-libs --no-lock --no-exec --no-multiarch --no-staged-install --no-html --no-byte-compile",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build and install package for testing (SLOW)",
+            "type": "shell",
+            "command": "Rscript build.R --args slow",
+            "problemMatcher": []
+        },
+        {
+            "label": "Update documentation, do not install",
+            "type": "shell",
+            "command": "Rscript build.R --args docOnly",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}
