@@ -9,9 +9,6 @@
 !.vscode/launch.json
 !.vscode/tasks.json
 
-# Scripts
-build.R
-
 # Build config/artifacts
 src/*.so
 src/*.o
