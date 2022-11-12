@@ -1,87 +1,10 @@
 
-
-#' @export
-.vsc.listenOnPort <- function(...){
-  # DEPRECATED
-  .vsc.listenForJSON(...)
-}
-
-# Can be used to dispatch requests via tcp socket instead of stdin
-#' @export
-.vsc.listenForJSON <- function(
-  port = session$jsonPort,
-  host = session$jsonHost,
-  timeout = -1,
-  server = FALSE
-){
-  registerEntryFrame()
-
-  # choose/open socketConnection
-  if(session$useDapSocket){
-    # sessions can only use one or the other function to receive commands
-    stop('This debug session receives messages via DAP socket.')
-  } else if(is.null(session$jsonSocketConnection)){
-    # create new connection
-    # should be used, if the initialize request is sent using this function
-    conn <- socketConnection(
-      host = host,
-      port = port,
-      server = server,
-      open = "r+b"
-    )
-    session$jsonSocketConnection <- conn 
-    session$jsonHost <- host
-    session$jsonPort <- port
-    session$useJsonSocket <- TRUE
-  } else{
-    # should be the 'normal' case
-    conn <- session$jsonSocketConnection
-    host <- session$jsonHost
-    port <- session$jsonPort
-  }
-  logCat('Listening on ', host, ':', port, '\nTimeout: ', toString(timeout), '\n', sep='')
-
-  # main loop
-  t <- as.numeric(Sys.time())
-  session$stopListeningOnPort <- FALSE
-  while(!session$stopListeningOnPort){
-    # wait for first character, regularly checking for timeout
-    char <- readChar(conn, nchars=1)
-    while(length(char)==0 && !session$stopListeningOnPort){
-      if(timeout>=0 && as.numeric(Sys.time())-t >= timeout){
-        session$stopListeningOnPort <- TRUE
-      } else{
-        Sys.sleep(0.001)
-      }
-      char <- readChar(conn, nchars=1)
-    }
-
-    # read json, don't check timeout, don't Sys.sleep
-    if(length(char)>0){
-      json <- ''
-      while(!identical(char, '\n')){
-        json <- paste0(json, char)
-        char <- readChar(conn, nchars=1)
-      }
-
-      # handle content
-      .vsc.handleJson(json)
-
-      # reset timer
-      t <- as.numeric(Sys.time())
-    }
-  }
-  logPrint('stop listening on port')
-  unregisterEntryFrame()
-  invisible(NULL)
-}
-
-
 #' @export
 .vsc.listenForDAP <- function(
   port = session$dapPort,
   host = session$dapHost,
-  timeout = -1
+  timeout = -1,
+  server = TRUE
 ){
   registerEntryFrame()
 
@@ -91,11 +14,11 @@
     stop('This Debug session receives messages via JSON socket.')
   } else if(is.null(session$dapSocketConnection)){
     # new session (also applies for disconnected sessions)
-    base::cat('Listening on ', host, ':', toString(port), '\n', sep='')
+    logCat('Listening on ', host, ':', toString(port), '\n', sep='')
     conn <- socketConnection(
       host = host,
       port = port,
-      server = TRUE,
+      server = server,
       open = "r+b",
       blocking = FALSE
     )
@@ -108,7 +31,7 @@
     port <- session$dapPort
     host <- session$dapHost
     conn <- session$dapSocketConnection
-    base::cat('Listening on ', host, ':', toString(port), '\n', sep='')
+    logCat('Listening on ', host, ':', toString(port), '\n', sep='')
     sendStoppedEvent('step')
     session$previousOptions <- options(session$internalOptions)
   }
@@ -212,7 +135,8 @@ sendToVsc <- function(body = "", useCustomSocket = FALSE) {
   } else if(!is.null(session$dapSocketConnection)){
     msg <- makeDapMessage(json)
     # This step should not be necessary, but the debugger does not work otherwise:
-    msg <- paste0(msg, '\r\n\r\n')
+    # msg <- paste0(msg, '\r\n\r\n')
+    msg <- paste0(msg)
     base::cat(msg, file=session$dapSocketConnection)
     logCat('Sent json (dap): ', json, '\n', sep='')
   } else{

@@ -151,7 +151,7 @@ mySetBreakpoint <- function(body, at, finalize = FALSE) {
     )
     srcref <- replicate(length(callAsList), atr$srcref[[at]], simplify = FALSE)
     b2 <- as.call(callAsList)
-    # b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step XXX\n')), quote(.vsc.preBreakpoint()), quote(.doTrace(browser())), body[[at]])
+    # b2 <- call('{', quote(base::cat('Tracing debugSourceBreakpoint step XXX\n')), quote(vscDebugger::.vsc.preBreakpoint()), quote(.doTrace(browser())), body[[at]])
     b2 <- structure(
       b2,
       srcref = srcref,

@@ -61,7 +61,7 @@ setBreakpoints <- function(
       suppressMessages(try(
         trace(
           what = sRef$name,
-          tracer = quote({.vsc.preBreakpoint(); browser()}),
+          tracer = quote({vscDebugger::.vsc.preBreakpoint(); browser()}),
           at = sRef$at,
           where = sRef$env
         ),

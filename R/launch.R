@@ -89,6 +89,22 @@ initializeRequest <- function(response, args, request){
     )
   }
 
+  
+  # connect to DAP socket, if specified
+  session$useDapSocket <- lget(args, 'useDapSocket', FALSE)
+  session$dapPort <- lget(args, 'dapPort', 0)
+  session$dapHost <- lget(args, 'dapHost', '127.0.0.1')
+  if(session$useDapSocket){
+    session$dapSocketConnection <- socketConnection(
+      host = session$dapHost,
+      port = session$dapPort,
+      server = FALSE,
+      blocking = FALSE,
+      encoding = 'UTF-8',
+      open = "r+b"
+    )
+  }
+
   # connect to sink socket if specified
   session$useSinkSocket <- lget(args, 'useSinkSocket', FALSE)
   session$sinkPort <- lget(args, 'sinkPort', 0)
@@ -122,6 +138,7 @@ initializeRequest <- function(response, args, request){
       session$rootNode$clearVariables()
       sendInvalidatedEvent('variables')
       unregisterEntryFrame()
+      sendStoppedEvent('step')
       options(session$internalOptions)
       TRUE
     })
