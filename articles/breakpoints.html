@@ -43,7 +43,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -107,39 +107,39 @@
 <p>Breakpoints can be (un)set in the UI while the debugger is running code, but they won’t take effect until the debugger is stopped on a breakpoint or done running its current evaluation.</p>
 <p>(Un)setting breakpoints while the program is stopped on a breakpoint can be a bit hit or miss, since the body of the currently executed function cannot be modified (which is done to set breakpoints). Therefore, setting a breakpoint in the same function as the breakpoint where you’re currently stopped usually won’t work:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span> <span class="co"># &lt;-- Setting breakpoint here while stopped on first breakpoint won't work</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>
-<span class="op">}</span>
-<span class="fu">f</span><span class="op">(</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span> <span class="co"># &lt;-- Setting breakpoint here while stopped on first breakpoint won't work</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">f</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>If a function is called repeatedly, the new breakpoint should work on the next iteration though: <em>(This example works with debug mode “Debug R-Function”)</em></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Setting breakpoint here while stopped on the other breakpoint should work on the next iteration</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>
-<span class="op">}</span>
-
-<span class="va">main</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span>
-    <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">{</span>
-        <span class="fu">f</span><span class="op">(</span><span class="op">)</span>
-    <span class="op">}</span>
-<span class="op">}</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Setting breakpoint here while stopped on the other breakpoint should work on the next iteration</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">main</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">{</span></span>
+<span>        <span class="fu">f</span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p>Setting breakpoints in a function that is not being executed should always work:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>
-    <span class="fu">g</span><span class="op">(</span><span class="op">)</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>
-<span class="op">}</span>
-<span class="va">g</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span> <span class="co"># &lt;-- Setting breakpoint here while stopped on the other breakpoint should work</span>
-<span class="op">}</span>
-<span class="fu">f</span><span class="op">(</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span>    <span class="fu">g</span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span> <span class="co"># &lt;-- Setting breakpoint here while stopped on the other breakpoint should work</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">f</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="debug-modes">Debug modes<a class="anchor" aria-label="anchor" href="#debug-modes"></a>
@@ -176,7 +176,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>

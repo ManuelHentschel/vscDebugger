@@ -27,7 +27,7 @@ Is used by e.g. .vsc.print, .vsc.cat"><!-- mathjax --><script src="https://cdnjs
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -71,19 +71,26 @@ Is used by e.g. <a href="outputOverwrites.html">.vsc.print</a>, <a href="outputO
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">printToVsc</span><span class="op">(</span><span class="va">ret</span>, skipCalls <span class="op">=</span> <span class="fl">0</span>, category <span class="op">=</span> <span class="st">"stdout"</span>, showSource <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">printToVsc</span><span class="op">(</span><span class="va">ret</span>, skipCalls <span class="op">=</span> <span class="fl">0</span>, category <span class="op">=</span> <span class="st">"stdout"</span>, showSource <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>ret</dt>
 <dd><p>The text to be sent</p></dd>
+
+
 <dt>skipCalls</dt>
 <dd><p>The number of calls to skip when reporting the calling file and line. Can be used e.g. inside log functions.</p></dd>
+
+
 <dt>category</dt>
 <dd><p>The output category ("stdout", "stderr", ...)</p></dd>
+
+
 <dt>showSource</dt>
 <dd><p>Whether to show the calling source file and line.</p></dd>
+
 </dl></div>
 
   </div>
@@ -98,7 +105,7 @@ Is used by e.g. <a href="outputOverwrites.html">.vsc.print</a>, <a href="outputO
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

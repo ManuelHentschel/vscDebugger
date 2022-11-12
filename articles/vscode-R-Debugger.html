@@ -43,7 +43,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -190,9 +190,9 @@
 <span id="cb2-2"><a href="#cb2-2"></a><span class="er">...</span></span></code></pre></div>
 <p>To overwrite the <code>print</code>/<code>cat</code>/<code>message</code> functions for an individual package, they need to be explicitly assigned somewhere in the package:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">print</span> <span class="op">&lt;-</span> <span class="va">print</span>
-<span class="va">cat</span> <span class="op">&lt;-</span> <span class="va">cat</span>
-<span class="va">message</span> <span class="op">&lt;-</span> <span class="va">message</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">print</span> <span class="op">&lt;-</span> <span class="va">print</span></span>
+<span><span class="va">cat</span> <span class="op">&lt;-</span> <span class="va">cat</span></span>
+<span><span class="va">message</span> <span class="op">&lt;-</span> <span class="va">message</span></span></code></pre></div>
 <p>This assignment can be overwritten by the debugger with <code>.vsc.print</code>/<code>.vsc.cat</code>/<code>.vsc.message</code>, but has no effect when not using the debugger.</p>
 </div>
 <div class="section level2">
@@ -224,7 +224,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>

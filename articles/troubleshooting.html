@@ -43,7 +43,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -103,11 +103,11 @@
 </ul>
 <p>If disabling you <code>.Rprofile</code> helps, you can selectively disable/enable code for vscode debug sessions using</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">'VSCODE_DEBUG_SESSION'</span><span class="op">)</span><span class="op">==</span><span class="st">'1'</span><span class="op">)</span><span class="op">{</span>
-    <span class="co">### Debugger-specific code here</span>
-<span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
-    <span class="co">### Debugger-breaking code here</span>
-<span class="op">}</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">'VSCODE_DEBUG_SESSION'</span><span class="op">)</span><span class="op">==</span><span class="st">'1'</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="co">### Debugger-specific code here</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>    <span class="co">### Debugger-breaking code here</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <p>Examples for code that might break things are</p>
 <ul>
 <li>Anything that modifies the input prompt (e.g. <code>prompt::set_prompt()</code>)</li>
@@ -144,7 +144,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>
