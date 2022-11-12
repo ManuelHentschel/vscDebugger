@@ -224,7 +224,7 @@ launchRequest <- function(response, args, request){
       for(pkg in session$loadPackages){
         ret <- try({
           pkgInfo <- internalLoadAll(
-            path=pkg,
+            path = pkg,
             refreshBreakpoints = FALSE,
             loadSilently = session$loadSilently
           )
@@ -232,7 +232,7 @@ launchRequest <- function(response, args, request){
         })
         if(inherits(ret, 'try-error')){
           response$success <- FALSE
-          response$message <- paste0('Failed to load package: ', pkg)
+          response$message <- paste0('Failed to load package: ', pkg, ' (', ret, ')')
           break
         }
       }

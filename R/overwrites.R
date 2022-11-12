@@ -271,10 +271,15 @@ internalLoadAll <- function(..., refreshBreakpoints=FALSE, loadSilently=FALSE){
     overwriteCat = session$overwriteCat,
     overwriteMessage = session$overwriteMessage
   ))
+  
+  # Insert overwrites into parent-env of package-namespace
+  # As of pkgload v1.3.1 this environment contains some pkgload-specific shims
+  # and is writeable.
   if(length(attachList)>0){
-    attachEnv <- as.environment(attachList)
-    parent.env(attachEnv) <- parent.env(ns)
-    parent.env(ns) <- attachEnv
+    shimEnv <- parent.env(ns)
+    for(fName in names(attachList)){
+      assign(fName, attachList[[fName]], envir = shimEnv)
+    }
   }
 
   # store pkgname
