@@ -73,6 +73,8 @@
 
       # read content in one go
       json <- readChar(conn, nchars=contentLength, useBytes = TRUE)
+      Encoding(json) <- 'UTF-8'
+      # json <- enc2native(json)
 
       # handle content
       .vsc.handleJson(json)
@@ -148,8 +150,9 @@ sendToVsc <- function(body = "", useCustomSocket = FALSE) {
 
 makeDapMessage <- function(json, cr = '\r'){
   json <- enc2utf8(json)
+  Encoding(json) <- 'native'
+  contentLength <- nchar(json, type = 'bytes')
   # saveRDS(json, 'json0.rds')
-  contentLength <- nchar(json)
   # saveRDS(json, 'json.rds')
   # cL2 <- nchar(json)
   # logCat('CL: ', contentLength, ' - ', cL2, '\n', sep='')
