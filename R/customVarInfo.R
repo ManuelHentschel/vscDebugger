@@ -2,6 +2,36 @@
 # TODO:
 # User facing functions in this file need to be updated to match the new entries in VarInfo!
 
+
+#' Get info about a variable
+#'
+#' Get info about a variable by applying the relevant `varInfo` entries.
+#'
+#' @param v The variable, any R value.
+#' @param infos Character vector of field names in `varInfo`. Retrieve first match.
+#' @param stackingInfos Character vector of field names in `varInfo`. Retrieve all matches.
+#' @param verbose Whether to print debug info using `logCat`, `logPrint`.
+#' @param ind The indices to retrieve if child variables are retrieved.
+#' 
+#' @details
+#' The allowed `varInfo` entries and their types are:
+#' - childVars: MinimalVariable[]
+#' - nChildVars: number
+#' - customAttributes: MinmalVariable[]
+#' - internalAttributes: MinmalVariable[]
+#' - toString: string
+#' - type: string
+#' - evaluateName: string
+#' - printFunc: function | boolean
+#' 
+#' Where `MinimalVariable[]` refers to a list of named lists with entries:
+#' - name: string
+#' - rValue: any R value
+#' - setter: (optional, undocumented)
+#' - setInfo: (optional, undocumented)
+#'
+#' @seealso [`varInfos`]
+#' @return A named list, containing the corresponding `varInfo` results.
 .vsc.applyVarInfos <- function(
   v,
   infos = character(0),
@@ -85,7 +115,7 @@
         if(is.null(tmp)){
           # ignore result
         } else if(isStacking[info]){
-          ret[[info]] <- append(ret[[info]], list(tmp))
+          ret[[info]][[varInfo$name]] <- tmp
           # keep looking...
         } else{
           ret[[info]] <- tmp
@@ -122,20 +152,48 @@ toAtomicBoolean <- function(v, ...){
   )
 }
 
+#' Tools to modify/debug varInfos
+#' 
+#' Tools to check the varInfos computed for variables and modify
+#' the list of varInfos used.
+#' 
+#' @param varInfos List of varInfos
+#' 
+#' @seealso [`.vsc.applyVarInfos`]
+#' @rdname varInfos
+.vsc.getAllVarInfoFields <- function(varInfos = session$varInfos){
+  allFields <- c()
+  for(vi in varInfos){
+    allFields <- union(allFields, names(vi))
+  }
+  return(allFields)
+}
 
+#' @param v Variable, any R object
+#' @param verbose passed to `.vsc.applyVarInfos`
+#' 
+#' @rdname varInfos
+.vsc.applyAllVarInfos <- function(v, verbose = TRUE){
+  stackingInfos <- .vsc.getAllVarInfoFields()
+  .vsc.applyVarInfos(v, stackingInfos = stackingInfos, verbose = verbose)
+}
 
-.vsc.resetVarInfo <- function() {
+#' @rdname varInfos
+.vsc.resetVarInfos <- function() {
   session$varInfos <- getDefaultVarInfos()
 }
 
-.vsc.clearVarInfo <- function() {
-  session$varInfos <- list()
-}
-
+#' @param varInfo A varInfo, i.e. named list.
+#' @param overwrite Boolean, whether to overwrite the entry in that position
+#' 
+#' @rdname varInfos
 .vsc.addVarInfo <- function(
   varInfo,
   overwrite = FALSE
 ) {
+  if(!.vsc.checkVarInfos(list(varInfo))){
+    stop('Not a valid varInfo.')
+  }
   position <- lget(varInfo, 'position', 1)
   if (position < 0) {
     # negative positions count from the end, -1 = last position
@@ -149,38 +207,33 @@ toAtomicBoolean <- function(v, ...){
   }
 }
 
-.vsc.removeVarInfo <- function(position = 1) {
-  if (position < 0) {
-    position <- length(session$varInfos) + 1 + position
-  }
-  session$varInfos[position] <- NULL
+#' @param positions Numeric or character vector, the entries to retrieve/remove
+#' 
+#' @rdname varInfos
+.vsc.removeVarInfos <- function(positions) {
+  session$varInfos[getVarInfoInds(positions, FALSE)] <- NULL
 }
 
-.vsc.listVarInfo <- function(position = NULL) {
-  if (is.null(position)) {
-    position <- seq_along(session$varInfos)
+getVarInfoInds <- function(positions = NULL, defaultToAll = FALSE){
+  varInfos <- getVarInfosWithPositions()
+  inds <- logical(length(varInfos))
+  names(inds) <- names(varInfos)
+  if(is.null(positions)){
+    positions <- defaultToAll
+  } else if(!is.numeric(positions) && !is.character(positions)){
+    stop('Argument positions must be character or numeric vector')
   }
-  varInfos <- .vsc.getAllVarInfos()
-  varInfos <- lapply(position, function(pos) varInfos[pos])
-  varInfos <- unlist(varInfos, recursive = FALSE)
-  return(varInfos)
+  inds[positions] <- TRUE
+  inds
 }
 
-.vsc.getVarInfo <- function(positionOrName = NULL){
-  if(is.null(positionOrName)){
-    return(NULL)
-  } else if(is.list(positionOrName)){
-    return(.vsc.listVarInfo(positionOrName))
-  } else if(is.vector(positionOrName) && length(positionOrName)>1){
-    return(.vsc.listVarInfo(as.list(positionOrName)))
-  }
-
-  varInfos <- .vsc.getAllVarInfos()
-  varInfo <- varInfos[[positionOrName]]
-  return(varInfo)
+#' @rdname varInfos
+.vsc.getVarInfos <- function(positions = NULL){
+  varInfos <- getVarInfosWithPositions()
+  varInfos[getVarInfoInds(positions, TRUE)]
 }
 
-.vsc.getAllVarInfos <- function(){
+getVarInfosWithPositions <- function(){
   varInfos <- session$varInfos
   varInfos <- lapply(seq_along(varInfos), function(i){
     vI <- varInfos[[i]]
@@ -197,11 +250,90 @@ toAtomicBoolean <- function(v, ...){
   return(varInfos)
 }
 
-applyTestVar <- function(varInfo, testVar){
-  for(i in seq_along(varInfo)){
-    if(is.function(varInfo[[i]])){
-      varInfo[i] <- list(try(varInfo[[i]](testVar), silent=TRUE))
+#' @rdname varInfos
+.vsc.checkVarInfos <- function(varInfos = session$varInfos){
+  if(!is.list(varInfos)){
+    stop('`varInfos` has to be a list of varInfos (i.e., list of lists).')
+  }
+  allOk <- TRUE
+  allNames <- c()
+  for(i in seq_along(varInfos)){
+    vi <- varInfos[[i]]
+    alert <- function(...){
+      allOk <<- FALSE
+      base::cat('varInfo #', i, ': ', ..., '\n', sep = '')
+    }
+    # Check that it's a named list
+    if(!is.list(vi)){
+      alert('Is not a list.')
+      next
+    }
+    if(is.null(names(vi))){
+      alert('Has no names.')
+      next
+    }
+    # Check name (must be a string)
+    viName <- lget(vi, 'name', NULL)
+    if(is.null(viName)){
+      alert('Has no name!')
+    } else if(!is.string(viName)){
+      alert('Has invalid name (must be a string)!')
+    } else{
+      allNames <- c(allNames, viName)
+    }
+    # Check doesApply (must be a function taking >=1 args)
+    doesApply <- lget(vi, 'doesApply', NULL)
+    if(is.null(doesApply)){
+      alert('Has no doesApply().')
+    } else if(!is.function.with.args(doesApply, 1)){
+      alert('doesApply needs to be a function with 1 argument.')
+    }
+    # Check others (if function, must take >= 1 args)
+    entryNames <- setdiff(names(vi), c('name', 'doesApply'))
+    if(length(entryNames) == 0){
+      alert('Has no entries.')
+    }
+    for(e in entryNames){
+      tmp <- vi[[e]]
+      if(viName == 'childVars' && !is.function.with.args(tmp, 2)){
+        alert('childVars() needs to take 2 arguments (second one optional).')
+      }
+      if(viName %in% c('toString', 'type', 'evaluateName')){
+        if(!(is.string(tmp) || is.function.with.args(tmp))){
+          alert(e, ' needs to be a string or function with 1 argument.')
+        }
+      } else if(viName %in% c('nChildVars')){
+        if(!(is.number(tmp) || is.function.with.args(tmp))){
+          alert(e, ' needs to be a number or function with 1 argument.')
+        }
+      } else if(is.function.with.args(tmp, 0, 'equal')){
+        alert(e, ' is a function but takes no arguments.')
+      }
     }
   }
-  return(varInfo)
+  return(allOk)
+}
+
+is.string <- function(v){
+  !is.null(v) && is.atomic(v) && is.character(v) && length(v) == 1
+}
+
+is.number <- function(v){
+  !is.null(v) && is.atomic(v) && is.numeric(v) && length(v) == 1
+}
+
+is.function.with.args <- function(f, nArgs = 1, match = c('atLeast', 'equal', 'atMost')[1]){
+  if(!is.function(f)){
+    return(FALSE)
+  }
+  nArgsf <- length(formals(args(f)))
+  if(match == 'atLeast'){
+    nArgsf >= nArgs
+  } else if(match == 'equal'){
+    nArgsf = nArgs
+  } else if(match == 'atMost'){
+    nArgsf <= nArgs
+  } else{
+    stop('Invalid argument `match`!')
+  }
 }
