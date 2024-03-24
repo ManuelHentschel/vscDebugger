@@ -66,13 +66,11 @@ Is hopefully the behaviour expected by users coming from R Studio etc.
 and use a custom version of `source()`, which makes changes to the R code in order to set breakpoints.
 To provide a somewhat 'cleaner' method of running code, this debug mode can be used.
 The specified file is executed using the default `source` command and breakpoints are set by using R's `trace(..., tracer=browser)` function, which is more robust than the custom breakpoint mechanism.
-Finally, the specified main function (by default `main()`) is called.
 
 The remaining config entries are:
-
 * `"workingDirectory"`: An absolute path to the desired work directory.
 Defaults to the workspace folder.
-The R process is always launched in the workspace folder (reading the `.Rprofile` there) and then changes directory.
+The R process is launched in this directory (reading the `.Rprofile` there).
 * `"file"`: Required for debug modes `"file"` and `"function"`. The file to be debugged/sourced before calling the main function.
 * `"mainFunction"`: Only used for debug mode `"function"`.
 The name of the main function to be debugged. Must be callable without arguments.
@@ -163,6 +161,7 @@ If no values are set, the defaults listed below are used.
 * `"vsc.showCustomAttributes" = TRUE`: Whether to show custom attributes in the variables view
 * `"vsc.showEvaluateName" = TRUE`: Whether to include an evaluate name to copy variables to another R session. Can be disabled for performance reasons when working with large variables/lists/vectors.
 * `"vsc.showInternalFrames" = FALSE`: Whether to show the frames on the bottom of the stack that belong to the R package 
+* `"vsc.showPromiseDetails" = FALSE`: Whether to show promise code and environment as child variables.
 * `"vsc.showUnclass" = TRUE`: Whether to show the value of `unclass()` in the variables view for object variables.
 * `"vsc.supportSetVariable" = TRUE`: Whether to enable support for settings the value of variables from the variables window
 * `"vsc.supportTerminateRequest" = FALSE`: Whether to try and exit only the main function/file when stop (Shift+F5) is used, preserving the R session itself.
