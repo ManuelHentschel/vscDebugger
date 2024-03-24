@@ -18,6 +18,9 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
+      - name: Install os level dependencies
+        run: sudo apt-get install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev
+
       - name: Query dependencies
         run: |
           install.packages('remotes')
