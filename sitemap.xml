@@ -34,6 +34,9 @@
     <loc>https://ManuelHentschel.github.io/vscDebugger/reference/convertFrameId.html</loc>
   </url>
   <url>
+    <loc>https://ManuelHentschel.github.io/vscDebugger/reference/dot-vsc.applyVarInfos.html</loc>
+  </url>
+  <url>
     <loc>https://ManuelHentschel.github.io/vscDebugger/reference/dot-vsc.debugSource.html</loc>
   </url>
   <url>
@@ -86,6 +89,9 @@
   </url>
   <url>
     <loc>https://ManuelHentschel.github.io/vscDebugger/reference/seq2.html</loc>
+  </url>
+  <url>
+    <loc>https://ManuelHentschel.github.io/vscDebugger/reference/varInfos.html</loc>
   </url>
   <url>
     <loc>https://ManuelHentschel.github.io/vscDebugger/reference/vscDebugger-package.html</loc>

@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">vscDebugger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
       </span>
     </div>
 
@@ -81,7 +81,7 @@
 
       
 
-      </header><script src="troubleshooting_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Troubleshooting</h1>
@@ -94,14 +94,24 @@
 
     
     
-<p>If you have problems getting the debugger to launch, you can try the following steps to eliminate possible sources of errors:</p>
+<p>If you have problems getting the debugger to launch, you can try the
+following steps to eliminate possible sources of errors:</p>
 <ul>
-<li>Switch to an empty directory, create a single <code>test.R</code> containing something simple like <code>print('Hello world')</code>
+<li>Switch to an empty directory, create a single <code>test.R</code>
+containing something simple like <code>print('Hello world')</code>
 </li>
-<li>Delete <code>./.vscode/launch.json</code> if present, and click <code>create a launch.json file</code> in the debug sidebar (<code>ctrl+shift+D</code>), to create a default launch config file. To avoid interference with other debug extensions, the workspace should only contain R files.</li>
-<li>Add the entry <code>"commandLineArgs": ["--vanilla"]</code> to the debug config you are trying to launch. This disables your <code>.Rprofile</code> and stops any <code>.RData</code> files from being restored.</li>
+<li>Delete <code>./.vscode/launch.json</code> if present, and click
+<code>create a launch.json file</code> in the debug sidebar
+(<code>ctrl+shift+D</code>), to create a default launch config file. To
+avoid interference with other debug extensions, the workspace should
+only contain R files.</li>
+<li>Add the entry <code>"commandLineArgs": ["--vanilla"]</code> to the
+debug config you are trying to launch. This disables your
+<code>.Rprofile</code> and stops any <code>.RData</code> files from
+being restored.</li>
 </ul>
-<p>If disabling you <code>.Rprofile</code> helps, you can selectively disable/enable code for vscode debug sessions using</p>
+<p>If disabling you <code>.Rprofile</code> helps, you can selectively
+disable/enable code for vscode debug sessions using</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">'VSCODE_DEBUG_SESSION'</span><span class="op">)</span><span class="op">==</span><span class="st">'1'</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="co">### Debugger-specific code here</span></span>
@@ -110,23 +120,34 @@
 <span><span class="op">}</span></span></code></pre></div>
 <p>Examples for code that might break things are</p>
 <ul>
-<li>Anything that modifies the input prompt (e.g. <code>prompt::set_prompt()</code>)</li>
+<li>Anything that modifies the input prompt
+(e.g. <code>prompt::set_prompt()</code>)</li>
 <li>Calls to <code><a href="https://rdrr.io/r/base/trace.html" class="external-link">trace()</a></code>, <code><a href="https://rdrr.io/r/base/trace.html" class="external-link">tracingState()</a></code> etc.</li>
-<li>Custom error handlers set using <code>options(error = ...)</code>
+<li>Custom error handlers set using
+<code>options(error = ...)</code>
 </li>
-<li>Calls to <code><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">sys.calls()</a></code>, <code><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">sys.frames()</a></code> etc.</li>
+<li>Calls to <code><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">sys.calls()</a></code>, <code><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">sys.frames()</a></code>
+etc.</li>
 <li>Use of <code><a href="https://rdrr.io/r/base/sink.html" class="external-link">sink()</a></code>
 </li>
-<li>Callbacks added using <code><a href="https://rdrr.io/r/base/taskCallback.html" class="external-link">addTaskCallback()</a></code> containing any of the above</li>
+<li>Callbacks added using <code><a href="https://rdrr.io/r/base/taskCallback.html" class="external-link">addTaskCallback()</a></code> containing any
+of the above</li>
 </ul>
-<p>When launching the debugger, detailed logs are printed to the output channel “R Debugger” (<code>ctrl+shift+u</code> -&gt; select <code>R Debugger</code> in the top right dropdown). These are not meant to be particularly descriptive for users, but might point you in the right direction.</p>
-<p>Problems that might be caused by timing issues, e.g. a slow R startup or network delay when working with remote servers, can sometimes be mitigated by increasing the timeout related settings:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">{</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a>  <span class="dt">"r.debugger.timeouts.prompt"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a>  <span class="dt">"r.debugger.timeouts.startup"</span><span class="fu">:</span> <span class="dv">2000</span><span class="fu">,</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a>  <span class="dt">"r.debugger.timeouts.terminate"</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="fu">}</span></span></code></pre></div>
-<p>If you don’t get the debugger running properly yourself, please don’t hesitate to open an issue on github!</p>
+<p>When launching the debugger, detailed logs are printed to the output
+channel “R Debugger” (<code>ctrl+shift+u</code> -&gt; select
+<code>R Debugger</code> in the top right dropdown). These are not meant
+to be particularly descriptive for users, but might point you in the
+right direction.</p>
+<p>Problems that might be caused by timing issues, e.g. a slow R startup
+or network delay when working with remote servers, can sometimes be
+mitigated by increasing the timeout related settings:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="dt">"r.debugger.timeouts.prompt"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="dt">"r.debugger.timeouts.startup"</span><span class="fu">:</span> <span class="dv">2000</span><span class="fu">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="dt">"r.debugger.timeouts.terminate"</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>If you don’t get the debugger running properly yourself, please don’t
+hesitate to open an issue on github!</p>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -144,7 +165,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

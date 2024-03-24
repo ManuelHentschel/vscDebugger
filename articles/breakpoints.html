@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">vscDebugger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
       </span>
     </div>
 
@@ -81,7 +81,7 @@
 
       
 
-      </header><script src="breakpoints_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Breakpoints</h1>
@@ -96,16 +96,27 @@
     
 <p><strong>TLDR:</strong></p>
 <ul>
-<li>Breakpoints work most reliable if they are set before launching the debugger</li>
-<li>The debug mode <em>“Debug R-Function”</em> sometimes works better to set/unset breakpoints</li>
-<li>To set breakpoints in packages, they need to be specified in the launch config entries <em>“debuggedPackages”</em> or <em>“loadPackages”</em>.</li>
+<li>Breakpoints work most reliable if they are set before launching the
+debugger</li>
+<li>The debug mode <em>“Debug R-Function”</em> sometimes works better to
+set/unset breakpoints</li>
+<li>To set breakpoints in packages, they need to be specified in the
+launch config entries <em>“debuggedPackages”</em> or
+<em>“loadPackages”</em>.</li>
 </ul>
 <div class="section level2">
 <h2 id="setting-breakpoints-during-debugging">Setting breakpoints during debugging<a class="anchor" aria-label="anchor" href="#setting-breakpoints-during-debugging"></a>
 </h2>
-<p>The most reliable way to use breakpoints is to set them before launching the debugger and not modifying them afterwards.</p>
-<p>Breakpoints can be (un)set in the UI while the debugger is running code, but they won’t take effect until the debugger is stopped on a breakpoint or done running its current evaluation.</p>
-<p>(Un)setting breakpoints while the program is stopped on a breakpoint can be a bit hit or miss, since the body of the currently executed function cannot be modified (which is done to set breakpoints). Therefore, setting a breakpoint in the same function as the breakpoint where you’re currently stopped usually won’t work:</p>
+<p>The most reliable way to use breakpoints is to set them before
+launching the debugger and not modifying them afterwards.</p>
+<p>Breakpoints can be (un)set in the UI while the debugger is running
+code, but they won’t take effect until the debugger is stopped on a
+breakpoint or done running its current evaluation.</p>
+<p>(Un)setting breakpoints while the program is stopped on a breakpoint
+can be a bit hit or miss, since the body of the currently executed
+function cannot be modified (which is done to set breakpoints).
+Therefore, setting a breakpoint in the same function as the breakpoint
+where you’re currently stopped usually won’t work:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span></span>
@@ -114,7 +125,9 @@
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu">f</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>If a function is called repeatedly, the new breakpoint should work on the next iteration though: <em>(This example works with debug mode “Debug R-Function”)</em></p>
+<p>If a function is called repeatedly, the new breakpoint should work on
+the next iteration though: <em>(This example works with debug mode
+“Debug R-Function”)</em></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Setting breakpoint here while stopped on the other breakpoint should work on the next iteration</span></span>
@@ -128,7 +141,8 @@
 <span>        <span class="fu">f</span><span class="op">(</span><span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>Setting breakpoints in a function that is not being executed should always work:</p>
+<p>Setting breakpoints in a function that is not being executed should
+always work:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="co"># &lt;-- Set breakpoint here</span></span>
@@ -144,17 +158,40 @@
 <div class="section level2">
 <h2 id="debug-modes">Debug modes<a class="anchor" aria-label="anchor" href="#debug-modes"></a>
 </h2>
-<p>The debug modes <em>“Debug R-File”</em> and <em>“Launch Workspace”</em> use a custom version of <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>, which makes changes to the R code in order to set breakpoints. To provide a somewhat ‘cleaner’ method of running code, the debug mode <em>“Debug R-Function”</em> can be used. In this mode, the specified file is executed using the default <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code> command and breakpoints are set by using R’s <code>trace(..., tracer=browser)</code> function, which is more robust than the custom breakpoint mechanism.</p>
+<p>The debug modes <em>“Debug R-File”</em> and <em>“Launch
+Workspace”</em> use a custom version of <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>, which
+makes changes to the R code in order to set breakpoints. To provide a
+somewhat ‘cleaner’ method of running code, the debug mode <em>“Debug
+R-Function”</em> can be used. In this mode, the specified file is
+executed using the default <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code> command and breakpoints
+are set by using R’s <code>trace(..., tracer=browser)</code> function,
+which is more robust than the custom breakpoint mechanism.</p>
 </div>
 <div class="section level2">
 <h2 id="breakpoints-in-packages">Breakpoints in packages<a class="anchor" aria-label="anchor" href="#breakpoints-in-packages"></a>
 </h2>
-<p>Packages can be debugged using <code>load_all()</code> from <code>pkgload</code>. To do so, it is required to install <code>pkgload</code> (part of <code>devtools</code>). By default, <code>load_all</code> will be masked by a modified version that automatically sets breakpoints in the loaded package and attaches the modified versions of <code>print</code>, <code>cat</code>, <code>message</code>. To always load a package when launching a debug session, you can specify an array of paths in the launch config entry <code>"loadPackages"</code>.</p>
-<p>If it is preferred to properly install a package before debugging, the package can be specified in the launch config entry <code>"debuggedPackages"</code>. To keep the required source information during installation, the following points might help:</p>
+<p>Packages can be debugged using <code>load_all()</code> from
+<code>pkgload</code>. To do so, it is required to install
+<code>pkgload</code> (part of <code>devtools</code>). By default,
+<code>load_all</code> will be masked by a modified version that
+automatically sets breakpoints in the loaded package and attaches the
+modified versions of <code>print</code>, <code>cat</code>,
+<code>message</code>. To always load a package when launching a debug
+session, you can specify an array of paths in the launch config entry
+<code>"loadPackages"</code>.</p>
+<p>If it is preferred to properly install a package before debugging,
+the package can be specified in the launch config entry
+<code>"debuggedPackages"</code>. To keep the required source information
+during installation, the following points might help:</p>
 <ul>
-<li>The package must be installed from source code (not CRAN or <code>.tar.gz</code>)</li>
+<li>The package must be installed from source code (not CRAN or
+<code>.tar.gz</code>)</li>
 <li>The flag <code>--with-keep.source</code> should be set</li>
-<li>Extensions containing C code might cause problems. Sometimes it helps to install the package using <code>devtools::install(quick=FALSE, ...)</code> to compile the binaries and again with <code>devtools::install(quick=TRUE, ...)</code> to retain the source information.</li>
+<li>Extensions containing C code might cause problems. Sometimes it
+helps to install the package using
+<code>devtools::install(quick=FALSE, ...)</code> to compile the binaries
+and again with <code>devtools::install(quick=TRUE, ...)</code> to retain
+the source information.</li>
 </ul>
 </div>
   </div>
@@ -176,7 +213,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
