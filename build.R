@@ -30,7 +30,7 @@ if('docOnly' %in% args){
   try({
     libpath <- installed.packages()['vscDebugger', 'LibPath']
     trunc <- file.path(libpath, 'vscDebugger', 'libs')
-    f1 <- file(file.path(trunc, 'i386', 'vscDebugger.dll'), open='r')
+    # f1 <- file(file.path(trunc, 'i386', 'vscDebugger.dll'), open='r')
     f2 <- file(file.path(trunc, 'x64', 'vscDebugger.dll'), open='r')
     remove.packages('vscDebugger')
   })

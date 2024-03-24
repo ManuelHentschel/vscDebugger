@@ -13,8 +13,10 @@ getPromiseVar(name, env)
 \item{env}{The environment in which to evaluate}
 }
 \value{
-An object of class \code{.vsc.promise};
-a named list containing the expression that will be evaluated,
+An object of class \code{.vsc.promise} or \code{.vc.promiseDetails},
+depending on the option \code{vsc.showPromiseDetails}.
+The two classes are functionally identical and only rendered differently.
+A named list containing the expression that will be evaluated,
 the status whether the promise has already been evaluated,
 the value if it has already been evaluated,
 and the environment in which the unevaluated promise will be evaluated.

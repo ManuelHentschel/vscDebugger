@@ -492,7 +492,8 @@ VariableNode <- R6::R6Class(
       infos <- c(
         "toString",
         "type",
-        "nChildVars"
+        "nChildVars",
+        "presentationHint"
       )
 
       if(getOption('vsc.showEvaluateName', TRUE)){
@@ -534,6 +535,7 @@ VariableNode <- R6::R6Class(
       self$value <- infos$toString
       self$type <- infos$type
       self$evaluateName <- infos$evaluateName
+      self$presentationHint <- infos$presentationHint
       
       if (self$indexedVariables + self$namedVariables > 0) {
         self$variablesReference <- self$getNewVarRef()
@@ -548,6 +550,7 @@ VariableNode <- R6::R6Class(
         type = self$type,
         evaluateName = self$evaluateName,
         variablesReference = self$variablesReference,
+        presentationHint = self$presentationHint,
         namedVariables = self$namedVariables,
         indexedVariables = self$indexedVariables
       )

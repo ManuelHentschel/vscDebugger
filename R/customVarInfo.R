@@ -133,47 +133,20 @@ toAtomicBoolean <- function(v, ...){
 }
 
 .vsc.addVarInfo <- function(
-  name = '',
-  doesApply = NULL,
-  childVars = NULL,
-  customAttributes = NULL,
-  hasChildren = NULL,
-  toString = NULL,
-  shortType = NULL,
-  longType = NULL,
-  includeAttributes = NULL,
-  varInfo = list(),
-  position = 1
+  varInfo,
+  overwrite = FALSE
 ) {
-  # start with empty varInfo if none given
-  if (is.null(varInfo)) {
-    varInfo <- list()
-  }
-
-  # check if there is a position given in varInfo
-  if (!is.null(varInfo$position)){
-    position <- varInfo$position
-  }
-
+  position <- lget(varInfo, 'position', 1)
   if (position < 0) {
     # negative positions count from the end, -1 = last position
     position <- length(session$varInfos) + 1 + position
-  } else if (position > 0) {
-    position <- position - 1 # position 1 == insert after 0
   }
 
-  # add entries to varInfo (entires already in varInfo will be overwritten)
-  varInfo$name <- name
-  varInfo$doesApply <- doesApply
-  varInfo$childVars <- childVars
-  varInfo$customAttributes <- customAttributes
-  varInfo$hasChildren <- hasChildren
-  varInfo$toString <- toString
-  varInfo$shortType <- shortType
-  varInfo$longType <- longType
-  varInfo$includeAttributes <- includeAttributes
-
-  session$varInfos <- append(session$varInfos, list(varInfo), position)
+  if(overwrite){
+    session$varInfos[[position]] <- varInfo
+  } else{
+    session$varInfos <- append(session$varInfos, list(varInfo), position - 1)
+  }
 }
 
 .vsc.removeVarInfo <- function(position = 1) {

@@ -12,19 +12,50 @@ getDefaultVarInfos <- function() {
       type = 'NULL',
       toString = 'NULL'
     ),
-    # promise (custom type)
+    # promsie (custom type, click-to-eval)
     list(
       name = 'Promise',
+      type = 'promise',
+      toString = function(v) paste0(
+          '`',
+          paste0(format(v$code), collapse = '; '),
+          '` in ',
+          format(v$environment)
+      ),
       doesApply = function(v) inherits(v, '.vsc.promise'),
+      nChildVars = 1,
+      childVars = function(v, ind){
+          list(list(
+              rValue = eval(v$code, envir=v$environment),
+              name = '<VALUE>'
+          ))
+      },
+      internalAttributes = list(),
+      presentationHint = list(lazy = TRUE)
+    ),
+    # promise details (custom type, includes environment and code)
+    list(
+      name = 'PromiseDetails',
+      doesApply = function(v) inherits(v, '.vsc.promiseDetails'),
       childVars = list(),
       nChildVars = 0,
-      type = 'promise',
+      type = 'promise details',
       toString = function(v) paste0(format(v$code), collapse = "; "),
       internalAttributes = function(v) {
+        # Change class to render `__promiseValue` as simple promise
+        class(v) = c(".vsc.promise", ".vsc.internalClass")
         ret <- list(
           list(
             name = '__promiseEnv',
             rValue = v$environment
+          ),
+          list(
+            name = '__promiseCode',
+            rValue = v$code
+          ),
+          list(
+            name = '__promiseValue',
+            rValue = v
           )
         )
         if (getOption('vsc.previewPromises', default = FALSE)) {
@@ -464,6 +495,7 @@ getDefaultVarInfos <- function() {
       childVars = list(),
       nChildVars = 0,
       type = function(v) typeof(v),
+      presentationHint = function(v) NULL,
       internalAttributes = function(v) {
         if(getOption('vsc.groupAttributes', FALSE)){
           return(list())
