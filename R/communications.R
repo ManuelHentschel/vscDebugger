@@ -32,7 +32,9 @@
     host <- session$dapHost
     conn <- session$dapSocketConnection
     logCat('Listening on ', host, ':', toString(port), '\n', sep='')
-    sendStoppedEvent('step')
+    if(!session$state$isPaused()){
+      sendStoppedEvent('step')
+    }
     session$previousOptions <- options(session$internalOptions)
   }
 

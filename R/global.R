@@ -194,7 +194,7 @@ State <- R6::R6Class(
             self$hasHitError <- TRUE
           }
         }
-        logCat('starting paused on', toString(pausedOn), '\n')
+        logCat('State: starting paused on', toString(pausedOn), '\n')
       }
       return(prevState)
     },

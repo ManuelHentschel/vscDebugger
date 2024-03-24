@@ -45,26 +45,27 @@
 showingPromptRequest <- function(response, args, request){
   whichPrompt <- lget(args, 'which', '')
   if(session$state$baseState %in% c('starting', 'loadLib', 'quitting')){
-    logPrint('ignoring callback...')
+    logPrint('showingPromptRequest: ignoring  callback...')
   } else if(whichPrompt == 'topLevel'){
-    logPrint('is showing toplevel prompt!!!')
+    logPrint('showingPromptRequest: is showing toplevel prompt!!!')
     if(session$allowGlobalDebugging){
-      logPrint('breakpoint on toplevel')
+      logPrint('showingPromptRequest: breakpoint on toplevel')
       session$state$changeBaseState('workspace', startPaused=TRUE)
       sendStoppedEvent(reason='step')
     } else{
-      logPrint('quit from toplevel')
+      logPrint('showingPromptRequest: quit from toplevel')
       session$state$changeBaseState('quitting')
       terminateSessionFromTopLevel()
       # session$stopListeningOnPort <- TRUE
     }
   } else if(session$state$isPausedOnError()){
+    logPrint('showingPromptRequest: paused on error -> ignore')
     # ignore
   } else if(session$state$isPausedOnBreakpoint()){
-    logPrint('starting paused on breakpoint!!!')
+    logPrint('showingPromptRequest: starting paused on breakpoint!!!')
     sendStoppedEvent(reason='breakpoint')
   } else{
-    logPrint('starting paused!!!')
+    logPrint('showingPromptRequest: starting paused!!!')
     session$state$startPaused('browser')
     session$clearStackTree <- TRUE
     sendStoppedEvent(reason='step')
