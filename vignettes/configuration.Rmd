@@ -68,6 +68,7 @@ To provide a somewhat 'cleaner' method of running code, this debug mode can be u
 The specified file is executed using the default `source` command and breakpoints are set by using R's `trace(..., tracer=browser)` function, which is more robust than the custom breakpoint mechanism.
 
 The remaining config entries are:
+
 * `"workingDirectory"`: An absolute path to the desired work directory.
 Defaults to the workspace folder.
 The R process is launched in this directory (reading the `.Rprofile` there).
