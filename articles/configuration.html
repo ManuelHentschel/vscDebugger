@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configuration • vscDebugger</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
@@ -198,24 +198,35 @@ executed using the default <code>source</code> command and breakpoints
 are set by using R’s <code>trace(..., tracer=browser)</code> function,
 which is more robust than the custom breakpoint mechanism.</li>
 </ul>
-<p>The remaining config entries are: * <code>"workingDirectory"</code>:
-An absolute path to the desired work directory. Defaults to the
-workspace folder. The R process is launched in this directory (reading
-the <code>.Rprofile</code> there). * <code>"file"</code>: Required for
-debug modes <code>"file"</code> and <code>"function"</code>. The file to
-be debugged/sourced before calling the main function. *
+<p>The remaining config entries are:</p>
+<ul>
+<li>
+<code>"workingDirectory"</code>: An absolute path to the desired
+work directory. Defaults to the workspace folder. The R process is
+launched in this directory (reading the <code>.Rprofile</code>
+there).</li>
+<li>
+<code>"file"</code>: Required for debug modes <code>"file"</code>
+and <code>"function"</code>. The file to be debugged/sourced before
+calling the main function.</li>
+<li>
 <code>"mainFunction"</code>: Only used for debug mode
 <code>"function"</code>. The name of the main function to be debugged.
-Must be callable without arguments. *
+Must be callable without arguments.</li>
+<li>
 <code>"allowGlobalDebugging"</code>: Whether to keep the R session
 running after debugging and evaluate expressions from the debug console.
 Essential for debug moge <code>"workspace"</code>, optional for
-<code>"file"</code>, usually not sensible for <code>"function"</code>. *
+<code>"file"</code>, usually not sensible for
+<code>"function"</code>.</li>
+<li>
 <code>"loadPackages"</code>: List of paths to packages to be loaded
 using <code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">pkgload::load_all</a></code> before launching the debugger.
-Requires <code>pkgload</code> to be installed. *
-<code>"loadSilently"</code>: Whether to suppress messages while loading
-packages specified in <code>loadPackages</code>.</p>
+Requires <code>pkgload</code> to be installed.</li>
+<li>
+<code>"loadSilently"</code>: Whether to suppress messages while
+loading packages specified in <code>loadPackages</code>.</li>
+</ul>
 <p>For config entries shared with attach requests see 3.3.</p>
 </div>
 <div class="section level3">
@@ -448,7 +459,7 @@ info when retrieving info about variables</li>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.8.</p>
 </div>
 
       </footer>
