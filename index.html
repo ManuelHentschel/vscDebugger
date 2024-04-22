@@ -86,14 +86,15 @@
 <div class="section level1">
 <div class="page-header"><h1 id="vscdebugger">vscDebugger<a class="anchor" aria-label="anchor" href="#vscdebugger"></a>
 </h1></div>
+<p><a href="https://manuelhentschel.r-universe.dev" class="external-link"><img src="https://manuelhentschel.r-universe.dev/badges/vscDebugger" class="img-fluid" alt="R-universe status badge"></a></p>
 <p>This package provides support for the VS Code extension <strong><a href="https://github.com/ManuelHentschel/VSCode-R-Debugger" class="external-link">R Debugger</a></strong>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>The package can be installed from the <a href="https://github.com/ManuelHentschel/vscDebugger/releases/latest" class="external-link">Releases</a> site. (Experimental) binaries for windows and macOS are provided as well. Should these not work, you can compile and install the package using e.g. <a href="https://cran.r-project.org/web/packages/devtools/index.html" class="external-link">devtools</a> and <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">RTools</a>.</p>
-<p>Depending on the installation you might need to manually install the dependencies, as well (currently <code>R6</code> and <code>jsonlite</code>):</p>
+<p><strong>vscDebugger</strong> is not yet on CRAN, but can be installed from R-universe.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'R6'</span>, <span class="st">'jsonlite'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"vscDebugger"</span>, repos <span class="op">=</span> <span class="st">"https://manuelhentschel.r-universe.dev"</span><span class="op">)</span></span></code></pre></div>
+<p>Alternatively, users can install a source release from GitHub <a href="https://github.com/ManuelHentschel/vscDebugger/releases/latest" class="external-link">here</a>. However, note that this may require manual compilation of the underlying C++ code (e.g., using <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">RTools</a> on Windows), as well manual installation of the package dependencies (currently <code>R6</code>, <code>jsonlite</code>, and <code>tcltk</code>).</p>
 </div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
@@ -155,7 +156,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.8.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
 </div>
 
       </footer>
