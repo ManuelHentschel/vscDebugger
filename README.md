@@ -1,23 +1,25 @@
 # vscDebugger
 
+<a href="https://manuelhentschel.r-universe.dev"><img src="https://manuelhentschel.r-universe.dev/badges/vscDebugger" class="img-fluid" alt="R-universe status badge"></a>
+
 This package provides support for the VS Code extension
 **[R Debugger](https://github.com/ManuelHentschel/VSCode-R-Debugger)**.
 
 ## Installation
 
-The package can be installed from the
-[Releases](https://github.com/ManuelHentschel/vscDebugger/releases/latest)
-site.
-(Experimental) binaries for windows and macOS are provided as well.
-Should these not work, you can compile and install the package using e.g.
-[devtools](https://cran.r-project.org/web/packages/devtools/index.html)
-and [RTools](https://cran.r-project.org/bin/windows/Rtools/).
+**vscDebugger** is not yet on CRAN, but can be installed from R-universe.
 
-Depending on the installation you might need to manually install the dependencies, as well
-(currently `R6` and `jsonlite`):
 ```r
-install.packages(c('R6', 'jsonlite'))
+install.packages("vscDebugger", repos = "https://manuelhentschel.r-universe.dev")
 ```
+
+Alternatively, users can install a source release from GitHub
+[here](https://github.com/ManuelHentschel/vscDebugger/releases/latest).
+However, note that this may require manual compilation of the
+underlying C++ code (e.g., using
+[RTools](https://cran.r-project.org/bin/windows/Rtools/) on Windows), as well
+manual installation of the package dependencies (currently `R6`, `jsonlite`,
+and `tcltk`).
 
 ## Usage
 Detailed information can be found [here](https://manuelhentschel.github.io/vscDebugger/).
