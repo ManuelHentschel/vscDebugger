@@ -1,50 +1,6 @@
 
 # helper functions for the default varInfos:
 
-getRow <- function(v, i) {
-  row <- v[i, ]
-  names(row) <- colnames(v)
-  if (is.null(names(row))) {
-    names(row) <- getIndices(v, row = i)
-  }
-  class(row) <- c('.vsc.matrixRow', '.vsc.internalClass')
-  return(row)
-}
-getCol <- function(v, j) {
-  col <- v[, j]
-  names(col) <- rownames(v)
-  if (is.null(names(col))) {
-    names(col) <- getIndices(v, col = j)
-  }
-  # matrixRow can be used here as well!
-  class(col) <- c('.vsc.matrixRow', '.vsc.internalClass')
-  return(col)
-}
-getIndices <- function(v, row = NULL, col = NULL) {
-  if (is.null(row) && is.null(col)) {
-    m <- expand.grid(nrow(v), ncol(v))
-    names <- mapply(function(i, j) paste0('[', i, ',', j, ']'), m[[1]], m[[2]])
-  } else if (is.null(row)) {
-    names <- lapply(seq_len(nrow(v)), function(i) paste0('[', i, ',', col, ']'))
-  } else if (is.null(col)) {
-    names <- lapply(seq_len(ncol(v)), function(j) paste0('[', row, ',', j, ']'))
-  } else {
-    names <- list(paste0('[', row, ',', col, ']'))
-  }
-}
-
-getIndices2 <- function(rows='', cols=''){
-  names <- mapply(
-    function(row, col) paste0('[', row, ',', col, ']'),
-    rows,
-    cols
-  )
-  return(names)
-}
-
-
-
-
 #' Get variable from environment
 #' 
 #' Is basically a wrapper for `get(name, envir=env)`, but does not force promises.
@@ -211,6 +167,17 @@ isPromise <- function(name, env, strict = TRUE) {
   .Call(c_is_promise, sym, env, strict)
 }
 
+# Used to deparse object, unless it's too large
+deparseUnlessTooLarge <- function(v) {
+  bytes <- object.size(v)
+  maxBytes <- getOption('vsc.deparseMaxBytes', 1e5)
+  if(bytes <= maxBytes){
+    ret <- paste0(deparse(v), collapse = '\n')
+  } else{
+    ret <- '<Object too large>'
+  }
+  return(ret)
+}
 
 
 

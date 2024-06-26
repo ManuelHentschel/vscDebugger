@@ -212,6 +212,11 @@ getDefaultVarInfos <- function() {
         arrayDimToList(v, onlyNChildVars = TRUE)
       },
       internalAttributes = list(),
+      evaluateName = function(v) {
+        attributes(v) <- NULL
+        v <- drop(v)
+        deparseUnlessTooLarge(v)
+      },
       toString = function(v) {
         if(is.null(dim(v))){
           toString(v)
@@ -488,6 +493,12 @@ getDefaultVarInfos <- function() {
         paste(deparse(v), collapse = '\n', sep = ';')
       }
     ),
+    # internal variable, deparse normally not
+    list(
+      name = 'InternalVar',
+      doesApply = function(v) inherits(v, '.vsc.internalClass'),
+      evaluateName = '<No expression available>'
+    ),
     # default case
     list(
       name = 'Default',
@@ -534,14 +545,7 @@ getDefaultVarInfos <- function() {
         paste0(utils::capture.output(utils::str(v, max.level = 0, give.attr = FALSE)), collapse = "\n")
       },
       evaluateName = function(v) {
-        bytes <- object.size(v)
-        maxBytes <- getOption('vsc.deparseMaxBytes', 1e5)
-        if(bytes <= maxBytes){
-          ret <- paste0(deparse(v), collapse = '\n')
-        } else{
-          ret <- '<Object too large>'
-        }
-        return(ret)
+        deparseUnlessTooLarge(v)
       },
       printFunc = function(v) {
         if(identical(getOption('vsc.printEvalResponses', FALSE), TRUE)){
