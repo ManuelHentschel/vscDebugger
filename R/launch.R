@@ -138,6 +138,7 @@ initializeRequest <- function(response, args, request){
       session$rootNode$clearVariables()
       sendInvalidatedEvent('variables')
       unregisterEntryFrame()
+      logCat('Stopping from taskCallback...')
       sendStoppedEvent('step')
       options(session$internalOptions)
       TRUE

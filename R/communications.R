@@ -39,7 +39,9 @@
   }
 
   # check if paused on function step or toplevel prompt
-  if(isCalledFromBrowser()){
+  if(session$state$isPaused()){
+    logCat('Session already paused.')
+  } else if(isCalledFromBrowser()){
     session$state$startPaused('step')
   } else{
     session$state$startPaused('toplevel')

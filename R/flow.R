@@ -62,10 +62,12 @@ showingPromptRequest <- function(response, args, request){
     logPrint('showingPromptRequest: paused on error -> ignore')
     # ignore
   } else if(session$state$isPausedOnBreakpoint()){
-    logPrint('showingPromptRequest: starting paused on breakpoint!!!')
+    logPrint('showingPromptRequest: starting paused on breakpoint!')
     sendStoppedEvent(reason='breakpoint')
   } else{
-    logPrint('showingPromptRequest: starting paused!!!')
+    logPrint('showingPromptRequest: starting paused!')
+    logPrint(session$state$pausedOn)
+    logPrint(session$state$running)
     session$state$startPaused('browser')
     session$clearStackTree <- TRUE
     sendStoppedEvent(reason='step')
