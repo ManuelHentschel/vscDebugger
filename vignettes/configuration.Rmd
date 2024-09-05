@@ -100,8 +100,6 @@ Whether to use a separate socket for custom events.
 Is necessary to allow flow control (stepping through code).
 * `"customPort"`: Port number of custom socket. Leave emtpy/0 to assign automatically.
 * `"customHost"`: Host name of custom socket. Leave empty to use localhost.
-* `"splitOverwrittenOutput"`:
-Whether to show the overwritten output in the normal stdout/stderr as well.
 
 
 ### 3.3 Shared config entries
@@ -120,6 +118,8 @@ Breakpoints and the modified `print`/`cat`/`message`/`str` functions are applied
 * `"overwriteStr"`: Same as above for `str()`.
 * `"overwriteMessage"`: Same as above for `message()`
 * `"overwriteSource"`: Whether to overwrite the `source` function with a custom version that is affected by breakpoints set in VS Code.
+* `"splitOverwrittenOutput"`:
+Whether to show the overwritten output in the normal stdout/stderr as well.
 
 
 ## 4. R Options
