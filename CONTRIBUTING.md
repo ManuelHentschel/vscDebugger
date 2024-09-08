@@ -16,6 +16,22 @@ This is rather simple to integrate in defaultVarInfos.R, but might take some tim
 * Implement proper user facing functions to add/modify VarInfos
 
 
+## Compiling/Building
+
+The package follows the normal build and installation process of R packages.
+It contains some C code, which needs to be compiled,
+so on Windows it might be necessary to install
+[RTools](https://cran.r-project.org/bin/windows/Rtools/).
+
+Documentation is written using [Roxygen comments](https://roxygen2.r-lib.org/),
+which are converted to .Rd files by the command `devtools::document()`.
+Vignettes are written as .Rmd files which can be built using `devtools::build_vignettes()`.
+The online documentation is built from the normal help pages using [pkgdown](https://pkgdown.r-lib.org/).
+
+The files `build.R` and `.vscode/tasks.json` contain some scripts that might be useful
+to speed up the development workflow, but these are not tested or documented properly
+at the moment.
+
 # File Structure
 
 Below is a rough grouping and explanation of the R files from this package.
