@@ -69,6 +69,12 @@
 <p>If you encounter bugs/problems while using the debugger or have suggestions for new features, please open an issue on github.</p>
 <p>If you want to contribute code but are unsure how/where to integrate your code in the package, please don’t hesitate to ask and I’ll try to clarify the packet structure or write some better documentation (which is naturally on the todo list anyways…).</p>
 <p>Current ideas/todos include: * Adding Logpoints, conditional breakpoints * Improve display of variables (e.g. promises, R6 objects). This is rather simple to integrate in defaultVarInfos.R, but might take some time to implement precisely and error-free. * Improve handling of breakpoints in function definitions by <code>.vsc.debugSource</code> * Improve handling of breakpoints in nested functions * Implement proper user facing functions to add/modify VarInfos</p>
+<div class="section level2">
+<h2 id="compilingbuilding">Compiling/Building<a class="anchor" aria-label="anchor" href="#compilingbuilding"></a></h2>
+<p>The package follows the normal build and installation process of R packages. It contains some C code, which needs to be compiled, so on Windows it might be necessary to install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">RTools</a>.</p>
+<p>Documentation is written using <a href="https://roxygen2.r-lib.org/" class="external-link">Roxygen comments</a>, which are converted to .Rd files by the command <code>devtools::document()</code>. Vignettes are written as .Rmd files which can be built using <code>devtools::build_vignettes()</code>. The online documentation is built from the normal help pages using <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>.</p>
+<p>The files <code>build.R</code> and <code>.vscode/tasks.json</code> contain some scripts that might be useful to speed up the development workflow, but these are not tested or documented properly at the moment.</p>
+</div>
 </div>
 <div class="section level1">
 <h1 id="file-structure">File Structure<a class="anchor" aria-label="anchor" href="#file-structure"></a></h1>
