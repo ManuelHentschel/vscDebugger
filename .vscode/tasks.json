@@ -5,7 +5,8 @@
     "options": {
         "env": {
             // "RCMD": "R410",
-            "RCMD": "R422",
+            // "RCMD": "R422",
+            "RCMD": "R"
         }
     },
     "tasks": [

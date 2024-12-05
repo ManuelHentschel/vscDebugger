@@ -2,11 +2,31 @@
 % Please edit documentation in R/global.R
 \docType{package}
 \name{vscDebugger-package}
+\alias{vscDebugger}
 \alias{vscDebugger-package}
 \title{vscDebugger}
 \description{
-Implementation of the \href{https://microsoft.github.io/debug-adapter-protocol/}{Debug Adapter Protocol} for R
+(Partial) implementation of the \href{https://microsoft.github.io/debug-adapter-protocol/}{Debug Adapter Protocol} for R.
 }
 \details{
 Provides support for the vscode extension \href{https://github.com/ManuelHentschel/VSCode-R-Debugger}{vscode-R-Debugger}.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://ManuelHentschel.github.io/vscDebugger/}
+  \item \url{https://github.com/ManuelHentschel/vscDebugger}
+  \item Report bugs at \url{https://github.com/ManuelHentschel/vscDebugger/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Manuel Hentschel \email{Manuel.Hentschel@outlook.com}
+
+Other contributors:
+\itemize{
+  \item Kun Ren \email{mail@renkun.me} [contributor]
+  \item Denes Toth \email{toth.denes@kogentum.hu} (\href{https://orcid.org/0000-0003-4262-3217}{ORCID}) [contributor]
+}
+
 }
