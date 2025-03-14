@@ -19,7 +19,7 @@ jobs:
       - uses: r-lib/actions/setup-pandoc@v2
 
       - name: Install os level dependencies
-        run: sudo apt-get install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libcurl4-openssl-dev libfontconfig1-dev
+        run: sudo apt-get install libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libcurl4-openssl-dev libfontconfig1-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev
 
       - name: Query dependencies
         run: |
