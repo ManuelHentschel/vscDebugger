@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">vscDebugger</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -139,18 +139,11 @@ debugging the debugger itself and their behaviour might change without
 notice.</p>
 <ul>
 <li>
-<code>r.debugger.logLevelRuntime</code>,
-<code>r.debugger.logLevelSession</code>,
-<code>r.debugger.logLevelRSession</code>
-(<code>"silent"|"info"|"debug"</code>): Log level of the debugger itself
-(visible e.g. in the ‘parent session’ when running the debugger from
-code).</li>
-<li>
 <code>r.debugger.packageURL</code>: Overwrite for the URL used to
 download the R package when installing it automatically.</li>
 <li>
 <code>r.debugger.printStdout</code>,
-<code>r.debugger.printStderr</code>,
+<code>r.debugger.printStderr</code>, <code>r.debugger.printStdin</code>,
 <code>r.debugger.printSinkSocket</code>
 (<code>"nothing"|"all"|"filtered"</code>): To what extent output by the
 R process is printed to the debug console.</li>
@@ -235,8 +228,9 @@ loading packages specified in <code>loadPackages</code>.</li>
 <code>"request": "attach"</code>. In this mode, the debugger is attached
 to an already running R process. To answer the requests sent by VS Code,
 the function <code>.vsc.listenForDAP()</code> must be called manually.
-This mode is ideal to give the user a more direct access to the R
-process.</p>
+This mode gives the user a more direct access to the R process. However,
+support of breakpoints and <code><a href="../reference/dot-vsc.debugSource.html">.vsc.debugSource()</a></code> is limited
+and might not work as expected.</p>
 <p>This mode should work fine with the defaults, but can be finetuned
 with the following config entries:</p>
 <ul>
@@ -381,6 +375,10 @@ value for the launch config entry
 <li>
 <code>"vsc.deparseMaxBytes" = 1e5</code>: Maximum size for variables
 to be deparsed.</li>
+<li>
+<code>"vsc.doLogPrint" = FALSE</code>: Whether to show output from
+internal functions <code>logCat</code> and <code>logPrint</code>. This
+is used for debugging the <code>vscDebugger</code> package itself.</li>
 <li>
 <code>"vsc.dropArrays" = TRUE</code>: Whether to skip dimensions of
 size one when showing arrays in the variables window</li>
