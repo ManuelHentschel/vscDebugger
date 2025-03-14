@@ -93,6 +93,9 @@ sendWriteToStdinForFlowControl <- function(text){
     } else if(session$useJsonSocket){
       listenFunction <- format(quote(.vsc.listenForJSON))
       callListenFunction <- TRUE
+    } else if(session$debugMode == 'attached' && session$supportsWriteToStdinEvent){
+      listenFunction <- format(quote(.vsc.listenForDAP))
+      callListenFunction <- TRUE
     } else{
       callListenFunction <- FALSE
     }
