@@ -21,7 +21,7 @@
   session$pendingEvalResponses <- list()
 
   if(pauseOnError){
-    logPrint('starting error mode!!')
+    logCat('starting error mode!\n')
     session$state$startPaused('error')
     if(is.null(err)){
       message <- geterrmessage()
@@ -36,7 +36,7 @@
     # unregisterEntryFrame()
     browser() # must be last command!
   } else {
-    logPrint('showing traceback!!!')
+    logCat('showing traceback!\n')
     traceback()
     unregisterEntryFrame()
   }
@@ -100,9 +100,11 @@ sendWriteToStdinForFlowControl <- function(text){
       callListenFunction <- FALSE
     }
     if(callListenFunction){
+      logCat('Request listen call: ', listenFunction, '\n')
       listenCall <- paste0(session$rStrings$packageName, '::', listenFunction, '()')
       sendWriteToStdinEvent(listenCall, when = 'now')
     } else{
+      logCat('Request no listen call.\n')
       ret # return success of previous sendWriteToSTdinEvent()
     }
   }
@@ -110,6 +112,7 @@ sendWriteToStdinForFlowControl <- function(text){
 
 continueRequest <- function(response, args, request){
   if(session$state$isPaused() && session$state$pausedOn == "toplevel" && lget(args, 'callDebugSource', FALSE)){
+    logCat('continueRequest: paused on toplevel\n')
     path <- lget(args$source, 'path', '')
     if(!identical(path, '')){
       logPrint('starting debugSource()...')
@@ -124,6 +127,7 @@ continueRequest <- function(response, args, request){
     }
     session$stopListeningOnPort <- response$success
   } else if(session$state$isPaused()){
+    logCat('continueRequest: paused on other\n')
     if(session$state$pausedOn != "toplevel"){
       sendWriteToStdinEvent('c', when='browserPrompt', fallBackToNow = TRUE)
     }
@@ -135,7 +139,7 @@ continueRequest <- function(response, args, request){
       session$state$startRunning()
     }
   } else {
-    logPrint('case not handled...')
+    logCat('continueRequest: case not handled...\n')
     logPrint(session$state$export())
     response$success <- FALSE
   }

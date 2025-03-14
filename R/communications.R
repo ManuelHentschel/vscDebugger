@@ -40,7 +40,7 @@
 
   # check if paused on function step or toplevel prompt
   if(session$state$isPaused()){
-    logCat('Session already paused.')
+    logCat('Session already paused.\n')
   } else if(isCalledFromBrowser()){
     session$state$startPaused('step')
   } else{
@@ -87,7 +87,7 @@
       t <- as.numeric(Sys.time())
     }
   }
-  logPrint('Stop listening on port')
+  logCat('.vsc.listenForDAP: Stop listening on port\n')
   options(session$previousOptions)
   unregisterEntryFrame()
   invisible(NULL)

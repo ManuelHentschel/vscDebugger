@@ -182,6 +182,7 @@ State <- R6::R6Class(
         if(!is.null(evalSilent)){
           self$evalSilent <- evalSilent
         }
+        logCat('State: start running:', toString(self$runningWhat), '\n')
       } else if(startPaused){
         self$running<- FALSE
         if(!is.null(pausedOn)){
@@ -237,6 +238,7 @@ State <- R6::R6Class(
       )
     },
     revert = function(state){
+      logCat('State: revert\n')
       prevState <- self$export()
       self$baseState <- state$baseState
       self$running<- state$running

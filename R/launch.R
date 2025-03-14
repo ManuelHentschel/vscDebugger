@@ -92,7 +92,7 @@ initializeRequest <- function(response, args, request){
   
   # connect to DAP socket, if specified
   session$useDapSocket <- lget(args, 'useDapSocket', FALSE)
-  session$dapPort <- lget(args, 'dapPort', 0)
+  session$dapPort <- lget(args, 'dapPort', 18721)
   session$dapHost <- lget(args, 'dapHost', '127.0.0.1')
   if(session$useDapSocket){
     session$dapSocketConnection <- socketConnection(
@@ -138,7 +138,7 @@ initializeRequest <- function(response, args, request){
       session$rootNode$clearVariables()
       sendInvalidatedEvent('variables')
       unregisterEntryFrame()
-      logCat('Stopping from taskCallback...')
+      logCat('Stopping from taskCallback...\n')
       sendStoppedEvent('step')
       options(session$internalOptions)
       TRUE
