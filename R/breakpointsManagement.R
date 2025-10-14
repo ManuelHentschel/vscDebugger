@@ -132,11 +132,21 @@ storeBreakpointEnv <- function(...){
   }
 }
 
+paths_equal <- function(p1, p2){
+  p1 <- normalizePath(p1, winslash = "/", mustWork = FALSE)
+  p2 <- normalizePath(p2, winslash = "/", mustWork = FALSE)
+  if(.Platform$OS.type == "windows"){
+    # on Windows, ignore case
+    p1 <- tolower(p1)
+    p2 <- tolower(p2)
+  }
+  return(p1 == p2)
+}
 
 storeSourceBreakpoints <- function(sbps){
   for(i in rev(seq_along(session$sourceBreakpointsList))){
     oldSbps <- session$sourceBreakpointsList[[i]]
-    if(oldSbps$source$path == sbps$source$path){
+    if(paths_equal(oldSbps$source$path, sbps$source$path)){
       session$sourceBreakpointsList[[i]] <- sbps
       return(oldSbps)
     }
@@ -149,7 +159,7 @@ storeSourceBreakpoints <- function(sbps){
 
 getSourceBreakpoints <- function(path){
   for(sbps in session$sourceBreakpointsList){
-    if(sbps$source$path == path){
+    if(paths_equal(sbps$source$path, path)){
       return(sbps)
     }
   }

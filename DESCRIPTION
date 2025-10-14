@@ -1,6 +1,6 @@
 Package: vscDebugger
 Title: Support for Visual Studio Code Debugger
-Version: 0.5.4
+Version: 0.5.5
 Authors@R: c(
     person(
         given = "Manuel",
@@ -41,5 +41,5 @@ Encoding: UTF-8
 LazyData: true
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr
