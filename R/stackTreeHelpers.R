@@ -1,35 +1,70 @@
 
 
-
 sourceRequest <- function(response, args, request){
-  sources <- lget(session, 'sources', list())
-  srcref <- lget(args, 'sourceReference', 0)
-  if(srcref==0){
+  # Get source reference from args (two possible locations)
+  ref <- lget(args, 'sourceReference', 0)
+  if(ref==0){
     srcref <- lget(args$source, 'sourceReference', 0)
   }
-  foundSource <- FALSE
-  for(src in sources){
-    if(src$sourceReference == srcref){
-      response$body <- list(
-        content = lget(src, 'content', '<ERROR: Source information not found!>'),
-        mimeType = lget(src, 'mimeType')
-      )
-      foundSource <- TRUE
-    }
+
+  # Get content matching the ref
+  content <- getStoredSourceContent(ref)
+  if(content == ''){
+    response$success <- FALSE
+  } else{
+    response$body <- list(
+      content = content,
+      mimeType = NULL
+    )
+    response$success <- TRUE
   }
-  response$success <- foundSource
   sendResponse(response)
+}
+
+locationsRequest <- function(response, args, request){
+  ref <- lget(args, 'locationReference', 0)
+  locationInfo <- getStoredLocationInfo(ref)
+  if(is.null(locationInfo)){
+    response$success <- FALSE
+  } else{
+    response$body <- locationInfo # Matches the required structure
+    response$success <- TRUE
+  }
+  sendResponse(response)
+}
+
+getStoredLocationInfo <- function(ref){
+  if(ref <= 0 || ref > length(session$locations)){
+    return(NULL)
+  }
+  return(session$locations[[ref]])
+}
+
+getLocationReference <- function(srcref){
+  locationInfo <- getLocationInfo(srcref)
+  ref <- storeLocationInfo(locationInfo)
+  return(ref)
+}
+
+storeLocationInfo <- function(locationInfo){
+  if(is.null(locationInfo)){
+    return(0)
+  }
+  ref <- length(session$locations) + 1
+  session$locations[[ref]] <- locationInfo
+  return(ref)
 }
 
 #' Gather info about a frame's source code
 #' 
 #' Gathers and returns a named list containing info about the name, path, and content of the source file of a frame
 #' 
-#' @param frameIdR A frame id (as used by R) that can be passed to sys.call
-#' @return A named list containing info about the source file
+#' @param call call object as returned by `sys.call`
+#' @param frameIdR A frame id (as used by R) that can be passed to `sys.call`
+#' @return NULL or a LocationInfo object, matching entries for LocationsResponse.body and OutputEvent.body
 #' 
 #' @keywords internal
-getSource <- function(call, frameIdR = 0) {
+getLocationInfoForCall <- function(call, frameIdR = 0) {
   # get call if not provided
   if(is.null(call)){
     call <- sys.call(frameIdR)
@@ -37,6 +72,15 @@ getSource <- function(call, frameIdR = 0) {
 
   # retrieve source information from call
   srcref <- attr(call, 'srcref')
+  return(getLocationInfo(srcref))
+}
+
+#' Get location info from srcref attribute
+#'
+#' @return NULL or a LocationInfo object, matching entries for LocationsResponse.body and OutputEvent.body
+#'
+#' @keywords internal
+getLocationInfo <- function(srcref){
   srcfile <- attr(srcref, 'srcfile')
 
   originalSrcfile <- srcfile$original
@@ -49,62 +93,70 @@ getSource <- function(call, frameIdR = 0) {
   # return empty source if no source information found
   if(is.null(srcfile)){
     if(!is.null(srcref)){
-      logPrint('found srcref but not srcfile!!!')
+      logPrint('found srcref but not srcfile!')
       logPrint(srcref)
-      logPrint(call)
     } else{
-      logPrint('no srcfile!!!!')
+      logPrint('no srcfile!')
     }
     return(NULL)
   }
 
-  # validate path
-  wd <- srcfile$wd
-  path <- srcfile$filename
-  if(path != ''){
-    path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
-  }
-  isFile <- file.exists(path)
-
   # handle source information
-  src <- list(
+  ret <- list(
     line = srcref[1],
     endLine = srcref[3],
     column = srcref[2],
-    endColumn = srcref[4],
-    isFile = isFile
+    endColumn = srcref[4]
   )
 
-  if(isFile){
-    src$sourceReference <- 0
-    src$name <- basename(path)
-    src$path <- path
+  # validate path
+  wd <- lget(srcfile, 'wd', '')
+  path <- lget(srcfile, 'filename', '')
+  if(path != ''){
+    path <- normalizePathInWd(path, winslash = "/", mustWork = FALSE, wd = wd)
+  }
+
+  source <- list(
+    name = basename(path)
+  )
+  if(file.exists(path)){
+    source$name <- basename(path)
+    source$path <- path
   } else{
+    # Store content and assign reference
     content <- paste0(srcfile$lines, collapse='\n')
     if(identical(content, '')){
       return(NULL)
     }
-    src$content <- content
-    # src$path <- 'temp'
-    # src$name <- 'temp'
-    src$path <- strsplit(content, ' ')[[1]][1]
-    src$name <- strsplit(content, ' ')[[1]][1]
-    # logPrint(toString(call[[1]]))
-    src$sourceReference <- storeSource(src)
+    source$sourceReference <- storeSourceContent(content)
+    # Make name if necessary
+    if(source$name == ''){
+      source$name <- strsplit(content, ' ')[[1]][1]
+    }
   }
+  ret$source <- source
 
-  return(src)
+  return(ret)
 }
 
-storeSource <- function(source, doSave=TRUE){
-  if(doSave){
-    sourceReference <- length(session$sources)+1
-    source$sourceReference <- sourceReference
-    session$sources[[sourceReference]] <- source
-  } else{
-    sourceReference <- 0
+storeSourceContent <- function(content){
+  # If content already stored, return existing ref
+  for(i in seq_along(session$sourceContents)){
+    if(identical(session$sourceContents[[i]], content)){
+      return(i)
+    }
   }
-  return(sourceReference)
+  # Store new content
+  new_ref <- length(session$sourceContents) + 1
+  session$sourceContents[[new_ref]] <- content
+  return(new_ref)
+}
+
+getStoredSourceContent <- function(ref){
+  if(ref <= 0 || ref > length(session$sourceContents)){
+    return('')
+  }
+  return(session$sourceContents[[ref]])
 }
 
 normalizePathInWd <- function(path, winslash="\\", mustWork=FALSE, wd=NULL){
@@ -122,21 +174,6 @@ normalizePathInWd <- function(path, winslash="\\", mustWork=FALSE, wd=NULL){
   }
   ret
 }
-
-getEmptySource <- function(){
-  list(
-    name = '',
-    path = '',
-    sourceReference = 0,
-    line = 0,
-    endLine = 0,
-    column = 0,
-    endColumn = 0,
-    content = '',
-    isFile = FALSE
-  )
-}
-
 
 #' Get the frame name of a given call
 #'

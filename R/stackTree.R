@@ -388,14 +388,13 @@ FrameNode <- R6::R6Class(
         self$presentationHint <- "normal"
         self$line <- NULL # to be overwritten by line from source
         self$column <- NULL # to be overwritten by column from source
-        source <- getSource(sys.call(self$frameIdR + 1), self$frameIdR + 1)
-        # source <- getSource(sys.call(self$frameIdR), self$frameIdR)
-        if(!is.null(source)){
-          self$source <- source
-          self$line <- source$line
-          self$column <- source$column
-          self$endLine <- source$endLine
-          self$endColumn <- source$endColumn + 1
+        locationInfo <- getLocationInfoForCall(sys.call(self$frameIdR + 1), self$frameIdR + 1)
+        if(!is.null(locationInfo)){
+          self$source <- locationInfo$source
+          self$line <- locationInfo$line
+          self$column <- locationInfo$column
+          self$endLine <- locationInfo$endLine
+          self$endColumn <- locationInfo$endColumn + 1
         }
       }
       self$id <- self$frameIdVsc
@@ -465,6 +464,7 @@ VariableNode <- R6::R6Class(
     childNodes = NULL,
     storedAttrIndices = NULL,
     storedChildIndices = NULL,
+    locationReference = NULL,
 
     updateValue = function(newValue) {
       args <- list(
@@ -493,7 +493,8 @@ VariableNode <- R6::R6Class(
         "toString",
         "type",
         "nChildVars",
-        "presentationHint"
+        "presentationHint",
+        "locationReference"
       )
 
       if(getOption('vsc.showEvaluateName', TRUE)){
@@ -536,6 +537,7 @@ VariableNode <- R6::R6Class(
       self$type <- infos$type
       self$evaluateName <- infos$evaluateName
       self$presentationHint <- infos$presentationHint
+      self$locationReference <- infos$locationReference
       
       if (self$indexedVariables + self$namedVariables > 0) {
         self$variablesReference <- self$getNewVarRef()
@@ -552,7 +554,8 @@ VariableNode <- R6::R6Class(
         variablesReference = self$variablesReference,
         presentationHint = self$presentationHint,
         namedVariables = self$namedVariables,
-        indexedVariables = self$indexedVariables
+        indexedVariables = self$indexedVariables,
+        valueLocationReference = self$locationReference
       )
       if(lget(args, 'includeSetInfo', FALSE)){
         content$setter <- self$setter

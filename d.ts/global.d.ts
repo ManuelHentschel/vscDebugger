@@ -2,14 +2,10 @@
 
 import { Breakpoints } from './breakpoints';
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
-import { VarInfo } from './customVarInfo';
+import { LocationInfo, VarInfo } from './customVarInfo';
 import { StackTree } from './stackTree';
 import { DebugProtocol } from './debugProtocol';
 
-
-interface InternalSource extends DebugProtocol.Source {
-    content?: string;
-}
 
 export interface Session {
   // settings:
@@ -120,7 +116,8 @@ export interface Session {
   // (like 'state', but contains longer lists etc.)
   rootNode: StackTree.RootNode;
   sourceBreakpointsList: Breakpoints.SourceBreakpoints[];
-  sources: InternalSource[];
+  sourceContents: string[]; // indexed by sourceReference (1-based)
+  locations: LocationInfo[]; // indexed by locationReference (1-based)
   print_help_files_with_topic_0: RFunction | null;
   print_hsearch_0: RFunction | null;
   breakpointEnvironments: REnvironment[];

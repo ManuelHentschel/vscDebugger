@@ -1,6 +1,7 @@
 
 import { RValue, REnvironment, RFunction, RCall, RNULL, RList, RVector } from './RTypes';
 import { StackTree } from './stackTree';
+import { DebugProtocol } from './debugProtocol';
 
 type MinimalVariable = StackTree.MinimalVariable;
     
@@ -27,6 +28,8 @@ export interface VarInfo {
   evaluateName?: ValueOrFunction<string>;
   // function that can be used to print/show the variable in the debug console
   printFunc?: RFunction | boolean;
+  // If variable has a srcref, positive integer to retrieve its location
+  locationReference?: ValueOrFunction<number>;
 }
 
 export function _vsc_applyVarInfo(
@@ -36,3 +39,15 @@ export function _vsc_applyVarInfo(
   verbose?: boolean,
   ind?: RVector<number>
 )
+
+// Format used internally to compute and store location references
+// Matches corresponding fields in:
+// - LocationsResponse.body
+// - OutputEvent.body
+export interface LocationInfo {
+  source: DebugProtocol.Source;
+  line: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
+}

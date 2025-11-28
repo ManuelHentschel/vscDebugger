@@ -115,7 +115,8 @@ initSession <- function() {
     # (like 'state', but contains longer lists etc.)
     rootNode <- NULL
     sourceBreakpointsList <- list()
-    sources <- list()
+    sourceContents <- list()
+    locations <- list()
     print_help_files_with_topic_0 <- NULL
     print_hsearch_0 <- NULL
     breakpointEnvironments <- list()

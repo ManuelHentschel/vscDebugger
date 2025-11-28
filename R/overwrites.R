@@ -126,19 +126,17 @@ NULL
   variable <- node$getContent()
 
   if(showSource){
-    source <- getSource(sys.call(-skipCalls))
-    line <- lget(source, 'line', 0)
+    locationInfo <- getLocationInfoForCall(sys.call(-skipCalls))
   } else{
-    source <- NULL
-    line <- NULL
+    locationInfo <- NULL
   }
 
   sendOutputEvent(
     output = "",
     category = "stdout",
     variablesReference = variable$variablesReference,
-    source = source,
-    line = line
+    source = locationInfo$source, # may be NULL
+    line = locationInfo$line # may be NULL
   )
 
   if(session$splitOverwrittenOutput){
@@ -162,13 +160,16 @@ NULL
 printToVsc <- function(ret, skipCalls=0, category="stdout", showSource=TRUE){
   output <- paste0(ret, collapse = "\n")
   if(showSource){
-    source <- getSource(sys.call(-skipCalls))
-    line <- lget(source, 'line', 0)
+    locationInfo <- getLocationInfoForCall(sys.call(-skipCalls))
   } else{
-    source <- NULL
-    line <- NULL
+    locationInfo <- NULL
   }
-  sendOutputEvent(category, output = output, line=line, source=source)
+  sendOutputEvent(
+    category,
+    output = output,
+    line = locationInfo$line, # may be NULL
+    source = locationInfo$source # may be NULL
+  )
 }
 
 

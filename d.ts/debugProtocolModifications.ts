@@ -15,7 +15,7 @@ export type DebugMode = 'function'|'file'|'workspace';
 export interface RStartupArguments {
     path: string;
     args: string[];
-    jsonPort?: number;
+    dapPort?: number;
     sinkPort?: number;
     cwd?: string;
     env?: {
@@ -64,10 +64,12 @@ export interface DebugConfiguration extends vsCode.DebugConfiguration {
 
 export interface LaunchConfiguration extends DebugConfiguration {
     request: 'launch';
+    rPath?: string;
     commandLineArgs?: string[];
     env?: {
         [key: string]: string;
-    }
+    };
+    launchDirectory?: string;
 }
 
 export interface FunctionDebugConfiguration extends LaunchConfiguration {
@@ -190,6 +192,8 @@ export interface WriteToStdinBody {
     ppid?: number;
 }
 
+export type CustomEventBody = ViewHelpBody | WriteToStdinBody;
+
 // Used to send info to R that is not part of the DAP
 export interface CustomRequest extends DebugProtocol.Request {
     command: 'custom'
@@ -207,4 +211,15 @@ export interface ShowingPromptRequest extends CustomRequest {
     }
 }
 
+// Tell R to show the data viewer for a variable
+export interface ShowDataViewerRequest extends CustomRequest {
+    arguments: ShowDataViewerArguments;
+}
 
+export interface ShowDataViewerArguments {
+    reason: 'showDataViewer';
+    /** The reference of the variable container. */
+    variablesReference: number;
+    /** The name of the variable in the container. */
+    name: string;
+}

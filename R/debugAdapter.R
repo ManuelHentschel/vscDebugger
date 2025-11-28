@@ -58,6 +58,8 @@
       attachRequest(response, args, request)
     } else if(command == 'custom'){
       customRequest(response, args, request)
+    } else if(command == 'locations'){
+      locationsRequest(response, args, request)
     } else {
       commandKnown <- FALSE
       response$success <- FALSE

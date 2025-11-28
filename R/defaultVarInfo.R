@@ -465,6 +465,18 @@ getDefaultVarInfos <- function() {
         paste0(format(v), collapse = '\n')
       }
     ),
+    # something with source info (usually functions)
+    list(
+      name = 'WithSource',
+      doesApply = function(v) {
+        "srcref" %in% names(attributes(v))
+      },
+      locationReference = function(v){
+        srcref <- attr(v, 'srcref')
+        locref <- getLocationReference(srcref)
+        return(locref)
+      }
+    ),
     # scalar
     list(
       name = 'Scalar',
@@ -553,7 +565,8 @@ getDefaultVarInfos <- function() {
         } else{
           TRUE
         }
-      }
+      },
+      locationReference = 0
     )
   )
 

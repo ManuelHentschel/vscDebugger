@@ -75,7 +75,10 @@ evaluateRequest <- function(response, args, request){
     response$body <- list(
       result = variable$value,
       type = variable$type,
-      variablesReference = variable$variablesReference
+      variablesReference = variable$variablesReference,
+      namedVariables = variable$namedVariables,
+      indexedVariables = variable$indexedVariables,
+      valueLocationReference = variable$valueLocationReference
     )
   } else{
     response$body <- list(
