@@ -154,6 +154,7 @@ If no values are set, the defaults listed below are used.
 * `"vsc.groupAttributes" = FALSE`: Whether to group attributes in the variables view
 * `"vsc.ignoreCrInEval" = TRUE`: Whether to ignore carriage returns (`\r`) in the text of eval requests
 * `"vsc.includeFrameColumn" = FALSE`: Whether to highlight the column of the active frame in the source code
+* `"vsc.linkSrcrefLocations" = TRUE`: Whether to create links to source locations for functions with srcref attributes
 * `"vsc.previewPromises" = FALSE`: Whether to show the value that a promise would currently evaluate to (can have side effects!)
 * `"vsc.setBreakpointsInStack" = TRUE`: Whether to try and set breakpoints in active stack frames.
 * `"vsc.showAttributes" = TRUE`: Whether to show attributes in the variables view

@@ -468,9 +468,10 @@ getDefaultVarInfos <- function() {
     # something with source info (usually functions)
     list(
       name = 'WithSource',
-      doesApply = function(v) {
-        "srcref" %in% names(attributes(v))
-      },
+      doesApply = function(v) {(
+        isTRUE(getOption('vsc.linkSrcrefLocations', TRUE))
+        && "srcref" %in% names(attributes(v))
+      )},
       locationReference = function(v){
         srcref <- attr(v, 'srcref')
         locref <- getLocationReference(srcref)
@@ -524,6 +525,9 @@ getDefaultVarInfos <- function() {
           return(list())
         }
         attr <- attributes(v)
+        if(getOption('vsc.linkSrcrefLocations', TRUE) && 'srcref' %in% names(attr)){
+          attr <- attr[setdiff(names(attr), 'srcref')]
+        }
         names <- names(attr)
         mapply(
           function(a, n){
@@ -541,11 +545,14 @@ getDefaultVarInfos <- function() {
       },
       customAttributes = function(v){
         if(getOption('vsc.groupAttributes', FALSE) && !inherits(v, '.vsc.internalClass') && getOption('vsc.showAttributes', TRUE)){
-          rValue <- attributes(v)
-          class(rValue) <- c('.vsc.attributeList', '.vsc.internalClass')
+          attr <- attributes(v)
+          if(getOption('vsc.linkSrcrefLocations', TRUE) && 'srcref' %in% names(attr)){
+            attr <- attr[setdiff(names(attr), 'srcref')]
+          }
+          class(attr) <- c('.vsc.attributeList', '.vsc.internalClass')
           ret <- list(
             name = "__attributes()",
-            rValue = rValue,
+            rValue = attr,
             setter = quote(attributes(parent))
           )
           list(ret)
