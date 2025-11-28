@@ -17,11 +17,12 @@
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/dot-vsc.refreshBreakpoints.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getDotVars.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getFrameName.html</loc></url>
+<url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getLocationInfo.html</loc></url>
+<url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getLocationInfoForCall.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getPpid.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getPromiseInfo.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getPromiseVar.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getScopeEnvs.html</loc></url>
-<url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getSource.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/getVarInEnv.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/index.html</loc></url>
 <url><loc>https://ManuelHentschel.github.io/vscDebugger/reference/isPromise.html</loc></url>
