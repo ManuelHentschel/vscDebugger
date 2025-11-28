@@ -1,6 +1,6 @@
 Package: vscDebugger
 Title: Support for Visual Studio Code Debugger
-Version: 0.5.5
+Version: 0.5.6
 Authors@R: c(
     person(
         given = "Manuel",
