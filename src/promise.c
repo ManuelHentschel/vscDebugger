@@ -1,5 +1,7 @@
 #include "promise.h"
 
+#if R_VERSION < R_Version(4, 6, 0)
+
 static Rboolean is_promise(SEXP object, Rboolean strict) {
   Rboolean ret = TYPEOF(object) == PROMSXP;
   if (ret && strict) {
@@ -58,3 +60,11 @@ SEXP attribute_hidden c_promise_info(SEXP sym, SEXP env) {
   UNPROTECT(3);
   return ret;
 }
+
+#else
+
+// todo:
+// figure out how to do the same as above, using
+// https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Working-with-variable-bindings
+
+#endif
