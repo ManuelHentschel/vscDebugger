@@ -16,8 +16,6 @@ A named list:
 \itemize{
 \item \code{code}: the expression that will be evaluated
 \item \code{environment}: the environment where the promise is evaluated
-\item \code{evaluated}: logical flag if the promise has been already evaluated
-\item \code{value}: optional node; the value of the evaluated promise
 }
 }
 \description{

@@ -4,20 +4,17 @@
 \alias{isPromise}
 \title{Test if an object is a promise}
 \usage{
-isPromise(name, env, strict = TRUE)
+isPromise(name, env)
 }
 \arguments{
 \item{name}{\code{character(1L)} the name of the object}
 
 \item{env}{\code{\link{environment}} the environment of the object}
-
-\item{strict}{\code{logical(1L)} if \code{strict} is \code{TRUE}
-(the default), evaluated promises return with \code{FALSE}}
 }
 \value{
 \code{TRUE} or \code{FALSE}
 }
 \description{
-Test if an object is a promise
+Only strict (non-forced) promises are considered.
 }
 \keyword{internal}
