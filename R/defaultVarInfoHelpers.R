@@ -151,7 +151,7 @@ getPromiseInfo <- function(name, env) {
 
 #' Test if an object is a promise
 #' 
-#' Starting with R 4.6.0 only strict (non-forced) promises are considered.
+#' Only strict (non-forced) promises are considered.
 #' @param name `character(1L)` the name of the object
 #' @param env [`environment`] the environment of the object 
 #' @return `TRUE` or `FALSE`
