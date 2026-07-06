@@ -16,9 +16,8 @@ getVarInEnv <- function(name, env) {
   tryCatch({
     if (name == '...') {
       getDotVars(env)
-    } else if (isPromise(name, env, strict = FALSE)) {
-      prom <- getPromiseVar(name, env)
-      if (isTRUE(prom$evaluated)) prom$value else prom
+    } else if (isPromise(name, env)) {
+      getPromiseVar(name, env)
     } else if (bindingIsActive(name, env) && !getOption('vsc.evaluateActiveBindings', FALSE)) {
       getActiveBinding(name, env)
     } else {
@@ -142,8 +141,6 @@ getPromiseVar <- function(name, env) {
 #' @return A named list: 
 #' * `code`: the expression that will be evaluated
 #' * `environment`: the environment where the promise is evaluated
-#' * `evaluated`: logical flag if the promise has been already evaluated
-#' * `value`: optional node; the value of the evaluated promise
 #' 
 #' @keywords internal
 #' @useDynLib vscDebugger c_promise_info 
@@ -154,17 +151,16 @@ getPromiseInfo <- function(name, env) {
 
 #' Test if an object is a promise
 #' 
+#' Only strict (non-forced) promises are considered.
 #' @param name `character(1L)` the name of the object
 #' @param env [`environment`] the environment of the object 
-#' @param strict `logical(1L)` if \code{strict} is \code{TRUE} 
-#'   (the default), evaluated promises return with \code{FALSE}
 #' @return `TRUE` or `FALSE`
 #' 
 #' @keywords internal
 #' @useDynLib vscDebugger c_is_promise
-isPromise <- function(name, env, strict = TRUE) {
+isPromise <- function(name, env) {
   sym <- as.name(name)
-  .Call(c_is_promise, sym, env, strict)
+  .Call(c_is_promise, sym, env)
 }
 
 # Used to deparse object, unless it's too large
