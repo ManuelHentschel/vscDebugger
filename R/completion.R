@@ -3,8 +3,22 @@
 #   'keyword' | 'snippet' | 'text' | 'color' | 'file' | 'reference' | 'customcolor';
 
 
+temp_log_completion_args <- function(args){
+  json <- getJson(args)
+  # base::cat('ayo:', json, '\n')
+  base::cat(json, '\n', file='temp.completion_args.jsonl', append=TRUE)
+}
+
+temp_log_completion_responses <- function(response){
+  json <- getJson(response)
+  # base::cat('ayo:', json, '\n')
+  base::cat(json, '\n', file='temp.completion_responses.jsonl', append=TRUE)
+}
 
 completionsRequest <- function(response, args, request) {
+  # temp:
+  temp_log_completion_args(args)
+
   # args
   frameIdVsc <- lget(args, 'frameId', 0)
   text <- lget(args, 'text', '')
