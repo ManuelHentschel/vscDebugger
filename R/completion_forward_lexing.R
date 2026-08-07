@@ -1,8 +1,7 @@
 # Implements a simple multi-step process to identify
 # relevant code for the completion engine.
-# 1. (HERE) Forward lexing: identify strings, comments, special operators,
-#    and (if possible) brackets
-# 2. (TODO) Local backwards lexing: identify the relevant expression before the cursor position
+# 1. (HERE) Forward lexing: identify strings, comments, and special operators
+# 2. Local backwards lexing: identify the relevant expression before the cursor position
 # 3. (TODO) Interpret the expression to identify containing lists etc. for completion
 #
 # This is more robust and easier to maintain than a full lexer, while still identifying nested expressions etc.
@@ -21,15 +20,8 @@ QUOTE_SYMBOLS <- c("'", "\"", "`")
 QUOTE_BY_STATE <- setNames(as.list(QUOTE_SYMBOLS), QUOTED_STATES)
 STATE_BY_QUOTE <- setNames(as.list(QUOTED_STATES), QUOTE_SYMBOLS)
 
-OPENING_DELIMITERS <- c("(", "[", "{")
-CLOSING_DELIMITERS <- c(")", "]", "}")
-CLOSING_TO_OPENING_DELIMITER <- setNames(
-    OPENING_DELIMITERS,
-    CLOSING_DELIMITERS
-)
-
-RAW_OPENING_DELIMITERS <- c(OPENING_DELIMITERS, "|")
-RAW_CLOSING_DELIMITERS <- c(CLOSING_DELIMITERS, "|")
+RAW_OPENING_DELIMITERS <- c("(", "[", "{", "|")
+RAW_CLOSING_DELIMITERS <- c(")", "]", "}", "|")
 RAW_OPENING_TO_CLOSING_DELIMITERS <- setNames(
     RAW_CLOSING_DELIMITERS,
     RAW_OPENING_DELIMITERS
@@ -62,15 +54,6 @@ lex_forward <- function(text) {
             end = end
         )
     }
-
-    # Delimiter information is advisory. If we encounter a mismatch, it is
-    # discarded while lexical region scanning continues normally.
-    #
-    # [[ is represented as two nested [ delimiters. The later backwards
-    # analysis can recognize [[ itself if necessary.
-    delimiter_kind <- character()
-    delimiter_start <- integer()
-    delimiters_valid <- TRUE
 
     state <- LS_CODE
     state_start <- NA_integer_
@@ -342,38 +325,6 @@ lex_forward <- function(text) {
             next
         }
 
-        # Advisory delimiter tracking
-        if (delimiters_valid) {
-            if (ch %in% OPENING_DELIMITERS) {
-                delimiter_kind <- c(
-                    delimiter_kind,
-                    ch
-                )
-                delimiter_start <- c(
-                    delimiter_start,
-                    i
-                )
-            } else if (ch %in% CLOSING_DELIMITERS) {
-                expected <- CLOSING_TO_OPENING_DELIMITER[[ch]]
-                depth <- length(delimiter_kind)
-                if (
-                    depth == 0L ||
-                    delimiter_kind[depth] != expected
-                ) {
-                    # Don't attempt parser-like error recovery.
-                    #
-                    # String/comment information remains valid, but from this
-                    # point onward delimiter nesting is considered unreliable.
-                    delimiters_valid <- FALSE
-                    delimiter_kind <- character()
-                    delimiter_start <- integer()
-                } else {
-                    delimiter_kind <- delimiter_kind[-depth]
-                    delimiter_start <- delimiter_start[-depth]
-                }
-            }
-        }
-
         i <- i + 1L
     }
 
@@ -432,11 +383,6 @@ lex_forward <- function(text) {
             state_start
         },
         regions = regions,
-        delimiter_stack = list(
-            kind = delimiter_kind,
-            start = delimiter_start
-        ),
-        delimiters_valid = delimiters_valid,
         raw = raw_string_info
     )
 }

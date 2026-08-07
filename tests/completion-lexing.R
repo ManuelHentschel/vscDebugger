@@ -1,4 +1,5 @@
-source(file.path("R", "completion_lexing.R"))
+source(file.path("R", "completion_forward_lexing.R"))
+source(file.path("R", "completion_backward_lexing.R"))
 
 STATE_NAME_BY_VALUE <- setNames(
     c(
@@ -85,7 +86,11 @@ format_status_value <- function(value) {
     as.character(value)
 }
 
-visualize_lex_forward <- function(text, lexed = lex_forward(text)) {
+visualize_lex_forward <- function(
+    text,
+    lexed = lex_forward(text),
+    context = lex_backward(text, lexed)
+) {
     stopifnot(
         is.character(text),
         length(text) == 1L,
@@ -94,23 +99,51 @@ visualize_lex_forward <- function(text, lexed = lex_forward(text)) {
     )
 
     chars <- strsplit(text, "", fixed = TRUE)[[1L]]
-    markers <- rep(" ", length(chars))
+    region_markers <- rep(" ", length(chars))
+    context_markers <- rep(" ", length(chars))
 
     for (region in lexed$regions) {
         symbol <- REGION_SYMBOL_BY_STATE[[as.character(region$state)]]
         positions <- seq.int(region$start, region$end - 1L)
         positions <- positions[positions >= 1L & positions <= length(chars)]
-        markers[positions] <- symbol
+        region_markers[positions] <- symbol
+    }
+
+    if (
+        context$feasible &&
+        context$start < context$end
+    ) {
+        positions <- seq.int(context$start, context$end - 1L)
+        positions <- positions[positions >= 1L & positions <= length(chars)]
+        context_markers[positions] <- "^"
     }
 
     # Preserve tab alignment instead of replacing a tab with one marker.
-    markers[chars == "\t"] <- "\t"
-    lines <- split_visual_lines(chars, markers)
-    line_number_width <- nchar(as.character(length(lines$text)))
+    region_markers[chars == "\t"] <- "\t"
+    context_markers[chars == "\t"] <- "\t"
+    region_lines <- split_visual_lines(chars, region_markers)
+    context_lines <- split_visual_lines(chars, context_markers)
+    line_number_width <- nchar(as.character(length(region_lines$text)))
 
-    for (line in seq_along(lines$text)) {
-        cat(sprintf("%*d | %s\n", line_number_width, line, lines$text[line]))
-        cat(sprintf("%*s | %s\n", line_number_width, "", lines$markers[line]))
+    for (line in seq_along(region_lines$text)) {
+        cat(sprintf(
+            "%*d | %s\n",
+            line_number_width,
+            line,
+            region_lines$text[line]
+        ))
+        cat(sprintf(
+            "%*s | %s\n",
+            line_number_width,
+            "R",
+            region_lines$markers[line]
+        ))
+        cat(sprintf(
+            "%*s | %s\n",
+            line_number_width,
+            "C",
+            context_lines$markers[line]
+        ))
     }
 
     state_name <- STATE_NAME_BY_VALUE[[as.character(lexed$state)]]
@@ -120,20 +153,6 @@ visualize_lex_forward <- function(text, lexed = lex_forward(text)) {
         "\n",
         sep = ""
     )
-
-    if (!lexed$delimiters_valid) {
-        delimiter_status <- "invalid; stack discarded"
-    } else if (length(lexed$delimiter_stack$kind) == 0L) {
-        delimiter_status <- "valid; stack empty"
-    } else {
-        entries <- paste0(
-            lexed$delimiter_stack$kind,
-            "@",
-            lexed$delimiter_stack$start
-        )
-        delimiter_status <- paste0("valid; stack: ", paste(entries, collapse = " "))
-    }
-    cat("delimiters: ", delimiter_status, "\n", sep = "")
 
     if (!is.null(lexed$raw)) {
         raw_status <- vapply(
@@ -149,8 +168,30 @@ visualize_lex_forward <- function(text, lexed = lex_forward(text)) {
     invisible(lexed)
 }
 
+print_lex_backward <- function(text, context = lex_backward(text)) {
+    if (!context$feasible) {
+        cat("completion suffix: not feasible\n")
+        return(invisible(context))
+    }
+
+    cat(
+        "completion suffix: ", format_status_value(context$text),
+        " [", context$start, ", ", context$end, ")",
+        "\n",
+        sep = ""
+    )
+    invisible(context)
+}
+
 examples <- list(
     "plain completion" = "foo",
+    "plain completion ending in space" = "foo ",
+    "separated names ending in space" = "asdf qwer ",
+    "else name ending in space" = "else qwer ",
+    "member completion" = "x$a$b$fo",
+    "member completion ending in space" = "x$a$b$fo ",
+    "accessor ending in space" = "x$a$b$ ",
+    "namespace completion" = "pkg:::fu",
     "escaped string in accessor" = paste0(
         'foo[["a',
         "\\",
@@ -162,21 +203,44 @@ examples <- list(
     ),
     "unfinished single-quoted string" = "x <- 'single",
     "unfinished double-quoted string" = 'x <- "double',
+    "unfinished quoted string ending in space" = 'x[["item ',
+    "unfinished quoted string ending in delimiter" = 'x[["item]',
+    "completed string" = 'x[["item"',
     "unfinished backtick name" = "x <- `backtick",
     "complete raw string" = 'r"---[contents]---" + (x)',
     "unfinished raw prefix" = 'r"---',
     "unfinished raw contents" = 'r"---[contents',
     "malformed raw recovery" = paste0('r"--not-an-opener', "\n", "(x"),
     "opaque special operator" = "something %#% complicated + x$a$fo",
+    "local chain after surrounding code" = paste0(
+        "something %custom% complicated |> code + ",
+        'x$a[["b"]]$fo'
+    ),
     "unfinished special operator recovery" = paste0(
         "x %unfinished",
         "\n",
         "(obj"
     ),
-    "delimiter mismatch" = '([)] + "still a string"'
+    "quoted string after delimiter mismatch" = '([)] + "still a string"',
+    "delimiter mismatch before completion" = "([)]$foo",
+    "unmatched call parenthesis" = "some_function(variable_na",
+    "empty unmatched call parenthesis" = "some_function(",
+    "completed call" = "get_object()",
+    "completed index" = 'x[["item"]]',
+    "function call receiver needs to be discarded later" = "get_object()$fo",
+    "parenthesized receiver candidate" = "(my_list)$fo",
+    "computed index candidate" = "x[[name]]$fo",
+    "incomplete %operator%" = "x %incomplete",
+    "multidimensional index" = "array[a,b]$fo",
+    "function call in index is rejected" = "array[f(a,b)]$fo",
+    "multidimensional index stops at comma" = 'matrix[, "co'
 )
 
 for (name in names(examples)) {
     cat("\n", strrep("=", 72L), "\n", name, "\n", sep = "")
-    visualize_lex_forward(examples[[name]])
+    text <- examples[[name]]
+    forward <- lex_forward(text)
+    context <- lex_backward(text, forward)
+    visualize_lex_forward(text, forward, context)
+    print_lex_backward(text, context)
 }
