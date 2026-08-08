@@ -10,15 +10,15 @@ LS_COMMENT <- 7L
 LS_SPECIAL_OPERATOR <- 8L
 
 QUOTED_STATES <- c(LS_SINGLE_QUOTED, LS_DOUBLE_QUOTED, LS_BACKTICK)
-QUOTE_SYMBOLS <- c("'", "\"", "`")
-QUOTE_BY_STATE <- setNames(as.list(QUOTE_SYMBOLS), QUOTED_STATES)
-STATE_BY_QUOTE <- setNames(as.list(QUOTED_STATES), QUOTE_SYMBOLS)
+.quote_symbols <- c("'", "\"", "`")
+.quote_by_state <- setNames(as.list(.quote_symbols), QUOTED_STATES)
+.state_by_quote <- setNames(as.list(QUOTED_STATES), .quote_symbols)
 
-RAW_OPENING_DELIMITERS <- c("(", "[", "{", "|")
-RAW_CLOSING_DELIMITERS <- c(")", "]", "}", "|")
-RAW_OPENING_TO_CLOSING_DELIMITERS <- setNames(
-    RAW_CLOSING_DELIMITERS,
-    RAW_OPENING_DELIMITERS
+.raw_opening_delimiters <- c("(", "[", "{", "|")
+.raw_closing_delimiters <- c(")", "]", "}", "|")
+.raw_opening_to_closing_delimiters <- setNames(
+    .raw_closing_delimiters,
+    .raw_opening_delimiters
 )
 
 lex_forward <- function(text) {
@@ -47,16 +47,12 @@ lex_forward <- function(text) {
     # Metadata used by the raw-string states.
     raw_quote <- NA_character_
     raw_dash_count <- 0L
-    raw_open <- NA_character_
     raw_close <- NA_character_
-    raw_invalid_position <- NA_integer_
 
     reset_raw <- function() {
         raw_quote <<- NA_character_
         raw_dash_count <<- 0L
-        raw_open <<- NA_character_
         raw_close <<- NA_character_
-        raw_invalid_position <<- NA_integer_
     }
 
     i <- 1L
@@ -65,7 +61,7 @@ lex_forward <- function(text) {
         ch <- chars[i]
 
         # Ordinary quoted strings / backtick names
-        quote <- QUOTE_BY_STATE[[as.character(state)]]
+        quote <- .quote_by_state[[as.character(state)]]
         if (!is.null(quote)) {
             # A backslash escapes the following character for the purpose of
             # finding the end of this quoted region. We don't need to
@@ -102,9 +98,8 @@ lex_forward <- function(text) {
                 next
             }
 
-            if (ch %in% RAW_OPENING_DELIMITERS) {
-                raw_open <- ch
-                raw_close <- RAW_OPENING_TO_CLOSING_DELIMITERS[[ch]]
+            if (ch %in% .raw_opening_delimiters) {
+                raw_close <- .raw_opening_to_closing_delimiters[[ch]]
                 state <- LS_RAW_QUOTED
                 # The opening delimiter itself is part of the raw literal;
                 # scanning raw contents starts after it.
@@ -118,7 +113,6 @@ lex_forward <- function(text) {
             #
             # For completion-oriented error recovery, an invalid raw prefix
             # is considered opaque until the next newline.
-            raw_invalid_position <- i
             state <- LS_RAW_INVALID
             # Do not advance yet: process this same character as part of the
             # invalid region.
@@ -294,9 +288,7 @@ lex_forward <- function(text) {
                 state_start <- i
                 raw_quote <- next_ch
                 raw_dash_count <- 0L
-                raw_open <- NA_character_
                 raw_close <- NA_character_
-                raw_invalid_position <- NA_integer_
                 # Consume r" / R" / r' / R'.
                 i <- i + 2L
                 next
@@ -304,8 +296,8 @@ lex_forward <- function(text) {
         }
 
         # Ordinary quoted strings.
-        if (ch %in% names(STATE_BY_QUOTE)) {
-            state <- STATE_BY_QUOTE[[ch]]
+        if (ch %in% names(.state_by_quote)) {
+            state <- .state_by_quote[[ch]]
             state_start <- i
             i <- i + 1L
             next
@@ -326,49 +318,8 @@ lex_forward <- function(text) {
         )
     }
 
-    # Raw-string metadata is only relevant if the cursor is currently in one
-    # of the raw-string states.
-    raw_string_info <- NULL
-
-    if (state %in% c(
-        LS_RAW_PREFIX,
-        LS_RAW_QUOTED,
-        LS_RAW_INVALID
-    )) {
-        terminator <- NULL
-
-        if (state == LS_RAW_QUOTED) {
-            terminator <- paste0(
-                raw_close,
-                strrep("-", raw_dash_count),
-                raw_quote
-            )
-        }
-
-        raw_string_info <- list(
-            quote = raw_quote,
-            dash_count = raw_dash_count,
-            opening_delimiter = raw_open,
-            closing_delimiter = raw_close,
-            terminator = terminator,
-            invalid_position = if (
-                state == LS_RAW_INVALID
-            ) {
-                raw_invalid_position
-            } else {
-                NA_integer_
-            }
-        )
-    }
-
     list(
         state = state,
-        state_start = if (state == LS_CODE) {
-            NA_integer_
-        } else {
-            state_start
-        },
-        regions = regions,
-        raw = raw_string_info
+        regions = regions
     )
 }

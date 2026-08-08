@@ -1,7 +1,21 @@
 # Splits a lexed completion suffix and validates its supported AST shape.
 # Longer accessors must precede their prefixes.
-COMPLETION_ACCESSORS <- c(":::", "::", "[[", "[", "$", "@")
+.completion_accessors <- c(":::", "::", "[[", "[", "$", "@")
 
+.completion_context_parts <- function(
+    context = "",
+    accessor = NULL,
+    partial_child = ""
+) {
+    list(
+        context = context,
+        accessor = accessor,
+        partial_child = partial_child
+    )
+}
+
+# Split context region in to context, accessor and partial child.
+# Similar to backward lexing step, but just looking for the first accessor from the right.
 split_completion_context <- function(
     text,
     regions = lex_forward(text)$regions,
@@ -10,11 +24,7 @@ split_completion_context <- function(
     # Check length and return early for empty string
     n <- nchar(text)
     if (n == 0L) {
-        return(list(
-            context = "",
-            accessor = NULL,
-            partial_child = ""
-        ))
+        return(.completion_context_parts())
     }
 
     # Slice with the half-open positions used by the lexers.
@@ -46,7 +56,7 @@ split_completion_context <- function(
             next
         }
         # Check longer accessor tokens before their prefixes.
-        for (candidate in COMPLETION_ACCESSORS) {
+        for (candidate in .completion_accessors) {
             candidate_start <- candidate_end - nchar(candidate)
             if (
                 candidate_start >= 1L &&
@@ -72,21 +82,17 @@ split_completion_context <- function(
         partial_child <- slice(accessor_end, n + 1L)
     }
 
-    list(
-        context = context,
-        accessor = accessor,
-        partial_child = partial_child
-    )
+    .completion_context_parts(context, accessor, partial_child)
 }
 
-completion_ast_name_to_string <- function(node) {
+.completion_ast_name_to_string <- function(node) {
     if (is.name(node)) {
         return(as.character(node))
     }
     node
 }
 
-completion_normalize_ast <- function(node) {
+.completion_normalize_ast <- function(node) {
     # Early returns
     if (is.null(node) || is.atomic(node) || is.name(node)) {
         return(node)
@@ -103,45 +109,31 @@ completion_normalize_ast <- function(node) {
     if (operator %in% c("$", "@")) {
         return(as.call(list(
             as.name(operator),
-            completion_normalize_ast(node[[2L]]),
-            completion_ast_name_to_string(node[[3L]])
+            .completion_normalize_ast(node[[2L]]),
+            .completion_ast_name_to_string(node[[3L]])
         )))
     }
 
     if (operator %in% c("::", ":::")) {
         return(as.call(list(
             as.name(operator),
-            completion_ast_name_to_string(node[[2L]]),
-            completion_ast_name_to_string(node[[3L]])
+            .completion_ast_name_to_string(node[[2L]]),
+            .completion_ast_name_to_string(node[[3L]])
         )))
     }
 
     if (operator %in% c("[", "[[")) {
         # Normalize all operands (`[` and `[[` remain unchanged)
-        return(as.call(lapply(as.list(node), completion_normalize_ast)))
+        return(as.call(lapply(as.list(node), .completion_normalize_ast)))
     }
 
     stop("Function or operator call is not allowed: ", operator)
 }
 
 parse_completion_context <- function(context) {
-    tryCatch({
-        parsed <- parse(text = context, keep.source = FALSE)
-        if (length(parsed) != 1L) {
-            stop("The context must contain exactly one expression")
-        }
-        list(
-            ok = TRUE,
-            ast = completion_normalize_ast(parsed[[1L]]),
-            reason = NULL,
-            message = NULL
-        )
-    }, error = function(error) {
-        list(
-            ok = FALSE,
-            ast = NULL,
-            reason = "invalid_context",
-            message = error$message
-        )
-    })
+    parsed <- parse(text = context, keep.source = FALSE)
+    if (length(parsed) != 1L) {
+        stop("The context must contain exactly one expression")
+    }
+    .completion_normalize_ast(parsed[[1L]])
 }

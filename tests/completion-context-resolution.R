@@ -36,33 +36,32 @@ show_candidates <- function(
 ) {
     old_options <- options(vsc.previewPromises = preview_promises)
     on.exit(options(old_options))
-    result <- completion_main(
+    forward <- lex_forward(text)
+    backward <- lex_backward(text, forward)
+    matches <- completion_main(
         text,
         firstenv = firstenv,
         lastenv = lastenv,
         global_lastenv = global_lastenv
     )
     cat("text:    ", dQuote(text), "\n", sep = "")
-    cat("status:  ", if (result$ok) "ok" else result$reason, "\n", sep = "")
-    if (!result$ok) {
-        cat("message: ", result$message, "\n", sep = "")
-    }
+    cat("status:  ", backward$status, "\n", sep = "")
     cat(
         "matches: ",
-        if (length(result$matches)) {
-            paste(result$matches, collapse = ", ")
+        if (length(matches)) {
+            paste(matches, collapse = ", ")
         } else {
             "<none>"
         },
         "\n",
         sep = ""
     )
-    invisible(result)
+    invisible(matches)
 }
 
 try_resolve <- function(...) {
     tryCatch(
-        list(ok = TRUE, value = resolve_completion_ast(...)),
+        list(ok = TRUE, value = resolve_completion_context(...)),
         error = function(error) list(ok = FALSE, reason = "resolution_error")
     )
 }
@@ -77,6 +76,8 @@ firstenv$my_list <- list(
 )
 firstenv$indices <- c(2L, 1L)
 firstenv$grid <- matrix(1:4, nrow = 2L)
+firstenv$foo_index <- 3L
+firstenv$mean_global <- 5L
 firstenv$`[[` <- "not a function"
 delayedAssign(
     "promised_list",
@@ -108,24 +109,50 @@ makeActiveBinding(
     firstenv
 )
 
+cat("\n", strrep("=", 72L), "\nedge paths\n", sep = "")
+show_candidates("", firstenv, lastenv)
+show_candidates(" ", firstenv, lastenv)
+show_candidates("my_list ", firstenv, lastenv)
+show_candidates("my_list)", firstenv, lastenv)
+show_candidates("my_list}", firstenv, lastenv)
+show_candidates('"done"', firstenv, lastenv)
+show_candidates('r"---[done]---"', firstenv, lastenv)
+show_candidates('"mea', firstenv, lastenv)
+show_candidates("'mea", firstenv, lastenv)
+show_candidates("`mea", firstenv, lastenv)
+show_candidates('r"---', firstenv, lastenv)
+show_candidates('r"---[done', firstenv, lastenv)
+show_candidates("$foo", firstenv, lastenv)
+show_candidates("@foo", firstenv, lastenv)
+show_candidates("::foo", firstenv, lastenv)
+show_candidates('[["foo', firstenv, lastenv)
+show_candidates("[foo", firstenv, lastenv)
+show_candidates("[[foo", firstenv, lastenv)
+show_candidates("my_list[[foo", firstenv, lastenv)
+show_candidates("my_list$", firstenv, lastenv)
+show_candidates("value+", firstenv, lastenv)
+show_candidates("value %in%", firstenv, lastenv)
+show_candidates("value\n", firstenv, lastenv)
+show_candidates("some_function(", firstenv, lastenv)
+show_candidates("some_function(my", firstenv, lastenv)
+
 cat("\n", strrep("=", 72L), "\nplain and nested access\n", sep = "")
 show_candidates("my_list$child$al", firstenv, lastenv)
 show_candidates("something + my_list$child$al", firstenv, lastenv)
 show_candidates('something + my_list[["a$b"]]$al', firstenv, lastenv)
 show_candidates('my_list[["ch', firstenv, lastenv)
+show_candidates('something + my_list[["ch', firstenv, lastenv)
 show_candidates('my_list[["child"]]$be', firstenv, lastenv)
 show_candidates("parent_list$par", firstenv, lastenv)
-show_candidates('x <- "chi', firstenv, lastenv)
-show_candidates('matrix[, "co', firstenv, lastenv)
 
 cat("\n", strrep("=", 72L), "\nnested index AST resolution\n", sep = "")
 parsed <- parse_completion_context("grid[indices[1], indices[2]]")
 resolved <- try_resolve(
-    parsed$ast,
+    parsed,
     firstenv = firstenv,
     lastenv = lastenv
 )
-cat("AST:      ", paste0(deparse(parsed$ast), collapse = ""), "\n", sep = "")
+cat("AST:      ", paste0(deparse(parsed), collapse = ""), "\n", sep = "")
 cat("resolved: ", if (resolved$ok) resolved$value else resolved$reason, "\n", sep = "")
 
 parsed <- parse_completion_context(
@@ -134,7 +161,7 @@ parsed <- parse_completion_context(
 for (preview in c(FALSE, TRUE)) {
     old_options <- options(vsc.previewPromises = preview)
     resolved <- try_resolve(
-        parsed$ast,
+        parsed,
         firstenv = firstenv,
         lastenv = lastenv
     )

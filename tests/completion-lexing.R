@@ -89,7 +89,7 @@ format_status_value <- function(value) {
 visualize_lex_forward <- function(
     text,
     lexed = lex_forward(text),
-    context = lex_backward(text, lexed)
+    backward = lex_backward(text, lexed)
 ) {
     stopifnot(
         is.character(text),
@@ -110,10 +110,10 @@ visualize_lex_forward <- function(
     }
 
     if (
-        context$feasible &&
-        context$start < context$end
+        backward$status == "candidate" &&
+        backward$start <= length(chars)
     ) {
-        positions <- seq.int(context$start, context$end - 1L)
+        positions <- seq.int(backward$start, length(chars))
         positions <- positions[positions >= 1L & positions <= length(chars)]
         context_markers[positions] <- "^"
     }
@@ -147,43 +147,42 @@ visualize_lex_forward <- function(
     }
 
     state_name <- STATE_NAME_BY_VALUE[[as.character(lexed$state)]]
+    state_start <- NA_integer_
+    if (lexed$state != LS_CODE && length(lexed$regions)) {
+        ending_region <- lexed$regions[[length(lexed$regions)]]
+        if (ending_region$end == length(chars) + 1L) {
+            state_start <- ending_region$start
+        }
+    }
     cat(
         "state: ", state_name, " (", lexed$state, ")",
-        ", start: ", format_status_value(lexed$state_start),
+        ", start: ", format_status_value(state_start),
         "\n",
         sep = ""
     )
-
-    if (!is.null(lexed$raw)) {
-        raw_status <- vapply(
-            names(lexed$raw),
-            function(name) {
-                paste0(name, "=", format_status_value(lexed$raw[[name]]))
-            },
-            character(1L)
-        )
-        cat("raw: ", paste(raw_status, collapse = ", "), "\n", sep = "")
-    }
 
     invisible(lexed)
 }
 
-print_lex_backward <- function(text, context = lex_backward(text)) {
-    if (!context$feasible) {
-        cat("completion suffix: not feasible\n")
-        return(invisible(context))
+print_lex_backward <- function(text, backward = lex_backward(text)) {
+    if (backward$status != "candidate") {
+        cat("completion suffix: ", backward$status, "\n", sep = "")
+        return(invisible(backward))
     }
 
+    end <- nchar(text) + 1L
     cat(
-        "completion suffix: ", format_status_value(context$text),
-        " [", context$start, ", ", context$end, ")",
+        "completion suffix: ", format_status_value(substring(text, backward$start)),
+        " [", backward$start, ", ", end, ")",
         "\n",
         sep = ""
     )
-    invisible(context)
+    invisible(backward)
 }
 
 examples <- list(
+    "empty input" = "",
+    "only whitespace" = " ",
     "plain completion" = "foo",
     "plain completion ending in space" = "foo ",
     "separated names ending in space" = "asdf qwer ",
@@ -225,7 +224,13 @@ examples <- list(
     "delimiter mismatch before completion" = "([)]$foo",
     "unmatched call parenthesis" = "some_function(variable_na",
     "empty unmatched call parenthesis" = "some_function(",
+    "bracket without receiver" = "[[foo",
+    "index expression" = "my_list[[foo",
     "completed call" = "get_object()",
+    "completed closing brace" = "value}",
+    "fresh expression after operator" = "value +",
+    "fresh expression after special operator" = "value %in%",
+    "fresh expression after newline" = "value\n",
     "completed index" = 'x[["item"]]',
     "function call receiver needs to be discarded later" = "get_object()$fo",
     "parenthesized receiver stops at closing parenthesis" = "(my_list)$fo",
@@ -240,7 +245,7 @@ for (name in names(examples)) {
     cat("\n", strrep("=", 72L), "\n", name, "\n", sep = "")
     text <- examples[[name]]
     forward <- lex_forward(text)
-    context <- lex_backward(text, forward)
-    visualize_lex_forward(text, forward, context)
-    print_lex_backward(text, context)
+    backward <- lex_backward(text, forward)
+    visualize_lex_forward(text, forward, backward)
+    print_lex_backward(text, backward)
 }

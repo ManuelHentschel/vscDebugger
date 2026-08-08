@@ -18,12 +18,15 @@ show_context_parsing <- function(text) {
     cat("partial child: ", dQuote(split$partial_child), "\n", sep = "")
 
     if (!is.null(split$accessor)) {
-        parsed <- parse_completion_context(split$context)
-        if (parsed$ok) {
-            cat("AST:           ", format_ast(parsed$ast), "\n", sep = "")
+        parsed <- tryCatch(
+            parse_completion_context(split$context),
+            error = identity
+        )
+        if (!inherits(parsed, "error")) {
+            cat("AST:           ", format_ast(parsed), "\n", sep = "")
         } else {
             cat(
-                "AST:           <", parsed$reason, "> ", parsed$message,
+                "AST:           <invalid context> ", conditionMessage(parsed),
                 "\n",
                 sep = ""
             )
@@ -32,8 +35,13 @@ show_context_parsing <- function(text) {
 }
 
 examples <- list(
+    "empty text" = "",
+    "entire incomplete string" = '"foo',
     "plain name" = "foo",
+    "accessor without context" = "$foo",
+    "quoted accessor without context" = '[["foo',
     "dollar accessor" = "my_list$chi",
+    "accessor with empty partial" = "my_list$",
     "nested dollar normalization" = "my_list$child$al",
     "at accessor" = "my_object@slo",
     "quoted double bracket" = 'my_list[["chi',
@@ -50,7 +58,7 @@ for (name in names(examples)) {
     show_context_parsing(examples[[name]])
 }
 
-normalized <- parse_completion_context("my_list$child")$ast
+normalized <- parse_completion_context("my_list$child")
 cat(
     "\nnormalized $ child type: ",
     typeof(normalized[[3L]]),

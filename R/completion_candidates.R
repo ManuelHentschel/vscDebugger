@@ -25,7 +25,7 @@ completion_candidates <- function(context, accessor, partial_name) {
         !is.object(context)
     ) {
         children <- NULL
-    } else {
+    } else if (accessor %in% c("$", "[", "[[")) {
         children <- attr(context, "names", exact = TRUE)
         if (is.null(children) && accessor %in% c("[", "[[")) {
             children <- unlist(
@@ -33,6 +33,8 @@ completion_candidates <- function(context, accessor, partial_name) {
                 use.names = FALSE
             )
         }
+    } else {
+        stop("Unsupported completion accessor: ", accessor)
     }
 
     if (is.null(children)) {

@@ -1,17 +1,10 @@
 # Finds a feasible expression suffix for completion. This pass deliberately
 # does not decide whether evaluating the expression or following its accessors
 # is safe; those checks belong to semantic resolution.
-BACKWARD_NAME_PATTERN <- "^[[:alnum:]_.]$"
-BACKWARD_HORIZONTAL_WHITESPACE <- c(" ", "\t", "\f", "\v")
+.backward_name_pattern <- "^[[:alnum:]_.]$"
+.backward_horizontal_whitespace <- c(" ", "\t", "\f", "\v")
 
-completion_backward_slice <- function(chars, start, end) {
-    if (start >= end) {
-        return("")
-    }
-    paste0(chars[seq.int(start, end - 1L)], collapse = "")
-}
-
-completion_region_ending_at <- function(regions, position) {
+.completion_region_ending_at <- function(regions, position) {
     for (region in rev(regions)) {
         if (region$end == position + 1L) {
             return(region)
@@ -20,21 +13,19 @@ completion_region_ending_at <- function(regions, position) {
     NULL
 }
 
-completion_is_name_char <- function(ch) {
-    grepl(BACKWARD_NAME_PATTERN, ch)
+.completion_is_name_char <- function(ch) {
+    grepl(.backward_name_pattern, ch)
 }
 
-completion_backward_result <- function(chars, start, end, feasible = TRUE) {
-    list(
-        feasible = feasible,
-        start = if (feasible) start else NA_integer_,
-        end = end,
-        text = if (feasible) {
-            completion_backward_slice(chars, start, end)
-        } else {
-            NULL
-        }
-    )
+.completion_backward_result <- function(
+    status,
+    start = NULL
+) {
+    result <- list(status = status)
+    if (!is.null(start)) {
+        result$start <- start
+    }
+    result
 }
 
 lex_backward <- function(text, forward = lex_forward(text)) {
@@ -45,11 +36,10 @@ lex_backward <- function(text, forward = lex_forward(text)) {
 
     # Empty context for empty suffix
     if (n == 0L) {
-        return(completion_backward_result(chars, end, end))
+        return(.completion_backward_result("candidate", end))
     }
 
-    # For now, completion inside raw strings, comments, and special operators is not supported.
-    # (might add later)
+    # Raw strings, comments, and unfinished special operators are unsupported.
     if (forward$state %in% c(
         LS_RAW_PREFIX,
         LS_RAW_QUOTED,
@@ -57,30 +47,33 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         LS_COMMENT,
         LS_SPECIAL_OPERATOR
     )) {
-        return(completion_backward_result(chars, end, end, FALSE))
+        return(.completion_backward_result("infeasible"))
     }
 
-    # A closing bracket or non-string space ends a completed value.
-    if (chars[n] == "]") {
-        return(completion_backward_result(chars, end, end))
+    # A closing delimiter or non-string space ends a completed value.
+    if (chars[n] %in% c(")", "]", "}")) {
+        return(.completion_backward_result("no_completion"))
     }
     if (
-        chars[n] %in% BACKWARD_HORIZONTAL_WHITESPACE &&
+        chars[n] %in% .backward_horizontal_whitespace &&
         !(forward$state %in% QUOTED_STATES)
     ) {
-        return(completion_backward_result(chars, end, end))
+        return(.completion_backward_result("no_completion"))
     }
 
-    # If cursor is right after a completed string etc., return empty context
+    # A completed string is a value that cannot continue without an operator.
     if (forward$state == LS_CODE) {
-        ending_region <- completion_region_ending_at(forward$regions, n)
-        if (!is.null(ending_region)) {
-            return(completion_backward_result(chars, end, end))
+        ending_region <- .completion_region_ending_at(forward$regions, n)
+        if (
+            !is.null(ending_region) &&
+            ending_region$state %in% c(QUOTED_STATES, LS_RAW_QUOTED)
+        ) {
+            return(.completion_backward_result("no_completion"))
         }
     }
 
     # These regions (strings) are allowed as part of an accessor chain
-    ALLOWED_REGIONS <- c(
+    allowed_regions <- c(
         LS_SINGLE_QUOTED,
         LS_DOUBLE_QUOTED,
         LS_BACKTICK,
@@ -99,13 +92,12 @@ lex_backward <- function(text, forward = lex_forward(text)) {
     position <- n
 
     while (position >= 1L) {
-        region <- completion_region_ending_at(forward$regions, position)
+        region <- .completion_region_ending_at(forward$regions, position)
         if (!is.null(region)) {
-            if (region$state %in% ALLOWED_REGIONS) {
+            if (region$state %in% allowed_regions) {
                 is_current_incomplete_string <-
                     suffix_is_incomplete_string &&
                     region$state == forward$state &&
-                    region$start == forward$state_start &&
                     region$end == end
                 if (!is_current_incomplete_string) {
                     suffix_is_incomplete_string <- FALSE
@@ -124,19 +116,19 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         }
 
         # Continue left through a name.
-        if (completion_is_name_char(ch)) {
+        if (.completion_is_name_char(ch)) {
             suffix_is_incomplete_string <- FALSE
             position <- position - 1L
             next
         }
         # Allow whitespace next to special operators, not between normal names
-        if (ch %in% BACKWARD_HORIZONTAL_WHITESPACE) {
+        if (ch %in% .backward_horizontal_whitespace) {
             # Consume the complete whitespace run before inspecting its edges.
             whitespace_start <- position
             while (
                 whitespace_start > 1L &&
                 chars[whitespace_start - 1L] %in%
-                    BACKWARD_HORIZONTAL_WHITESPACE
+                    .backward_horizontal_whitespace
             ) {
                 whitespace_start <- whitespace_start - 1L
             }
@@ -147,8 +139,8 @@ lex_backward <- function(text, forward = lex_forward(text)) {
             if (
                 left >= 1L &&
                 right <= n &&
-                completion_is_name_char(chars[left]) &&
-                completion_is_name_char(chars[right])
+                .completion_is_name_char(chars[left]) &&
+                .completion_is_name_char(chars[right])
             ) {
                 break
             }
@@ -197,6 +189,23 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                 # An unmatched [ is useful only for an unfinished string
                 # accessor such as `x[["item`.
                 if (!suffix_is_incomplete_string) {
+                    opening_start <- if (
+                        position > 1L && chars[position - 1L] == "["
+                    ) {
+                        position - 1L
+                    } else {
+                        position
+                    }
+                    receiver_end <- opening_start - 1L
+                    while (
+                        receiver_end >= 1L &&
+                        chars[receiver_end] %in% .backward_horizontal_whitespace
+                    ) {
+                        receiver_end <- receiver_end - 1L
+                    }
+                    if (receiver_end < 1L) {
+                        return(.completion_backward_result("no_completion"))
+                    }
                     break
                 }
                 position <- position - 1L
@@ -218,16 +227,16 @@ lex_backward <- function(text, forward = lex_forward(text)) {
 
     # Unmatched closing brackets do not form a feasible completion suffix.
     if (bracket_depth > 0L) {
-        return(completion_backward_result(chars, end, end, FALSE))
+        return(.completion_backward_result("infeasible"))
     }
 
     # Find first non-whitespace character in the suffix
     candidate_start <- position + 1L
     while (
         candidate_start < end &&
-        chars[candidate_start] %in% BACKWARD_HORIZONTAL_WHITESPACE
+        chars[candidate_start] %in% .backward_horizontal_whitespace
     ) {
         candidate_start <- candidate_start + 1L
     }
-    completion_backward_result(chars, candidate_start, end)
+    .completion_backward_result("candidate", candidate_start)
 }
