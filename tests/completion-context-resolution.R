@@ -4,6 +4,7 @@ source(file.path("R", "completion_context_parsing.R"))
 source(file.path("R", "stackTreeHelpers.R"))
 source(file.path("R", "completion_context_resolution.R"))
 source(file.path("R", "completion_candidates.R"))
+source(file.path("R", "completion_main.R"))
 
 # Load the package's native promise inspection without installing the package.
 if (!("vscDebugger" %in% names(getLoadedDLLs()))) {
@@ -30,14 +31,16 @@ show_candidates <- function(
     text,
     firstenv,
     lastenv,
-    preview_promises = FALSE
+    preview_promises = FALSE,
+    global_lastenv = lastenv
 ) {
     old_options <- options(vsc.previewPromises = preview_promises)
     on.exit(options(old_options))
-    result <- completion_context_candidates(
+    result <- completion_main(
         text,
         firstenv = firstenv,
-        lastenv = lastenv
+        lastenv = lastenv,
+        global_lastenv = global_lastenv
     )
     cat("text:    ", dQuote(text), "\n", sep = "")
     cat("status:  ", if (result$ok) "ok" else result$reason, "\n", sep = "")
@@ -57,6 +60,13 @@ show_candidates <- function(
     invisible(result)
 }
 
+try_resolve <- function(...) {
+    tryCatch(
+        list(ok = TRUE, value = resolve_completion_ast(...)),
+        error = function(error) list(ok = FALSE, reason = "resolution_error")
+    )
+}
+
 lastenv <- new.env(parent = baseenv())
 firstenv <- new.env(parent = lastenv)
 lastenv$parent_list <- list(parent_child = 1L)
@@ -67,6 +77,7 @@ firstenv$my_list <- list(
 )
 firstenv$indices <- c(2L, 1L)
 firstenv$grid <- matrix(1:4, nrow = 2L)
+firstenv$`[[` <- "not a function"
 delayedAssign(
     "promised_list",
     my_list,
@@ -104,10 +115,12 @@ show_candidates('something + my_list[["a$b"]]$al', firstenv, lastenv)
 show_candidates('my_list[["ch', firstenv, lastenv)
 show_candidates('my_list[["child"]]$be', firstenv, lastenv)
 show_candidates("parent_list$par", firstenv, lastenv)
+show_candidates('x <- "chi', firstenv, lastenv)
+show_candidates('matrix[, "co', firstenv, lastenv)
 
 cat("\n", strrep("=", 72L), "\nnested index AST resolution\n", sep = "")
 parsed <- parse_completion_context("grid[indices[1], indices[2]]")
-resolved <- resolve_completion_ast(
+resolved <- try_resolve(
     parsed$ast,
     firstenv = firstenv,
     lastenv = lastenv
@@ -120,7 +133,7 @@ parsed <- parse_completion_context(
 )
 for (preview in c(FALSE, TRUE)) {
     old_options <- options(vsc.previewPromises = preview)
-    resolved <- resolve_completion_ast(
+    resolved <- try_resolve(
         parsed$ast,
         firstenv = firstenv,
         lastenv = lastenv
@@ -148,7 +161,12 @@ show_candidates("active_list$al", firstenv, lastenv)
 
 cat("\n", strrep("=", 72L), "\nconfigurable environment boundary\n", sep = "")
 show_candidates("mea", .GlobalEnv, .GlobalEnv)
-show_candidates("mea", .GlobalEnv, emptyenv())
+show_candidates(
+    "mea",
+    .GlobalEnv,
+    .GlobalEnv,
+    global_lastenv = emptyenv()
+)
 
 cat("\n", strrep("=", 72L), "\nnamespace completion\n", sep = "")
 show_candidates("stats::l", firstenv, lastenv)

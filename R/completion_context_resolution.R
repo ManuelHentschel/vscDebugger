@@ -1,5 +1,5 @@
-# Resolves validated completion ASTs without forcing promises or loading namespaces.
-# Find a variable/function with given name
+# Resolves completion ASTs while guarding promises, active bindings, and namespaces.
+# Find a binding with the given name.
 # Returns the (first) environment containing the binding, or NULL
 completion_find_binding <- function(name, environments) {
     for (environment in environments) {
@@ -10,8 +10,8 @@ completion_find_binding <- function(name, environments) {
     NULL
 }
 
-# Look up the value of a variable/function by name in the given environments
-# Avoids promise forcing and active bindings, depending on config
+# Look up a binding by name in the given environments.
+# Avoids promise forcing and active bindings according to package settings
 completion_lookup_binding <- function(
     name,
     environments
@@ -42,8 +42,20 @@ completion_lookup_binding <- function(
     get(name, envir = environment, inherits = FALSE)
 }
 
-# Resolve the arguments of a function call AST node
-# Basically lapply with recursion, but skips missing arguments
+completion_find_function <- function(name, environments) {
+    for (environment in environments) {
+        if (!exists(name, envir = environment, inherits = FALSE)) {
+            next
+        }
+        value <- completion_lookup_binding(name, list(environment))
+        if (is.function(value)) {
+            return(value)
+        }
+    }
+    NULL
+}
+
+# Return a namespace only if it is already loaded.
 completion_namespace <- function(package) {
     if (!isNamespaceLoaded(package)) {
         stop("Namespace is not loaded: ", package)
@@ -70,7 +82,7 @@ completion_resolve_ast_node <- function(
     }
 
     # If the node is a (variable) name, look it up and return
-    if(is.name(node)) {
+    if (is.name(node)) {
         name <- as.character(node)
         return(completion_lookup_binding(
             name,
@@ -106,26 +118,30 @@ completion_resolve_ast_node <- function(
         environments = environments
     )
 
-    # Avoid promise forcing for `$` and `[[` into environments
+    # Guard promised and active environment children before normal dispatch.
     parent <- arguments[[1L]]
     if (
         operator %in% c("$", "[[") &&
         is.environment(parent) &&
         length(arguments) == 2L &&
-        is.character(arguments[[2L]]) &&
-        length(arguments[[2L]]) == 1L &&
-        isPromise(arguments[[2L]], parent)
+        !identical(unname(arguments[2L]), unname(alist(value = )))
     ) {
-        return(completion_lookup_binding(arguments[[2L]], list(parent)))
+        child <- arguments[[2L]]
+        if (
+            is.character(child) &&
+            length(child) == 1L &&
+            exists(child, envir = parent, inherits = FALSE) &&
+            (bindingIsActive(child, parent) || isPromise(child, parent))
+        ) {
+            return(completion_lookup_binding(child, list(parent)))
+        }
     }
 
     # Use normal dispatch for all other cases
     # Might dispatch overwritten `[` methods, but that's on the user
-    operator_environment <- completion_find_binding(operator, environments)
-    accessor <- if (is.null(operator_environment)) {
-        operator
-    } else {
-        completion_lookup_binding(operator, list(operator_environment))
+    accessor <- completion_find_function(operator, environments)
+    if (is.null(accessor)) {
+        accessor <- get(operator, envir = baseenv(), inherits = FALSE)
     }
     do.call(accessor, arguments, envir = environments[[1L]])
 }
@@ -136,23 +152,5 @@ resolve_completion_ast <- function(
     lastenv = .GlobalEnv
 ) {
     environments <- getScopeEnvs(firstenv, lastenv)
-
-    tryCatch({
-        list(
-            ok = TRUE,
-            value = completion_resolve_ast_node(
-                ast,
-                environments
-            ),
-            reason = NULL,
-            message = NULL
-        )
-    }, error = function(error) {
-        list(
-            ok = FALSE,
-            value = NULL,
-            reason = "resolution_error",
-            message = conditionMessage(error)
-        )
-    })
+    completion_resolve_ast_node(ast, environments)
 }

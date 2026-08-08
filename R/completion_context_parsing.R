@@ -1,5 +1,6 @@
-# Splits a lexed completion suffix and validates its context as a safe AST.
-COMPLETION_ACCESSORS <- c(":::", "::", "[[", "[", "$", "@") # decreasing length!
+# Splits a lexed completion suffix and validates its supported AST shape.
+# Longer accessors must precede their prefixes.
+COMPLETION_ACCESSORS <- c(":::", "::", "[[", "[", "$", "@")
 
 split_completion_context <- function(
     text,
@@ -16,8 +17,7 @@ split_completion_context <- function(
         ))
     }
 
-    # Character vector and slice helper for easier indexing
-    chars <- strsplit(text, "", fixed = TRUE)[[1L]]
+    # Slice with the half-open positions used by the lexers.
     slice <- function(start, end) {
         if (start >= end) {
             return("")
@@ -35,18 +35,17 @@ split_completion_context <- function(
         }
     }
 
-
     # Find the right-most accessor, preferring longer tokens at each endpoint.
     accessor <- NULL
     accessor_start <- NA_integer_
     accessor_end <- NA_integer_
 
-    for (candidate_end in rev(seq.int(2L, n+1L))) {
-        # Skip if inside string
+    for (candidate_end in rev(seq.int(2L, n + 1L))) {
+        # Skip characters inside opaque lexical regions.
         if (opaque[candidate_end - 1L]) {
             next
         }
-        # Check if we are at the end of an accessor token, order must be long ones first!
+        # Check longer accessor tokens before their prefixes.
         for (candidate in COMPLETION_ACCESSORS) {
             candidate_start <- candidate_end - nchar(candidate)
             if (
@@ -70,7 +69,7 @@ split_completion_context <- function(
         partial_child <- text
     } else {
         context <- slice(1L, accessor_start)
-        partial_child <- slice(accessor_end, n+1L)
+        partial_child <- slice(accessor_end, n + 1L)
     }
 
     list(
@@ -80,14 +79,11 @@ split_completion_context <- function(
     )
 }
 
-completion_ast_node_as_string <- function(node) {
+completion_ast_name_to_string <- function(node) {
     if (is.name(node)) {
         return(as.character(node))
     }
-    if (is.character(node) && length(node) == 1L && !is.na(node)) {
-        return(node)
-    }
-    stop("Expected a name or string")
+    node
 }
 
 completion_normalize_ast <- function(node) {
@@ -105,24 +101,18 @@ completion_normalize_ast <- function(node) {
 
     # Check recursively, normalize ambiguous operands to strings
     if (operator %in% c("$", "@")) {
-        if (length(node) != 3L) {
-            stop(operator, " must have exactly two operands")
-        }
         return(as.call(list(
             as.name(operator),
             completion_normalize_ast(node[[2L]]),
-            completion_ast_node_as_string(node[[3L]])
+            completion_ast_name_to_string(node[[3L]])
         )))
     }
 
     if (operator %in% c("::", ":::")) {
-        if (length(node) != 3L) {
-            stop(operator, " must have exactly two operands")
-        }
         return(as.call(list(
             as.name(operator),
-            completion_ast_node_as_string(node[[2L]]),
-            completion_ast_node_as_string(node[[3L]])
+            completion_ast_name_to_string(node[[2L]]),
+            completion_ast_name_to_string(node[[3L]])
         )))
     }
 

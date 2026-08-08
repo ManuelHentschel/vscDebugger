@@ -1,10 +1,4 @@
-# Implements a simple multi-step process to identify
-# relevant code for the completion engine.
-# 1. (HERE) Forward lexing: identify strings, comments, and special operators
-# 2. Local backwards lexing: identify the relevant expression before the cursor position
-# 3. (TODO) Interpret the expression to identify containing lists etc. for completion
-#
-# This is more robust and easier to maintain than a full lexer, while still identifying nested expressions etc.
+# Marks strings, comments, and special operators for later completion passes.
 LS_CODE <- 0L
 LS_SINGLE_QUOTED <- 1L
 LS_DOUBLE_QUOTED <- 2L
@@ -31,10 +25,8 @@ lex_forward <- function(text) {
     chars <- strsplit(text, "", fixed = TRUE)[[1L]]
     n <- length(chars)
 
-    # Opaque lexical regions. In addition to genuinely non-code contents such
-    # as strings and comments, this includes complete special operators. Their
-    # contents are code, but characters inside them must not be interpreted as
-    # quotes, comments, or delimiters by the rest of this scanner.
+    # Opaque regions include strings, comments, and complete special operators.
+    # Their characters must not be reinterpreted by the rest of this scanner.
     #
     # Positions are 1-based and half-open: [start, end).
     # For an unfinished region extending to the cursor,

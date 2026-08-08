@@ -60,8 +60,8 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         return(completion_backward_result(chars, end, end, FALSE))
     }
 
-    # If the suffix ends with a closing delimiter or non-string space, return empty context
-    if (chars[n] %in% c(")", "]")) {
+    # A closing bracket or non-string space ends a completed value.
+    if (chars[n] == "]") {
         return(completion_backward_result(chars, end, end))
     }
     if (
@@ -113,17 +113,17 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                 position <- region$start - 1L
                 next
             }
-            # unsupported region (comment, raw string prefix)
+            # Stop at any unsupported lexical region.
             break
         }
 
         ch <- chars[position]
-        # Break on newline, not allowing multiline element access.
+        # Break on newlines outside quoted regions.
         if (ch %in% c("\n", "\r")) {
             break
         }
 
-        # continue left on normal characters, whitespace, and accessors
+        # Continue left through a name.
         if (completion_is_name_char(ch)) {
             suffix_is_incomplete_string <- FALSE
             position <- position - 1L
@@ -170,7 +170,7 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                 colon_start <- colon_start - 1L
             }
             colon_width <- position - colon_start + 1L
-            # break for : or ::::
+            # Only namespace accessors use colons here.
             if (!colon_width %in% c(2L, 3L)) {
                 break
             }
@@ -200,7 +200,7 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                     break
                 }
                 position <- position - 1L
-                # Check for double [[, to avoid mismatch break after first [
+                # Consume the second opening bracket of `[[`.
                 if (position >= 1L && chars[position] == "[") {
                     position <- position - 1L
                 }
