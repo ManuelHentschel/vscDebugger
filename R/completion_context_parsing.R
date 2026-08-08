@@ -1,81 +1,57 @@
 # Splits a lexed completion suffix and validates its context as a safe AST.
-COMPLETION_ACCESSORS <- c(":::", "::", "[[", "$", "@", "[")
-COMPLETION_AST_ACCESSORS <- c("$", "@", "[", "[[", "::", ":::")
-
-completion_context_slice <- function(chars, start, end) {
-    if (start >= end) {
-        return("")
-    }
-    paste0(chars[seq.int(start, end - 1L)], collapse = "")
-}
+COMPLETION_ACCESSORS <- c(":::", "::", "[[", "[", "$", "@") # decreasing length!
 
 split_completion_context <- function(
     text,
-    forward = lex_forward(text),
-    start = 1L,
-    end = NULL
+    regions = lex_forward(text)$regions,
+    offset = 0L
 ) {
-    stopifnot(
-        is.character(text),
-        length(text) == 1L,
-        !is.na(text),
-        is.list(forward)
-    )
-
-    chars <- strsplit(text, "", fixed = TRUE)[[1L]]
-    n <- length(chars)
-    if (is.null(end)) {
-        end <- n + 1L
-    }
-    stopifnot(
-        length(start) == 1L,
-        length(end) == 1L,
-        !is.na(start),
-        !is.na(end),
-        start >= 1L,
-        start <= end,
-        end <= n + 1L
-    )
-    if (start == end) {
+    # Check length and return early for empty string
+    n <- nchar(text)
+    if (n == 0L) {
         return(list(
             context = "",
             accessor = NULL,
-            partial_child = "",
-            accessor_start = NA_integer_,
-            accessor_end = NA_integer_,
-            partial_start = start,
-            selection_start = start,
-            selection_end = end
+            partial_child = ""
         ))
     }
 
-    opaque <- rep(FALSE, n)
-
-    # Ignore accessor-like characters inside lexical regions.
-    for (region in forward$regions) {
-        positions <- seq.int(region$start, region$end - 1L)
-        positions <- positions[positions >= 1L & positions <= n]
-        opaque[positions] <- TRUE
+    # Character vector and slice helper for easier indexing
+    chars <- strsplit(text, "", fixed = TRUE)[[1L]]
+    slice <- function(start, end) {
+        if (start >= end) {
+            return("")
+        }
+        substr(text, start, end - 1L)
     }
 
+    # Make logical vector indicating opaque regions (strings, comments, etc.)
+    opaque <- rep(FALSE, n)
+    for (region in regions) {
+        region_start <- max(1L, region$start - offset)
+        region_end <- min(n + 1L, region$end - offset)
+        if (region_start < region_end) {
+            opaque[seq.int(region_start, region_end - 1L)] <- TRUE
+        }
+    }
+
+
+    # Find the right-most accessor, preferring longer tokens at each endpoint.
     accessor <- NULL
     accessor_start <- NA_integer_
     accessor_end <- NA_integer_
 
-    # Find the right-most accessor, preferring longer tokens at each endpoint.
-    for (candidate_end in rev(seq.int(start + 1L, end))) {
+    for (candidate_end in rev(seq.int(2L, n+1L))) {
+        # Skip if inside string
         if (opaque[candidate_end - 1L]) {
             next
         }
+        # Check if we are at the end of an accessor token, order must be long ones first!
         for (candidate in COMPLETION_ACCESSORS) {
             candidate_start <- candidate_end - nchar(candidate)
             if (
-                candidate_start >= start &&
-                completion_context_slice(
-                    chars,
-                    candidate_start,
-                    candidate_end
-                ) == candidate
+                candidate_start >= 1L &&
+                slice(candidate_start, candidate_end) == candidate
             ) {
                 accessor <- candidate
                 accessor_start <- candidate_start
@@ -88,55 +64,46 @@ split_completion_context <- function(
         }
     }
 
+    # Compute context and partial child based on accessor position
     if (is.null(accessor)) {
         context <- ""
-        partial_child <- completion_context_slice(chars, start, end)
-        partial_start <- start
+        partial_child <- text
     } else {
-        context <- completion_context_slice(chars, start, accessor_start)
-        partial_child <- completion_context_slice(
-            chars,
-            accessor_end,
-            end
-        )
-        partial_start <- accessor_end
+        context <- slice(1L, accessor_start)
+        partial_child <- slice(accessor_end, n+1L)
     }
 
     list(
         context = context,
         accessor = accessor,
-        partial_child = partial_child,
-        accessor_start = accessor_start,
-        accessor_end = accessor_end,
-        partial_start = partial_start,
-        selection_start = start,
-        selection_end = end
+        partial_child = partial_child
     )
 }
 
-completion_ast_name <- function(node, role) {
+completion_ast_node_as_string <- function(node) {
     if (is.name(node)) {
         return(as.character(node))
     }
     if (is.character(node) && length(node) == 1L && !is.na(node)) {
         return(node)
     }
-    stop(role, " must be a name or string")
+    stop("Expected a name or string")
 }
 
 completion_normalize_ast <- function(node) {
+    # Early returns
     if (is.null(node) || is.atomic(node) || is.name(node)) {
         return(node)
     }
+
+    # Check that node is a call with a named operator
     if (!is.call(node) || !is.name(node[[1L]])) {
         stop("The context contains an unsupported expression")
     }
 
     operator <- as.character(node[[1L]])
-    if (!(operator %in% COMPLETION_AST_ACCESSORS)) {
-        stop("Function or operator call is not allowed: ", operator)
-    }
 
+    # Check recursively, normalize ambiguous operands to strings
     if (operator %in% c("$", "@")) {
         if (length(node) != 3L) {
             stop(operator, " must have exactly two operands")
@@ -144,7 +111,7 @@ completion_normalize_ast <- function(node) {
         return(as.call(list(
             as.name(operator),
             completion_normalize_ast(node[[2L]]),
-            completion_ast_name(node[[3L]], "Accessor child")
+            completion_ast_node_as_string(node[[3L]])
         )))
     }
 
@@ -154,36 +121,20 @@ completion_normalize_ast <- function(node) {
         }
         return(as.call(list(
             as.name(operator),
-            completion_ast_name(node[[2L]], "Package"),
-            completion_ast_name(node[[3L]], "Namespace child")
+            completion_ast_node_as_string(node[[2L]]),
+            completion_ast_node_as_string(node[[3L]])
         )))
     }
 
-    parts <- as.list(node)
-    if (length(parts) < 2L || (operator == "[[" && length(parts) < 3L)) {
-        stop("Invalid ", operator, " expression")
-    }
-    argument_names <- names(parts)
-    if (
-        !is.null(argument_names) &&
-        length(argument_names) > 2L &&
-        any(nzchar(argument_names[-seq_len(2L)]))
-    ) {
-        stop("Named indexing arguments are not supported")
+    if (operator %in% c("[", "[[")) {
+        # Normalize all operands (`[` and `[[` remain unchanged)
+        return(as.call(lapply(as.list(node), completion_normalize_ast)))
     }
 
-    parent <- completion_normalize_ast(parts[[2L]])
-    indices <- lapply(parts[-seq_len(2L)], completion_normalize_ast)
-    as.call(c(list(as.name(operator), parent), indices))
+    stop("Function or operator call is not allowed: ", operator)
 }
 
 parse_completion_context <- function(context) {
-    stopifnot(
-        is.character(context),
-        length(context) == 1L,
-        !is.na(context)
-    )
-
     tryCatch({
         parsed <- parse(text = context, keep.source = FALSE)
         if (length(parsed) != 1L) {

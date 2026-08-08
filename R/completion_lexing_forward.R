@@ -28,12 +28,6 @@ RAW_OPENING_TO_CLOSING_DELIMITERS <- setNames(
 )
 
 lex_forward <- function(text) {
-    stopifnot(
-        is.character(text),
-        length(text) == 1L,
-        !is.na(text)
-    )
-
     chars <- strsplit(text, "", fixed = TRUE)[[1L]]
     n <- length(chars)
 

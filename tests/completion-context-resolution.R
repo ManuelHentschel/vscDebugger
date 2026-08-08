@@ -1,5 +1,5 @@
-source(file.path("R", "completion_forward_lexing.R"))
-source(file.path("R", "completion_backward_lexing.R"))
+source(file.path("R", "completion_lexing_forward.R"))
+source(file.path("R", "completion_lexing_backward.R"))
 source(file.path("R", "completion_context_parsing.R"))
 source(file.path("R", "completion_context_resolution.R"))
 

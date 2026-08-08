@@ -3,8 +3,6 @@ completion_scope_environments <- function(
     firstenv = parent.frame(),
     lastenv = .GlobalEnv
 ) {
-    stopifnot(is.environment(firstenv), is.environment(lastenv))
-
     environments <- list()
     environment <- firstenv
     repeat {
@@ -352,10 +350,9 @@ completion_context_candidates <- function(
         ))
     }
     split <- split_completion_context(
-        text,
-        forward,
-        backward$start,
-        backward$end
+        backward$text,
+        forward$regions,
+        backward$start - 1L
     )
     environments <- completion_scope_environments(firstenv, lastenv)
     partial_child <- sub(
