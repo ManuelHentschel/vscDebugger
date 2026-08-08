@@ -228,7 +228,7 @@ examples <- list(
     "completed call" = "get_object()",
     "completed index" = 'x[["item"]]',
     "function call receiver needs to be discarded later" = "get_object()$fo",
-    "parenthesized receiver candidate" = "(my_list)$fo",
+    "parenthesized receiver stops at closing parenthesis" = "(my_list)$fo",
     "computed index candidate" = "x[[name]]$fo",
     "incomplete %operator%" = "x %incomplete",
     "multidimensional index" = "array[a,b]$fo",

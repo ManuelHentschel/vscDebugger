@@ -133,12 +133,6 @@ completion_normalize_ast <- function(node) {
     }
 
     operator <- as.character(node[[1L]])
-    if (operator == "(") {
-        if (length(node) != 2L) {
-            stop("Parentheses must contain exactly one expression")
-        }
-        return(completion_normalize_ast(node[[2L]]))
-    }
     if (!(operator %in% COMPLETION_AST_ACCESSORS)) {
         stop("Function or operator call is not allowed: ", operator)
     }

@@ -3,12 +3,6 @@
 # is safe; those checks belong to semantic resolution.
 BACKWARD_NAME_PATTERN <- "^[[:alnum:]_.]$"
 BACKWARD_HORIZONTAL_WHITESPACE <- c(" ", "\t", "\f", "\v")
-BACKWARD_OPENING_DELIMITERS <- c("(", "[")
-BACKWARD_CLOSING_DELIMITERS <- c(")", "]")
-BACKWARD_CLOSING_TO_OPENING <- setNames(
-    BACKWARD_OPENING_DELIMITERS,
-    BACKWARD_CLOSING_DELIMITERS
-)
 
 completion_backward_slice <- function(chars, start, end) {
     if (start >= end) {
@@ -44,12 +38,6 @@ completion_backward_result <- function(chars, start, end, feasible = TRUE) {
 }
 
 lex_backward <- function(text, forward = lex_forward(text)) {
-    stopifnot(
-        is.character(text),
-        length(text) == 1L,
-        !is.na(text),
-        is.list(forward)
-    )
 
     chars <- strsplit(text, "", fixed = TRUE)[[1L]]
     n <- length(chars)
@@ -73,7 +61,7 @@ lex_backward <- function(text, forward = lex_forward(text)) {
     }
 
     # If the suffix ends with a closing delimiter or non-string space, return empty context
-    if (chars[n] %in% BACKWARD_CLOSING_DELIMITERS) {
+    if (chars[n] %in% c(")", "]")) {
         return(completion_backward_result(chars, end, end))
     }
     if (
@@ -99,8 +87,8 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         LS_RAW_QUOTED
     )
 
-    # Keep track of closed delimiters that need matching opening ones
-    expected_openings <- character()
+    # Keep track of closed brackets that need matching opening ones
+    bracket_depth <- 0L
 
     # Track whether the suffix is just an incomplete string
     suffix_is_incomplete_string <- forward$state %in% c(
@@ -125,7 +113,7 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                 position <- region$start - 1L
                 next
             }
-            # illegal region (comment, raw string prefix)
+            # unsupported region (comment, raw string prefix)
             break
         }
 
@@ -191,36 +179,26 @@ lex_backward <- function(text, forward = lex_forward(text)) {
             next
         }
 
-        # Allow commas directly inside an indexing expression.
-        # This filters out multi argument function calls, other function calls need to be discarded later
-        if (
-            ch == "," &&
-            length(expected_openings) > 0L &&
-            expected_openings[length(expected_openings)] == "["
-        ) {
+        # Allow commas while scanning a completed indexing expression.
+        if (ch == "," && bracket_depth > 0L) {
             position <- position - 1L
             next
         }
 
-        # Track closing delimiters and match with opening ones
-        # Treating ]] as two times ] ok here
-        if (ch %in% BACKWARD_CLOSING_DELIMITERS) {
+        # Track closing brackets and match them with opening ones.
+        if (ch == "]") {
             suffix_is_incomplete_string <- FALSE
-            expected_openings <- c(
-                expected_openings,
-                BACKWARD_CLOSING_TO_OPENING[[ch]]
-            )
+            bracket_depth <- bracket_depth + 1L
             position <- position - 1L
             next
         }
-        if (ch %in% BACKWARD_OPENING_DELIMITERS) {
-            if (length(expected_openings) == 0L) {
+        if (ch == "[") {
+            if (bracket_depth == 0L) {
                 # An unmatched [ is useful only for an unfinished string
                 # accessor such as `x[["item`.
-                if (ch == "(" || !suffix_is_incomplete_string) {
+                if (!suffix_is_incomplete_string) {
                     break
                 }
-                # else: ch == "["
                 position <- position - 1L
                 # Check for double [[, to avoid mismatch break after first [
                 if (position >= 1L && chars[position] == "[") {
@@ -229,12 +207,7 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                 suffix_is_incomplete_string <- FALSE
                 next
             }
-            # else: there is an expected opening delimiter, check if it matches
-            depth <- length(expected_openings)
-            if (expected_openings[depth] != ch) {
-                break
-            }
-            expected_openings <- expected_openings[-depth]
+            bracket_depth <- bracket_depth - 1L
             position <- position - 1L
             next
         }
@@ -243,9 +216,8 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         break
     }
 
-    # If there remain unmatched closing delimiters, this is not a feasible completion suffix.
-    # Might occur legally if there are newlines inside parentheses, but we don't allow that for now.
-    if (length(expected_openings) > 0L) {
+    # Unmatched closing brackets do not form a feasible completion suffix.
+    if (bracket_depth > 0L) {
         return(completion_backward_result(chars, end, end, FALSE))
     }
 

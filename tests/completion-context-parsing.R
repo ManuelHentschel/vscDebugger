@@ -40,7 +40,7 @@ examples <- list(
     "quoted accessor character is ignored" = 'my_list[["a$b"]]$chi',
     "namespace accessor" = "stats::l",
     "nested indices" = "my_list[indices[1], indices[2]]$chi",
-    "parenthesized context" = "(my_list)$chi",
+    "parenthesized context is rejected" = "(my_list)$chi",
     "function call is rejected" = "get_object()$chi",
     "operator call is rejected" = "my_list[index + 1]$chi"
 )
