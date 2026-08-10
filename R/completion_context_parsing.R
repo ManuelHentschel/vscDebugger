@@ -2,9 +2,12 @@
 
 .completion_ast_name_to_string <- function(node) {
     if (is.name(node)) {
-        return(as.character(node))
+        node <- as.character(node)
     }
-    node
+    if (is.character(node) && length(node) == 1L && !is.na(node)) {
+        return(node)
+    }
+    stop("Expected a name or string as argument")
 }
 
 .completion_normalize_ast <- function(node) {
@@ -42,13 +45,51 @@
         return(as.call(lapply(as.list(node), .completion_normalize_ast)))
     }
 
-    stop("Function or operator call is not allowed: ", operator)
+    stop("Function or operator not allowed in context: ", operator)
+}
+
+.completion_parsing_result <- function(status, ast = NULL, reason = NULL) {
+    result <- list(status = status)
+    if (status == "success") {
+        result["ast"] <- list(ast)
+    }
+    if (!is.null(reason)) {
+        result$reason <- reason
+    }
+    result
 }
 
 parse_completion_context <- function(context) {
-    parsed <- parse(text = context, keep.source = FALSE)
-    if (length(parsed) != 1L) {
-        stop("The context must contain exactly one expression")
+    # Parse the context expression into an AST
+    ast <- try(parse(text = context, keep.source = FALSE), silent = TRUE)
+
+    if(inherits(ast, "try-error")) {
+        return(.completion_parsing_result(
+            "infeasible",
+            reason = "Parsing the context expression failed."
+        ))
     }
-    .completion_normalize_ast(parsed[[1L]])
+
+    # Assert that the AST contains exactly one expression
+    if (length(ast) != 1L) {
+        return(.completion_parsing_result(
+            "infeasible",
+            reason = "The context must contain exactly one expression"
+        ))
+    }
+
+    # Normalize AST and check for unsupported operators
+    normalized_ast <- try(.completion_normalize_ast(ast[[1L]]), silent = TRUE)
+
+    if(inherits(normalized_ast, "try-error")) {
+        return(.completion_parsing_result(
+            "infeasible",
+            reason = conditionMessage(attr(normalized_ast, "condition"))
+        ))
+    }
+
+    return(.completion_parsing_result(
+        "success",
+        ast = normalized_ast
+    ))
 }

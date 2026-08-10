@@ -55,12 +55,19 @@
     NULL
 }
 
-# Return a namespace only if it is already loaded.
-.completion_namespace <- function(package) {
-    if (!isNamespaceLoaded(package)) {
-        stop("Namespace is not loaded: ", package)
+.completion_resolution_result <- function(
+    status,
+    value = NULL,
+    reason = NULL
+) {
+    result <- list(status = status)
+    if (status == "success") {
+        result["value"] <- list(value)
     }
-    getNamespace(package)
+    if (!is.null(reason)) {
+        result$reason <- reason
+    }
+    result
 }
 
 .completion_resolve_ast_node <- function(
@@ -92,8 +99,11 @@
     # Handle namespace accessors
     if (operator %in% c("::", ":::")) {
         package <- node[[2L]]
+        if(!isNamespaceLoaded(package)){
+            stop("Namespace is not loaded: ", package)
+        }
+        namespace <- getNamespace(package)
         child <- node[[3L]]
-        namespace <- .completion_namespace(package)
         # Check namespace exports for `::`
         if (
             operator == "::" &&
@@ -130,6 +140,7 @@
             exists(child, envir = parent, inherits = FALSE) &&
             (bindingIsActive(child, parent) || isPromise(child, parent))
         ) {
+            # Operation accesses a promise/active binding -> use safe binding lookup
             return(.completion_lookup_binding(child, list(parent)))
         }
     }
@@ -143,6 +154,50 @@
     do.call(accessor_function, arguments, envir = environments[[1L]])
 }
 
+.completion_resolve_ast <- function(ast, firstenv, lastenv) {
+    environments <- getScopeEnvs(firstenv, lastenv)
+    tryCatch(
+        .completion_resolution_result(
+            "success",
+            value = .completion_resolve_ast_node(ast, environments)
+        ),
+        error = function(error) {
+            .completion_resolution_result(
+                "infeasible",
+                reason = conditionMessage(error)
+            )
+        }
+    )
+}
+
+# Resolve a bare or quoted package name without loading its namespace.
+.completion_resolve_namespace <- function(package) {
+    if (is.name(package)) {
+        package <- as.character(package)
+    }
+    if (
+        !is.character(package) ||
+        length(package) != 1L ||
+        is.na(package) ||
+        !nzchar(package)
+    ) {
+        return(.completion_resolution_result(
+            "infeasible",
+            reason = "The namespace context is not a package name"
+        ))
+    }
+    if (!isNamespaceLoaded(package)) {
+        return(.completion_resolution_result(
+            "infeasible",
+            reason = paste0("Namespace is not loaded: ", package)
+        ))
+    }
+    .completion_resolution_result(
+        "success",
+        value = getNamespace(package)
+    )
+}
+
 resolve_completion_context <- function(
     ast,
     accessor = NULL,
@@ -150,8 +205,7 @@ resolve_completion_context <- function(
     lastenv = .GlobalEnv
 ) {
     if (!is.null(accessor) && accessor %in% c("::", ":::")) {
-        return(.completion_namespace(as.character(ast)))
+        return(.completion_resolve_namespace(ast))
     }
-    environments <- getScopeEnvs(firstenv, lastenv)
-    .completion_resolve_ast_node(ast, environments)
+    .completion_resolve_ast(ast, firstenv, lastenv)
 }

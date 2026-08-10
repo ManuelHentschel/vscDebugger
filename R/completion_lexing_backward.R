@@ -20,15 +20,20 @@
 # - context: the text of the context expression
 # - accessor: the accessor character
 # - partial_child: the text of the child expression
-# If status is other than "candidate", the other elements are NULL.
+# - reason: an optional explanation when status is "infeasible"
+# Context, accessor, and partial_child are present only for candidates.
 .completion_backward_result <- function(
     status,
     text = NULL,
     start = NULL,
     accessor = NULL,
-    accessor_start = NULL
+    accessor_start = NULL,
+    reason = NULL
 ) {
     result <- list(status = status)
+    if (!is.null(reason)) {
+        result$reason <- reason
+    }
     if (!is.null(start)) {
         if (is.null(accessor)) {
             context <- ""
@@ -89,7 +94,10 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         }
     } else {
         # Raw strings, comments, and unfinished special operators are infeasible.
-        return(.completion_backward_result("infeasible"))
+        return(.completion_backward_result(
+            "infeasible",
+            reason = "Invalid cursor location"
+        ))
     }
 
     # Identify the accessor preceding the partial child.
@@ -213,13 +221,19 @@ lex_backward <- function(text, forward = lex_forward(text)) {
 
     # A missing opening bracket means the context is incomplete.
     if (bracket_depth > 0L) {
-        return(.completion_backward_result("infeasible"))
+        return(.completion_backward_result(
+            "infeasible",
+            reason = "Could not find a complete context expression"
+        ))
     }
 
     # Every accessor requires a context expression to its left.
     context_start <- position + 1L
     if (context_start == accessor_start) {
-        return(.completion_backward_result("infeasible"))
+        return(.completion_backward_result(
+            "infeasible",
+            reason = "The accessor has no context expression"
+        ))
     }
 
     .completion_backward_result(

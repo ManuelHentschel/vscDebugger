@@ -1,11 +1,3 @@
-# Runs the completion pipeline and returns DAP completion items.
-.completion_attempt <- function(expr) {
-    tryCatch(
-        list(value = force(expr)),
-        error = function(error) NULL
-    )
-}
-
 # Count positions in the UTF-16 units used by DAP and VS Code.
 .completion_utf16_length <- function(text) {
     codepoints <- utf8ToInt(enc2utf8(text))
@@ -88,24 +80,19 @@ completion_main <- function(
         }
         context <- getScopeEnvs(firstenv, global_lastenv)
     } else {
-        # Parse the context without letting invalid syntax escape the pipeline.
-        parsed <- .completion_attempt(
-            parse_completion_context(backward$context)
-        )
-        if (is.null(parsed)) {
+        # Parse and resolve the context through their stage-local error boundaries.
+        parsed <- parse_completion_context(backward$context)
+        if (parsed$status != "success") {
             return(list())
         }
 
-        # Resolve independently so parse and evaluation errors stay local.
-        resolved <- .completion_attempt(
-            resolve_completion_context(
-                parsed$value,
-                accessor,
-                firstenv = firstenv,
-                lastenv = lastenv
-            )
+        resolved <- resolve_completion_context(
+            parsed$ast,
+            accessor,
+            firstenv = firstenv,
+            lastenv = lastenv
         )
-        if (is.null(resolved)) {
+        if (resolved$status != "success") {
             return(list())
         }
         context <- resolved$value

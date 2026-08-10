@@ -174,7 +174,11 @@ visualize_lex_forward <- function(
 
 print_lex_backward <- function(text, backward = lex_backward(text)) {
     if (backward$status != "candidate") {
-        cat("completion suffix: ", backward$status, "\n", sep = "")
+        cat("completion suffix: ", backward$status, sep = "")
+        if (!is.null(backward$reason)) {
+            cat(": ", backward$reason, sep = "")
+        }
+        cat("\n")
         return(invisible(backward))
     }
 

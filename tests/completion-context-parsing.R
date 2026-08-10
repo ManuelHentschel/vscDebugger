@@ -10,7 +10,11 @@ show_context_parsing <- function(text) {
     backward <- lex_backward(text)
     cat("text:          ", dQuote(text), "\n", sep = "")
     if (backward$status != "candidate") {
-        cat("status:        ", backward$status, "\n", sep = "")
+        cat("status:        ", backward$status, sep = "")
+        if (!is.null(backward$reason)) {
+            cat(": ", backward$reason, sep = "")
+        }
+        cat("\n")
         return(invisible())
     }
 
@@ -25,15 +29,12 @@ show_context_parsing <- function(text) {
     cat("partial child: ", dQuote(backward$partial_child), "\n", sep = "")
 
     if (!is.null(accessor)) {
-        parsed <- tryCatch(
-            parse_completion_context(backward$context),
-            error = identity
-        )
-        if (!inherits(parsed, "error")) {
-            cat("AST:           ", format_ast(parsed), "\n", sep = "")
+        parsed <- parse_completion_context(backward$context)
+        if (parsed$status == "success") {
+            cat("AST:           ", format_ast(parsed$ast), "\n", sep = "")
         } else {
             cat(
-                "AST:           <invalid context> ", conditionMessage(parsed),
+                "AST:           <invalid context> ", parsed$reason,
                 "\n",
                 sep = ""
             )
@@ -56,6 +57,7 @@ examples <- list(
     "nested incomplete index" = "my_list[[index_list$na",
     "quoted accessor character is ignored" = 'my_list[["a$b"]]$chi',
     "namespace accessor" = "stats::l",
+    "quoted namespace accessor" = '"stats"::l',
     "triple namespace accessor" = "stats:::l",
     "nested indices" = "my_list[indices[1], indices[2]]$chi",
     "parenthesized context is rejected" = "(my_list)$chi",
@@ -69,9 +71,10 @@ for (name in names(examples)) {
 }
 
 normalized <- parse_completion_context("my_list$child")
+stopifnot(normalized$status == "success")
 cat(
     "\nnormalized $ child type: ",
-    typeof(normalized[[3L]]),
+    typeof(normalized$ast[[3L]]),
     "\n",
     sep = ""
 )

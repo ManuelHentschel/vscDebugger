@@ -46,7 +46,11 @@ show_candidates <- function(
     )
     labels <- vapply(items, `[[`, "", "label")
     cat("text:    ", dQuote(text), "\n", sep = "")
-    cat("status:  ", backward$status, "\n", sep = "")
+    cat("status:  ", backward$status, sep = "")
+    if (!is.null(backward$reason)) {
+        cat(": ", backward$reason, sep = "")
+    }
+    cat("\n")
     cat(
         "matches: ",
         if (length(labels)) {
@@ -58,13 +62,6 @@ show_candidates <- function(
         sep = ""
     )
     invisible(items)
-}
-
-try_resolve <- function(...) {
-    tryCatch(
-        list(ok = TRUE, value = resolve_completion_context(...)),
-        error = function(error) list(ok = FALSE, reason = "resolution_error")
-    )
 }
 
 lastenv <- new.env(parent = baseenv())
@@ -148,28 +145,35 @@ show_candidates("parent_list$par", firstenv, lastenv)
 
 cat("\n", strrep("=", 72L), "\nnested index AST resolution\n", sep = "")
 parsed <- parse_completion_context("grid[indices[1], indices[2]]")
-resolved <- try_resolve(
-    parsed,
+stopifnot(parsed$status == "success")
+resolved <- resolve_completion_context(
+    parsed$ast,
     firstenv = firstenv,
     lastenv = lastenv
 )
-cat("AST:      ", paste0(deparse(parsed), collapse = ""), "\n", sep = "")
-cat("resolved: ", if (resolved$ok) resolved$value else resolved$reason, "\n", sep = "")
+cat("AST:      ", paste0(deparse(parsed$ast), collapse = ""), "\n", sep = "")
+cat(
+    "resolved: ",
+    if (resolved$status == "success") resolved$value else resolved$reason,
+    "\n",
+    sep = ""
+)
 
 parsed <- parse_completion_context(
     "grid[promised_indices[1], indices[2]]"
 )
+stopifnot(parsed$status == "success")
 for (preview in c(FALSE, TRUE)) {
     old_options <- options(vsc.previewPromises = preview)
-    resolved <- try_resolve(
-        parsed,
+    resolved <- resolve_completion_context(
+        parsed$ast,
         firstenv = firstenv,
         lastenv = lastenv
     )
     options(old_options)
     cat(
         "promised index, preview=", preview, ": ",
-        if (resolved$ok) resolved$value else resolved$reason,
+        if (resolved$status == "success") resolved$value else resolved$reason,
         "\n",
         sep = ""
     )
@@ -198,3 +202,4 @@ show_candidates(
 
 cat("\n", strrep("=", 72L), "\nnamespace completion\n", sep = "")
 show_candidates("stats::l", firstenv, lastenv)
+show_candidates('"stats"::l', firstenv, lastenv)
