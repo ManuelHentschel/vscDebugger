@@ -13,24 +13,36 @@
     text_after_cursor
 }
 
-# Remove the part of an insertion that is already present to the right.
-.completion_trim_right_overlap <- function(insertion, right_candidate) {
-    max_overlap <- min(nchar(insertion), nchar(right_candidate))
+# Reuse the right fragment, or reject a candidate that cannot preserve it.
+.completion_trim_right_overlap <- function(insertion, available_right_text) {
+    max_overlap <- min(nchar(insertion), nchar(available_right_text))
     if (max_overlap == 0L) {
         return(insertion)
     }
+
+    matched_overlap <- 0L
     for (overlap in rev(seq_len(max_overlap))) {
         insertion_suffix <- substr(
             insertion,
             nchar(insertion) - overlap + 1L,
             nchar(insertion)
         )
-        right_prefix <- substr(right_candidate, 1L, overlap)
+        right_prefix <- substr(available_right_text, 1L, overlap)
         if (insertion_suffix == right_prefix) {
-            return(substr(insertion, 1L, nchar(insertion) - overlap))
+            matched_overlap <- overlap
+            break
         }
     }
-    insertion
+
+    # A completion must account for the entire name fragment to the right.
+    right_name <- sub("[^[:alnum:]_.].*$", "", available_right_text)
+    if (
+        matched_overlap < nchar(right_name) ||
+        matched_overlap == nchar(insertion)
+    ) {
+        return(NULL)
+    }
+    substr(insertion, 1L, nchar(insertion) - matched_overlap)
 }
 
 # Spell a candidate as valid R code while preserving an existing quote.
@@ -38,7 +50,7 @@
     child_name,
     accessor,
     quote,
-    right_candidate
+    available_right_text
 ) {
     if (!is.null(quote)) {
         insertion <- substring(encodeString(child_name, quote = quote), 2L)
@@ -49,7 +61,7 @@
     } else {
         insertion <- encodeString(child_name, quote = "`")
     }
-    .completion_trim_right_overlap(insertion, right_candidate)
+    .completion_trim_right_overlap(insertion, available_right_text)
 }
 
 # Generates DAP completion items from an already resolved context.
@@ -89,6 +101,7 @@ completion_candidates <- function(
     ) {
         child_names <- NULL
     } else if (accessor %in% c("$", "[", "[[")) {
+        # Read names without dispatching another user-defined method.
         child_names <- attr(context, "names", exact = TRUE)
         if (is.null(child_names) && accessor %in% c("[", "[[")) {
             child_names <- unlist(
@@ -103,9 +116,12 @@ completion_candidates <- function(
     if (is.null(child_names)) {
         return(list())
     }
+
+    # Remove unusable names and keep those matching the typed prefix.
     child_names <- unique(child_names[!is.na(child_names) & nzchar(child_names)])
     child_names <- unname(child_names[startsWith(child_names, partial_name)])
 
+    # Keep item types generic without inspecting or forcing child bindings.
     item_type <- if (is.null(accessor)) {
         "variable"
     } else if (accessor == "@") {
@@ -114,19 +130,26 @@ completion_candidates <- function(
         "property"
     }
 
-    right_candidate <- .completion_available_right_text(text_after_cursor)
-    lapply(child_names, function(child_name) {
+    available_right_text <- .completion_available_right_text(text_after_cursor)
+
+    # Build DAP items, omitting candidates that cannot reuse the right fragment.
+    items <- lapply(child_names, function(child_name) {
+        text <- .completion_candidate_text(
+            child_name,
+            accessor,
+            quote,
+            available_right_text
+        )
+        if (is.null(text)) {
+            return(NULL)
+        }
         list(
             label = child_name,
-            text = .completion_candidate_text(
-                child_name,
-                accessor,
-                quote,
-                right_candidate
-            ),
+            text = text,
             type = item_type,
             start = replacement_start,
             length = replacement_length
         )
     })
+    Filter(Negate(is.null), items)
 }

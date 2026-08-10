@@ -5,6 +5,8 @@ source(file.path("R", "stackTreeHelpers.R"))
 source(file.path("R", "completion_context_resolution.R"))
 source(file.path("R", "completion_candidates.R"))
 source(file.path("R", "completion_main.R"))
+source(file.path("R", "completion_legacy.R"))
+source(file.path("R", "completion_utils.R"))
 source(file.path("R", "completion.R"))
 
 # Keep these examples independent of the installed package and browser stack.
@@ -21,6 +23,7 @@ firstenv$my_list <- list(
 firstenv$mean_global <- 4L
 firstenv$x <- 99
 firstenv$unnamed <- unname(list(1L, 2L))
+firstenv$overlap_list <- list(child = 1L, chili = 2L)
 
 format_source <- function(text) {
     encodeString(text, quote = "\"")
@@ -107,6 +110,7 @@ stopifnot("mean_global" %in% vapply(items, `[[`, "", "label"))
 
 cat("\nrequest cursor handling\n")
 my_list <- firstenv$my_list
+overlap_list <- firstenv$overlap_list
 request_text <- 'first\r\nmy_list[["ch"]]'
 cursor <- .completion_request_cursor(request_text, 2L, 13L)
 items <- .vsc.getCompletionNew(
@@ -142,6 +146,24 @@ stopifnot(items[[1L]]$text == "mea")
 
 items <- .vsc.getCompletionNew(0L, "my_list$child", 11L, 1L)
 stopifnot(items[[1L]]$text == "ch")
+
+# Reject candidates that match only part of the name fragment on the right.
+items <- .vsc.getCompletionNew(
+    0L,
+    "overlap_list$child",
+    nchar("overlap_list$ch") + 1L,
+    1L
+)
+stopifnot(identical(vapply(items, `[[`, "", "label"), "child"))
+
+# DAP treats an empty insertion as the label, so omit complete overlaps.
+items <- .vsc.getCompletionNew(
+    0L,
+    "overlap_list$child",
+    nchar("overlap_list$") + 1L,
+    1L
+)
+stopifnot(!length(items))
 
 items <- .vsc.getCompletionNew(0L, 'my_list[["child"]]', 13L, 1L)
 stopifnot(items[[1L]]$text == "ch")

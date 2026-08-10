@@ -28,7 +28,7 @@
 
 # Extract the typed name and its replacement range from the partial child.
 .completion_partial <- function(text, partial_child) {
-    source <- sub("^[ \t\f\v]*", "", partial_child, perl = TRUE)
+    source <- partial_child
     quote <- substr(source, 1L, 1L)
     if (quote %in% c("'", "\"", "`")) {
         source <- substring(source, 2L)
@@ -54,6 +54,7 @@
     )
 }
 
+# Run the completion stages and return DAP completion items.
 completion_main <- function(
     text,
     firstenv = parent.frame(),
