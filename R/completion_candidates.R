@@ -52,6 +52,44 @@
     encodeString(child_name, quote = "`")
 }
 
+# Build typed candidates from bindings in one environment.
+.completion_environment_candidates <- function(
+    environment,
+    names = NULL,
+    compute_types = TRUE
+) {
+    if (is.null(names)) {
+        names <- ls(environment, all.names = TRUE, sorted = FALSE)
+    }
+
+    lapply(names, function(name) {
+        candidate <- list(name = name)
+        if (!compute_types) {
+            return(candidate)
+        }
+
+        # Do not force promises or active bindings just to choose an icon.
+        if (bindingIsActive(name, environment) || isPromise(name, environment)) {
+            candidate$type <- "event"
+        } else if (is.function(get(name, envir = environment))) {
+            candidate$type <- "function"
+        } else {
+            candidate$type <- "variable"
+        }
+        candidate
+    })
+}
+
+# Build uniform candidates from known names.
+.completion_candidates_from_names <- function(
+    names,
+    type = 'variable'
+) {
+    lapply(names, function(name) {
+        list(name = name, type = type)
+    })
+}
+
 # Generate DAP completion items from an already resolved context.
 completion_candidates <- function(
     context,
@@ -60,69 +98,89 @@ completion_candidates <- function(
     quote,
     replacement_start,
     replacement_length,
-    text_after_cursor
+    text_after_cursor,
+    compute_types = TRUE
 ) {
+    candidates <- NULL
+
     if (is.null(accessor)) {
         # Top-level expression, context is list of available environments.
-        child_names <- unlist(lapply(
+        candidates <- unlist(lapply(
             context,
-            ls,
-            all.names = TRUE,
-            sorted = FALSE
-        ), use.names = FALSE)
+            .completion_environment_candidates,
+            compute_types = compute_types
+        ), recursive = FALSE, use.names = FALSE)
     } else if (accessor == "::") {
-        child_names <- getNamespaceExports(context)
+        candidates <- .completion_environment_candidates(
+            context,
+            getNamespaceExports(context),
+            compute_types
+        )
     } else if (accessor == ":::") {
-        child_names <- ls(context, all.names = TRUE, sorted = FALSE)
+        candidates <- .completion_environment_candidates(
+            context,
+            compute_types = compute_types
+        )
     } else if (accessor == "@") {
-        child_names <- methods::slotNames(context)
+        candidates <- .completion_candidates_from_names(
+            methods::slotNames(context),
+            type = "field"
+        )
     } else if (is.environment(context)) {
-        child_names <- if (accessor == "[" && !is.object(context)) {
-            NULL
+        candidates <- if (accessor == "[" && !is.object(context)) {
+            list()
         } else {
-            ls(context, all.names = TRUE, sorted = FALSE)
+            .completion_candidates_from_names(
+                ls(context, all.names = TRUE, sorted = FALSE),
+                type = "field"
+            )
         }
     } else if (
         accessor == "$" &&
         !is.recursive(context) &&
         !is.object(context)
     ) {
-        child_names <- NULL
+        candidates <- list()
     } else if (accessor %in% c("$", "[", "[[")) {
         # Read names without dispatching another user-defined method.
-        child_names <- attr(context, "names", exact = TRUE)
-        if (is.null(child_names) && accessor %in% c("[", "[[")) {
-            child_names <- unlist(
-                attr(context, "dimnames", exact = TRUE),
-                use.names = FALSE
+        candidates <- .completion_candidates_from_names(
+            attr(context, "names", exact = TRUE),
+            type = "field"
+        )
+        if (
+            is.null(attr(context, "names", exact = TRUE)) &&
+            accessor %in% c("[", "[[")
+        ) {
+            candidates <- .completion_candidates_from_names(
+                unlist(attr(context, "dimnames", exact = TRUE), use.names = FALSE),
+                type = "field"
             )
         }
     } else {
         stop("Unsupported completion accessor: ", accessor)
     }
 
-    if (is.null(child_names)) {
+    if (is.null(candidates)) {
         return(list())
     }
 
-    # Remove unusable names and keep those matching the typed prefix.
-    child_names <- unique(child_names[!is.na(child_names) & nzchar(child_names)])
-    child_names <- unname(child_names[startsWith(child_names, partial_name)])
-
-    # Keep item types generic without inspecting or forcing child bindings.
-    item_type <- if (is.null(accessor)) {
-        "variable"
-    } else if (accessor == "@") {
-        "field"
-    } else {
-        "property"
-    }
+    # Keep usable candidates matching the typed prefix, once per name/type pair.
+    candidates <- Filter(function(candidate) {
+        !is.na(candidate$name) &&
+        nzchar(candidate$name) &&
+        startsWith(candidate$name, partial_name)
+    }, candidates)
+    candidate_keys <- vapply(candidates, function(candidate) {
+        paste(c(candidate$type, candidate$name), collapse = "\r")
+    }, "")
+    candidates <- candidates[!duplicated(candidate_keys)]
 
     # Consider right-hand text up to first whitespace
     available_right_text <- .completion_available_right_text(text_after_cursor)
 
     # Build DAP items, omitting only exact no-op overlaps.
-    items <- lapply(child_names, function(child_name) {
+    items <- lapply(candidates, function(candidate) {
+        child_name <- candidate$name
         escaped_text <- .completion_candidate_text(child_name, accessor, quote)
         trimmed_text <- .completion_trim_right_overlap(
             escaped_text,
@@ -131,14 +189,16 @@ completion_candidates <- function(
         if (nchar(trimmed_text) == 0L) {
             return(NULL)
         }
-        list(
+        item <- list(
             label = child_name,
             text = trimmed_text,
+            type = candidate$type,
             # DAP says 1-based, but vscode interprets 0-based for `start`
             # (Temporary?) fix by converting to 0-based
             start = replacement_start - 1L,
             length = replacement_length
         )
+        item
     })
     Filter(Negate(is.null), items)
 }

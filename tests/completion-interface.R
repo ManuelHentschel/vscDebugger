@@ -136,7 +136,7 @@ print_items(items)
 stopifnot(
     items[[1L]]$label == "child",
     items[[1L]]$text == '"child',
-    items[[1L]]$start == 17L,
+    items[[1L]]$start == 16L,
     items[[1L]]$length == 3L
 )
 
