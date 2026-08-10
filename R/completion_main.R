@@ -1,4 +1,4 @@
-# Runs the completion pipeline and returns matching candidates.
+# Runs the completion pipeline and returns DAP completion items.
 .completion_attempt <- function(expr) {
     tryCatch(
         list(value = force(expr)),
@@ -6,68 +6,139 @@
     )
 }
 
+# Count positions in the UTF-16 units used by DAP and VS Code.
+.completion_utf16_length <- function(text) {
+    codepoints <- utf8ToInt(enc2utf8(text))
+    as.integer(length(codepoints) + sum(codepoints > 0xffffL))
+}
+
+# Decode a quoted source prefix for matching against actual child names.
+.completion_partial_name <- function(source, quote) {
+    if (is.null(quote) || source == "") {
+        return(source)
+    }
+    parsed <- tryCatch(
+        parse(text = paste0(quote, source, quote), keep.source = FALSE),
+        error = function(error) NULL
+    )
+    if (length(parsed) != 1L) {
+        return(NULL)
+    }
+    value <- parsed[[1L]]
+    if (quote == "`" && is.name(value)) {
+        return(as.character(value))
+    }
+    if (quote != "`" && is.character(value) && length(value) == 1L) {
+        return(value)
+    }
+    NULL
+}
+
+# Extract the typed name and its replacement range from the partial child.
+.completion_partial <- function(text, partial_child) {
+    source <- sub("^[ \t\f\v]*", "", partial_child, perl = TRUE)
+    quote <- substr(source, 1L, 1L)
+    if (quote %in% c("'", "\"", "`")) {
+        source <- substring(source, 2L)
+    } else {
+        quote <- NULL
+    }
+
+    # VS Code can only replace text on the cursor's current line.
+    if (grepl("[\r\n]", source)) {
+        return(NULL)
+    }
+    name <- .completion_partial_name(source, quote)
+    if (is.null(name)) {
+        return(NULL)
+    }
+
+    before_source <- substr(text, 1L, nchar(text) - nchar(source))
+    list(
+        name = name,
+        quote = quote,
+        start = .completion_utf16_length(before_source) + 1L,
+        length = .completion_utf16_length(source)
+    )
+}
+
 completion_main <- function(
     text,
     firstenv = parent.frame(),
     lastenv = .GlobalEnv,
-    global_lastenv = emptyenv()
+    global_lastenv = emptyenv(),
+    text_after_cursor = ""
 ) {
-    # Select the expression suffix before the cursor.
+    # Select and split the expression suffix before the cursor.
     forward <- lex_forward(text)
     backward <- lex_backward(text, forward)
     if (backward$status != "candidate") {
-        return(character())
+        return(list())
     }
-    selected <- substring(text, backward$start)
+    accessor <- backward$accessor
+    partial <- .completion_partial(text, backward$partial_child)
+    if (is.null(partial)) {
+        return(list())
+    }
 
-    # Split the suffix into its context, accessor, and partial name.
-    split <- split_completion_context(
-        selected,
-        forward$regions,
-        backward$start - 1L
-    )
-    # Remove leading whitespace and an opening quote from the partial name.
-    partial_name <- sub(
-        "^[ \t\f\v]*['\"`]?",
-        "",
-        split$partial_child,
-        perl = TRUE
-    )
-    # TODO: Keep track of leading quotes to complete closing quotes
-
-    if (is.null(split$accessor)) {
+    if (is.null(accessor)) {
         # Only code and backtick names can be global-name completions.
         if (!forward$state %in% c(LS_CODE, LS_BACKTICK)) {
-            return(character())
+            return(list())
         }
         context <- getScopeEnvs(firstenv, global_lastenv)
     } else {
         # Parse the context without letting invalid syntax escape the pipeline.
         parsed <- .completion_attempt(
-            parse_completion_context(split$context)
+            parse_completion_context(backward$context)
         )
         if (is.null(parsed)) {
-            return(character())
+            return(list())
         }
 
         # Resolve independently so parse and evaluation errors stay local.
         resolved <- .completion_attempt(
             resolve_completion_context(
                 parsed$value,
-                split$accessor,
+                accessor,
                 firstenv = firstenv,
                 lastenv = lastenv
             )
         )
         if (is.null(resolved)) {
-            return(character())
+            return(list())
         }
         context <- resolved$value
     }
 
-    completion_candidates(
+    items <- completion_candidates(
         context,
-        split$accessor,
-        partial_name
+        accessor,
+        partial$name,
+        partial$quote,
+        partial$start,
+        partial$length,
+        text_after_cursor
     )
+
+    # Empty-index policy: prefer named children, then fall back to globals.
+    empty_index <- (
+        !is.null(accessor) &&
+        accessor %in% c("[", "[[") &&
+        partial$name == "" &&
+        is.null(partial$quote)
+    )
+    if (!length(items) && empty_index) {
+        items <- completion_candidates(
+            getScopeEnvs(firstenv, global_lastenv),
+            NULL,
+            "",
+            NULL,
+            partial$start,
+            partial$length,
+            text_after_cursor
+        )
+    }
+
+    items
 }

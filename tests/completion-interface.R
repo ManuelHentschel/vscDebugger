@@ -1,0 +1,152 @@
+source(file.path("R", "completion_lexing_forward.R"))
+source(file.path("R", "completion_lexing_backward.R"))
+source(file.path("R", "completion_context_parsing.R"))
+source(file.path("R", "stackTreeHelpers.R"))
+source(file.path("R", "completion_context_resolution.R"))
+source(file.path("R", "completion_candidates.R"))
+source(file.path("R", "completion_main.R"))
+source(file.path("R", "completion.R"))
+
+# Keep these examples independent of the installed package and browser stack.
+isPromise <- function(name, environment) FALSE
+isCalledFromBrowser <- function() FALSE
+
+firstenv <- new.env(parent = emptyenv())
+firstenv$my_list <- list(
+    child = 1L,
+    'a"b' = 2L,
+    "a b" = 3L,
+    "my item" = 4L
+)
+firstenv$mean_global <- 4L
+firstenv$x <- 99
+firstenv$unnamed <- unname(list(1L, 2L))
+
+format_source <- function(text) {
+    encodeString(text, quote = "\"")
+}
+
+print_items <- function(items) {
+    if (!length(items)) {
+        cat("  <none>\n")
+        return(invisible())
+    }
+    for (item in items) {
+        cat(
+            "  ",
+            format_source(item$label),
+            " -> insert ",
+            format_source(item$text),
+            " [start=", item$start,
+            ", length=", item$length,
+            "]\n",
+            sep = ""
+        )
+    }
+    invisible()
+}
+
+show_items <- function(description, text, text_after_cursor = "") {
+    items <- completion_main(
+        text,
+        firstenv,
+        firstenv,
+        firstenv,
+        text_after_cursor
+    )
+    cat("\n", description, "\n", sep = "")
+    cat(
+        "  cursor: ",
+        format_source(paste0(text, "|", text_after_cursor)),
+        "\n",
+        sep = ""
+    )
+    print_items(items)
+    invisible(items)
+}
+
+cat("\nempty input\n")
+items <- show_items("global suggestions for empty input", "")
+stopifnot("mean_global" %in% vapply(items, `[[`, "", "label"))
+
+cat("quoted and code completion items\n")
+show_items("quoted child without a closing quote", 'my_list[["ch')
+show_items("quoted child with an existing closing quote", 'my_list[["ch', '"')
+show_items("single-quoted child", "my_list[['a")
+show_items("escaped quote in a child name", 'my_list[["a\\"')
+show_items("backtick-quoted global name", "`mea")
+show_items("UTF-16 offset after an astral character", "😀 + mea")
+
+cat("\nright-side reuse\n")
+show_items("reuse remaining name characters", "my_list$ch", "ild")
+show_items(
+    "do not reuse a space inside a quoted name",
+    'my_list[["my',
+    ' item"]]'
+)
+
+cat("\nempty index expressions\n")
+stopifnot(!length(show_items("bracket without a receiver", "[")))
+stopifnot(!length(show_items("double bracket without a receiver", "[[")))
+
+items <- show_items("named single-bracket index", "my_list[")
+labels <- vapply(items, `[[`, "", "label")
+child <- items[[which(labels == "child")]]
+stopifnot(child$text == '"child"')
+stopifnot(!"mean_global" %in% labels)
+
+items <- show_items("named double-bracket index", "my_list[[")
+child <- items[[which(vapply(items, `[[`, "", "label") == "child")]]
+stopifnot(child$text == '"child"')
+
+items <- show_items("unnamed index starts a new expression", "unnamed[")
+stopifnot("mean_global" %in% vapply(items, `[[`, "", "label"))
+
+items <- show_items("nonempty index stays an expression", "my_list[[mea")
+stopifnot("mean_global" %in% vapply(items, `[[`, "", "label"))
+
+cat("\nrequest cursor handling\n")
+my_list <- firstenv$my_list
+request_text <- 'first\r\nmy_list[["ch"]]'
+cursor <- .completion_request_cursor(request_text, 2L, 13L)
+items <- .vsc.getCompletionNew(
+    0L,
+    request_text,
+    13L,
+    2L
+)
+cat(
+    "  cursor: ",
+    format_source(paste0(cursor$text, "|", cursor$text_after_cursor)),
+    "\n",
+    sep = ""
+)
+print_items(items)
+stopifnot(
+    items[[1L]]$label == "child",
+    items[[1L]]$text == "child",
+    items[[1L]]$start == 18L,
+    items[[1L]]$length == 2L
+)
+
+# UTF-16 cursor positions must not split a surrogate pair.
+stopifnot(
+    is.null(.completion_request_cursor("😀", 1L, 2L)),
+    .completion_request_cursor("😀", 1L, 3L)$text == "😀"
+)
+
+# Reuse the part of a completion that is already present after the cursor.
+mean_global <- firstenv$mean_global
+items <- .vsc.getCompletionNew(0L, "mean_global", 4L, 1L)
+stopifnot(items[[1L]]$text == "mea")
+
+items <- .vsc.getCompletionNew(0L, "my_list$child", 11L, 1L)
+stopifnot(items[[1L]]$text == "ch")
+
+items <- .vsc.getCompletionNew(0L, 'my_list[["child"]]', 13L, 1L)
+stopifnot(items[[1L]]$text == "ch")
+
+# Do not reuse spaces or other expression separators on the right.
+items <- .vsc.getCompletionNew(0L, 'my_list[["my item"]]', 13L, 1L)
+item <- items[[which(vapply(items, `[[`, "", "label") == "my item")]]
+stopifnot(item$text == 'my item"')

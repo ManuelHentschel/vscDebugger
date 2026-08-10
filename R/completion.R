@@ -27,7 +27,11 @@ completionsRequest <- function(response, args, request) {
 
   # do stuff
   targets <- list()
-  if(getOption('vsc.completionsFromVscDebugger', TRUE)){
+  if(getOption('vsc.completionsNew', TRUE)){
+    # use the new completion pipeline
+    targets <- c(targets, .vsc.getCompletionNew(frameIdVsc, text, column, line))
+  }
+  if(getOption('vsc.completionsFromVscDebugger', FALSE)){
     # use our completion tools
     targets <- c(targets, .vsc.getCompletion(frameIdVsc, text, column, line))
   }
@@ -125,6 +129,89 @@ getAttachedPackages <- function() {
 
 getInstalledPackages <- function() {
   .packages(all.available = TRUE)
+}
+
+# Convert a UTF-16 cursor offset to an R character count.
+.completion_utf16_prefix_characters <- function(text, length) {
+  if (length == 0L) {
+    return(0L)
+  }
+  codepoints <- utf8ToInt(enc2utf8(text))
+  ends <- cumsum(1L + (codepoints > 0xffffL))
+  character_count <- match(length, ends)
+  if (is.na(character_count)) NULL else character_count
+}
+
+# Split the request at the UTF-16 cursor while preserving preceding lines.
+.completion_request_cursor <- function(text, line, column) {
+  breaks <- gregexpr("\r\n|\r|\n", text, perl = TRUE)[[1L]]
+  if (length(breaks) == 1L && breaks[1L] == -1L) {
+    breaks <- integer()
+    break_lengths <- integer()
+  } else {
+    break_lengths <- attr(breaks, "match.length")
+  }
+  starts <- c(1L, breaks + break_lengths)
+  ends <- c(breaks - 1L, nchar(text))
+
+  if (line < 1L || line > length(starts) || column < 1L) {
+    return(NULL)
+  }
+  line_text <- if (starts[line] <= ends[line]) {
+    substr(text, starts[line], ends[line])
+  } else {
+    ""
+  }
+  prefix_characters <- .completion_utf16_prefix_characters(
+    line_text,
+    column - 1L
+  )
+  if (is.null(prefix_characters)) {
+    return(NULL)
+  }
+
+  before_line <- if (starts[line] > 1L) {
+    substr(text, 1L, starts[line] - 1L)
+  } else {
+    ""
+  }
+  line_prefix <- if (prefix_characters > 0L) {
+    substr(line_text, 1L, prefix_characters)
+  } else {
+    ""
+  }
+  text_after_cursor <- if (prefix_characters < nchar(line_text)) {
+    substring(line_text, prefix_characters + 1L)
+  } else {
+    ""
+  }
+
+  list(
+    text = paste0(before_line, line_prefix),
+    text_after_cursor = text_after_cursor
+  )
+}
+
+.vsc.getCompletionNew <- function(frameIdVsc, text, column = 1L, line = 1L) {
+  cursor <- .completion_request_cursor(text, line, column)
+  if (is.null(cursor)) {
+    return(list())
+  }
+  if (!isCalledFromBrowser()) {
+    firstenv <- globalenv()
+  } else {
+    frameId <- convertFrameId(vsc = frameIdVsc)
+    if (is.null(frameId)) frameId <- 0
+    firstenv <- sys.frame(frameId)
+  }
+
+  completion_main(
+    cursor$text,
+    firstenv = firstenv,
+    lastenv = globalenv(),
+    global_lastenv = emptyenv(),
+    text_after_cursor = cursor$text_after_cursor
+  )
 }
 
 .vsc.getCompletion <- function(frameIdVsc, text, column = 0, line = 1, id = 0, onlyGlobalEnv = FALSE) {

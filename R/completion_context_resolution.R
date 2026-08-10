@@ -67,16 +67,12 @@
     node,
     environments
 ) {
-    # Return missing argument nodes as such,
-    # constructing a new `missing arg` representation to avoid errors
-    if (missing(node)) {
-        return(quote(expr = ))
-    }
+    # Return missing arguments as such (e.g. my_matrix[,1])
     if (is.name(node) && as.character(node) == "") {
-        return(quote(expr = ))
+        return(node)
     }
 
-    # Return atomic nodes (numbers, logicals, etc.) as such
+    # Return atomic nodes (numbers, logicals, etc.) as is
     if (is.null(node) || is.atomic(node)) {
         return(node)
     }
@@ -90,6 +86,7 @@
         ))
     }
 
+    # Remaining cases are calls which are handled recursively
     operator <- as.character(node[[1L]])
 
     # Handle namespace accessors
@@ -118,7 +115,7 @@
         environments = environments
     )
 
-    # Guard promised and active environment children before normal dispatch.
+    # Guard promises and active environment children before normal dispatch.
     parent <- arguments[[1L]]
     if (
         operator %in% c("$", "[[") &&
@@ -138,7 +135,7 @@
     }
 
     # Use normal dispatch for all other cases
-    # Might dispatch overwritten `[` methods, but that's on the user
+    # Might dispatch overwritten `[` methods, but that's on the user if there's side-effects
     accessor_function <- .completion_find_function(operator, environments)
     if (is.null(accessor_function)) {
         accessor_function <- get(operator, envir = baseenv(), inherits = FALSE)

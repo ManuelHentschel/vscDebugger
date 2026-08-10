@@ -1,8 +1,6 @@
-# Finds a feasible expression suffix for completion. This pass deliberately
+# Finds and splits a feasible expression suffix for completion. This pass deliberately
 # does not decide whether evaluating the expression or following its accessors
 # is safe; those checks belong to semantic resolution.
-.backward_name_pattern <- "^[[:alnum:]_.]$"
-.backward_horizontal_whitespace <- c(" ", "\t", "\f", "\v")
 
 .completion_region_ending_at <- function(regions, position) {
     for (region in rev(regions)) {
@@ -14,16 +12,37 @@
 }
 
 .completion_is_name_char <- function(ch) {
-    grepl(.backward_name_pattern, ch)
+    grepl("^[[:alnum:]_.]$", ch)
 }
 
+# Returns a list with the following elements:
+# - status: one of "candidate", "no_completion", or "infeasible"
+# - context: the text of the context expression
+# - accessor: the accessor character
+# - partial_child: the text of the child expression
+# If status is other than "candidate", the other elements are NULL.
 .completion_backward_result <- function(
     status,
-    start = NULL
+    text = NULL,
+    start = NULL,
+    accessor = NULL,
+    accessor_start = NULL
 ) {
     result <- list(status = status)
     if (!is.null(start)) {
-        result$start <- start
+        if (is.null(accessor)) {
+            context <- ""
+            partial_child <- substring(text, start)
+        } else {
+            context <- substr(text, start, accessor_start - 1L)
+            partial_child <- substring(
+                text,
+                accessor_start + nchar(accessor)
+            )
+        }
+        result$context <- context
+        result$accessor <- accessor
+        result$partial_child <- partial_child
     }
     result
 }
@@ -34,187 +53,154 @@ lex_backward <- function(text, forward = lex_forward(text)) {
     n <- length(chars)
     end <- n + 1L
 
-    # Empty context for empty suffix
+    # An empty request starts an empty global-name completion.
     if (n == 0L) {
-        return(.completion_backward_result("candidate", end))
+        return(.completion_backward_result("candidate", text, end))
     }
 
-    # Raw strings, comments, and unfinished special operators are unsupported.
-    if (forward$state %in% c(
-        LS_RAW_PREFIX,
-        LS_RAW_QUOTED,
-        LS_RAW_INVALID,
-        LS_COMMENT,
-        LS_SPECIAL_OPERATOR
-    )) {
+    # Identify the partial child or handle cursor locations without one.
+    if (forward$state %in% QUOTED_STATES) {
+        # The entire unfinished quoted region is the child.
+        child_region <- .completion_region_ending_at(forward$regions, n)
+        child_start <- child_region$start
+        child_kind <- if (forward$state == LS_BACKTICK) "name" else "string"
+    } else if (forward$state == LS_CODE) {
+        ch <- chars[n]
+        if (.completion_is_name_char(ch)) {
+            # If we are in a name, scan backward to find the start of the name.
+            child_start <- n
+            while (
+                child_start > 1L &&
+                .completion_is_name_char(chars[child_start - 1L])
+            ) {
+                child_start <- child_start - 1L
+            }
+            child_kind <- "name"
+        } else if (ch %in% c("$", "@", ":", "[")) {
+            # If we are on an accessor, the child is empty.
+            child_start <- end
+            child_kind <- "empty"
+        } else if (ch %in% c(")", "]", "}", "\"", "'", "`")) {
+            # Completed strings and closing delimiters cannot be extended.
+            return(.completion_backward_result("no_completion"))
+        } else {
+            # Whitespace and other punctuation start an empty expression.
+            return(.completion_backward_result("candidate", text, end))
+        }
+    } else {
+        # Raw strings, comments, and unfinished special operators are infeasible.
         return(.completion_backward_result("infeasible"))
     }
 
-    # A closing delimiter or non-string space ends a completed value.
-    if (chars[n] %in% c(")", "]", "}")) {
-        return(.completion_backward_result("no_completion"))
-    }
-    if (
-        chars[n] %in% .backward_horizontal_whitespace &&
-        !(forward$state %in% QUOTED_STATES)
-    ) {
-        return(.completion_backward_result("no_completion"))
-    }
-
-    # A completed string is a value that cannot continue without an operator.
-    if (forward$state == LS_CODE) {
-        ending_region <- .completion_region_ending_at(forward$regions, n)
-        if (
-            !is.null(ending_region) &&
-            ending_region$state %in% c(QUOTED_STATES, LS_RAW_QUOTED)
-        ) {
-            return(.completion_backward_result("no_completion"))
+    # Identify the accessor preceding the partial child.
+    accessor <- NULL
+    accessor_start <- NULL
+    position <- child_start - 1L
+    if (position >= 1L) {
+        ch <- chars[position]
+        if (ch %in% c("$", "@")) {
+            accessor <- ch
+            accessor_start <- position
+        } else if (ch == ":") {
+            # Count the complete colon run before accepting `::` or `:::`.
+            colon_start <- position
+            while (colon_start > 1L && chars[colon_start - 1L] == ":") {
+                colon_start <- colon_start - 1L
+            }
+            colon_width <- position - colon_start + 1L
+            if (colon_width %in% c(2L, 3L)) {
+                accessor <- substr(text, colon_start, position)
+                accessor_start <- colon_start
+            }
+        } else if (ch == "[" && child_kind %in% c("empty", "string")) {
+            # Empty/string indices are child access; name/backtick indices are expressions.
+            if (position > 1L && chars[position - 1L] == "[") {
+                accessor <- "[["
+                accessor_start <- position - 1L
+            } else {
+                accessor <- "["
+                accessor_start <- position
+            }
         }
     }
 
-    # These regions (strings) are allowed as part of an accessor chain
+    # Without an accessor, return only the partial child.
+    if (is.null(accessor)) {
+        return(.completion_backward_result(
+            "candidate",
+            text,
+            child_start
+        ))
+    }
+
+    # Scan backward to find the start of the context expression.
     allowed_regions <- c(
         LS_SINGLE_QUOTED,
         LS_DOUBLE_QUOTED,
         LS_BACKTICK,
         LS_RAW_QUOTED
     )
-
-    # Keep track of closed brackets that need matching opening ones
     bracket_depth <- 0L
-
-    # Track whether the suffix is just an incomplete string
-    suffix_is_incomplete_string <- forward$state %in% c(
-        LS_SINGLE_QUOTED,
-        LS_DOUBLE_QUOTED
-    )
-
-    position <- n
+    position <- accessor_start - 1L
 
     while (position >= 1L) {
+        # Treat quoted regions as indivisible context tokens.
         region <- .completion_region_ending_at(forward$regions, position)
         if (!is.null(region)) {
             if (region$state %in% allowed_regions) {
-                is_current_incomplete_string <-
-                    suffix_is_incomplete_string &&
-                    region$state == forward$state &&
-                    region$end == end
-                if (!is_current_incomplete_string) {
-                    suffix_is_incomplete_string <- FALSE
-                }
                 position <- region$start - 1L
                 next
             }
-            # Stop at any unsupported lexical region.
             break
         }
 
+        # Handle ordinary code characters
         ch <- chars[position]
-        # Break on newlines outside quoted regions.
+
+        # Stop looking on line breaks
         if (ch %in% c("\n", "\r")) {
             break
         }
 
-        # Continue left through a name.
-        if (.completion_is_name_char(ch)) {
-            suffix_is_incomplete_string <- FALSE
-            position <- position - 1L
-            next
-        }
-        # Allow whitespace next to special operators, not between normal names
-        if (ch %in% .backward_horizontal_whitespace) {
-            # Consume the complete whitespace run before inspecting its edges.
-            whitespace_start <- position
-            while (
-                whitespace_start > 1L &&
-                chars[whitespace_start - 1L] %in%
-                    .backward_horizontal_whitespace
-            ) {
-                whitespace_start <- whitespace_start - 1L
-            }
-
-            # Whitespace between two name characters separates two tokens.
-            left <- whitespace_start - 1L
-            right <- position + 1L
-            if (
-                left >= 1L &&
-                right <= n &&
-                .completion_is_name_char(chars[left]) &&
-                .completion_is_name_char(chars[right])
-            ) {
-                break
-            }
-            position <- left
-            next
+        # Stop looking on horizontal whitespace unless it is inside an index expression
+        if (bracket_depth == 0L && ch %in% c(" ", "\t", "\f", "\v")) {
+            break
         }
 
-        # Check for accessors
-        if (ch %in% c("$", "@")) {
-            suffix_is_incomplete_string <- FALSE
+        # Keep scanning on name characters and accessors `$`, `@`
+        if (.completion_is_name_char(ch) || ch %in% c("$", "@")) {
             position <- position - 1L
             next
         }
 
-        # Count colons, only :: or ::: are allowed
+        # Allow complete namespace accessors inside the context.
+        # (in particular, break on a single `:`!)
         if (ch == ":") {
             colon_start <- position
             while (colon_start > 1L && chars[colon_start - 1L] == ":") {
                 colon_start <- colon_start - 1L
             }
             colon_width <- position - colon_start + 1L
-            # Only namespace accessors use colons here.
             if (!colon_width %in% c(2L, 3L)) {
                 break
             }
-            suffix_is_incomplete_string <- FALSE
             position <- colon_start - 1L
             next
         }
 
-        # Allow commas while scanning a completed indexing expression.
+        # Commas are valid only inside a balanced indexing expression.
         if (ch == "," && bracket_depth > 0L) {
             position <- position - 1L
             next
         }
-
-        # Track closing brackets and match them with opening ones.
         if (ch == "]") {
-            suffix_is_incomplete_string <- FALSE
             bracket_depth <- bracket_depth + 1L
             position <- position - 1L
             next
         }
         if (ch == "[") {
             if (bracket_depth == 0L) {
-                # An unmatched [ is useful only for an unfinished string
-                # accessor such as `x[["item`.
-                if (!suffix_is_incomplete_string) {
-                    opening_start <- if (
-                        position > 1L && chars[position - 1L] == "["
-                    ) {
-                        position - 1L
-                    } else {
-                        position
-                    }
-                    receiver_end <- opening_start - 1L
-                    while (
-                        receiver_end >= 1L &&
-                        chars[receiver_end] %in% .backward_horizontal_whitespace
-                    ) {
-                        receiver_end <- receiver_end - 1L
-                    }
-                    if (receiver_end < 1L) {
-                        return(.completion_backward_result("no_completion"))
-                    }
-                    break
-                }
-                position <- position - 1L
-                # Consume the second opening bracket of `[[`.
-                if (position >= 1L && chars[position] == "[") {
-                    position <- position - 1L
-                }
-                suffix_is_incomplete_string <- FALSE
-                next
+                break
             }
             bracket_depth <- bracket_depth - 1L
             position <- position - 1L
@@ -225,18 +211,22 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         break
     }
 
-    # Unmatched closing brackets do not form a feasible completion suffix.
+    # A missing opening bracket means the context is incomplete.
     if (bracket_depth > 0L) {
         return(.completion_backward_result("infeasible"))
     }
 
-    # Find first non-whitespace character in the suffix
-    candidate_start <- position + 1L
-    while (
-        candidate_start < end &&
-        chars[candidate_start] %in% .backward_horizontal_whitespace
-    ) {
-        candidate_start <- candidate_start + 1L
+    # Every accessor requires a context expression to its left.
+    context_start <- position + 1L
+    if (context_start == accessor_start) {
+        return(.completion_backward_result("infeasible"))
     }
-    .completion_backward_result("candidate", candidate_start)
+
+    .completion_backward_result(
+        "candidate",
+        text,
+        context_start,
+        accessor,
+        accessor_start
+    )
 }

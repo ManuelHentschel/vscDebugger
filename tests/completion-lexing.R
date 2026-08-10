@@ -86,6 +86,14 @@ format_status_value <- function(value) {
     as.character(value)
 }
 
+completion_suffix <- function(backward) {
+    paste0(
+        backward$context,
+        if (is.null(backward$accessor)) "" else backward$accessor,
+        backward$partial_child
+    )
+}
+
 visualize_lex_forward <- function(
     text,
     lexed = lex_forward(text),
@@ -109,13 +117,13 @@ visualize_lex_forward <- function(
         region_markers[positions] <- symbol
     }
 
-    if (
-        backward$status == "candidate" &&
-        backward$start <= length(chars)
-    ) {
-        positions <- seq.int(backward$start, length(chars))
-        positions <- positions[positions >= 1L & positions <= length(chars)]
-        context_markers[positions] <- "^"
+    if (backward$status == "candidate") {
+        candidate_start <- length(chars) - nchar(completion_suffix(backward)) + 1L
+        if (candidate_start <= length(chars)) {
+            positions <- seq.int(candidate_start, length(chars))
+            positions <- positions[positions >= 1L & positions <= length(chars)]
+            context_markers[positions] <- "^"
+        }
     }
 
     # Preserve tab alignment instead of replacing a tab with one marker.
@@ -170,10 +178,12 @@ print_lex_backward <- function(text, backward = lex_backward(text)) {
         return(invisible(backward))
     }
 
+    suffix <- completion_suffix(backward)
+    start <- nchar(text) - nchar(suffix) + 1L
     end <- nchar(text) + 1L
     cat(
-        "completion suffix: ", format_status_value(substring(text, backward$start)),
-        " [", backward$start, ", ", end, ")",
+        "completion suffix: ", format_status_value(suffix),
+        " [", start, ", ", end, ")",
         "\n",
         sep = ""
     )
@@ -188,6 +198,8 @@ examples <- list(
     "separated names ending in space" = "asdf qwer ",
     "else name ending in space" = "else qwer ",
     "member completion" = "x$a$b$fo",
+    "space before accessor" = "my_list $child_name",
+    "space after accessor" = "my_list$ child_name",
     "member completion ending in space" = "x$a$b$fo ",
     "accessor ending in space" = "x$a$b$ ",
     "namespace completion" = "pkg:::fu",
@@ -203,7 +215,8 @@ examples <- list(
     "unfinished single-quoted string" = "x <- 'single",
     "unfinished double-quoted string" = 'x <- "double',
     "unfinished quoted string ending in space" = 'x[["item ',
-    "unfinished quoted string ending in delimiter" = 'x[["item]',
+    "unfinished quoted string containing a closing bracket" = 'x[["item]',
+    "unfinished backtick containing a closing brace" = "x$`item}",
     "completed string" = 'x[["item"',
     "unfinished backtick name" = "x <- `backtick",
     "complete raw string" = 'r"---[contents]---" + (x)',
@@ -225,9 +238,16 @@ examples <- list(
     "unmatched call parenthesis" = "some_function(variable_na",
     "empty unmatched call parenthesis" = "some_function(",
     "bracket without receiver" = "[[foo",
+    "empty single-bracket accessor" = "my_list[",
+    "empty double-bracket accessor" = "my_list[[",
     "index expression" = "my_list[[foo",
     "completed call" = "get_object()",
     "completed closing brace" = "value}",
+    "fresh expression after whitespace" = "value ",
+    "fresh expression after comma" = "value,",
+    "fresh expression after semicolon" = "value;",
+    "fresh expression after opening parenthesis" = "some_function(",
+    "fresh expression after opening brace" = "if (TRUE) {",
     "fresh expression after operator" = "value +",
     "fresh expression after special operator" = "value %in%",
     "fresh expression after newline" = "value\n",
@@ -238,7 +258,8 @@ examples <- list(
     "incomplete %operator%" = "x %incomplete",
     "multidimensional index" = "array[a,b]$fo",
     "function call in index is rejected" = "array[f(a,b)]$fo",
-    "multidimensional index stops at comma" = 'matrix[, "co'
+    "multidimensional index stops at comma" = 'matrix[, "co',
+    "ellipses" = "99 + list(...)$"
 )
 
 for (name in names(examples)) {

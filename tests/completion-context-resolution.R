@@ -38,25 +38,26 @@ show_candidates <- function(
     on.exit(options(old_options))
     forward <- lex_forward(text)
     backward <- lex_backward(text, forward)
-    matches <- completion_main(
+    items <- completion_main(
         text,
         firstenv = firstenv,
         lastenv = lastenv,
         global_lastenv = global_lastenv
     )
+    labels <- vapply(items, `[[`, "", "label")
     cat("text:    ", dQuote(text), "\n", sep = "")
     cat("status:  ", backward$status, "\n", sep = "")
     cat(
         "matches: ",
-        if (length(matches)) {
-            paste(matches, collapse = ", ")
+        if (length(labels)) {
+            paste(labels, collapse = ", ")
         } else {
             "<none>"
         },
         "\n",
         sep = ""
     )
-    invisible(matches)
+    invisible(items)
 }
 
 try_resolve <- function(...) {

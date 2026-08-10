@@ -1,4 +1,5 @@
 source(file.path("R", "completion_lexing_forward.R"))
+source(file.path("R", "completion_lexing_backward.R"))
 source(file.path("R", "completion_context_parsing.R"))
 
 format_ast <- function(ast) {
@@ -6,20 +7,26 @@ format_ast <- function(ast) {
 }
 
 show_context_parsing <- function(text) {
-    split <- split_completion_context(text)
+    backward <- lex_backward(text)
     cat("text:          ", dQuote(text), "\n", sep = "")
-    cat("context:       ", dQuote(split$context), "\n", sep = "")
+    if (backward$status != "candidate") {
+        cat("status:        ", backward$status, "\n", sep = "")
+        return(invisible())
+    }
+
+    accessor <- backward$accessor
+    cat("context:       ", dQuote(backward$context), "\n", sep = "")
     cat(
         "accessor:      ",
-        if (is.null(split$accessor)) "<none>" else split$accessor,
+        if (is.null(accessor)) "<none>" else accessor,
         "\n",
         sep = ""
     )
-    cat("partial child: ", dQuote(split$partial_child), "\n", sep = "")
+    cat("partial child: ", dQuote(backward$partial_child), "\n", sep = "")
 
-    if (!is.null(split$accessor)) {
+    if (!is.null(accessor)) {
         parsed <- tryCatch(
-            parse_completion_context(split$context),
+            parse_completion_context(backward$context),
             error = identity
         )
         if (!inherits(parsed, "error")) {
@@ -45,8 +52,11 @@ examples <- list(
     "nested dollar normalization" = "my_list$child$al",
     "at accessor" = "my_object@slo",
     "quoted double bracket" = 'my_list[["chi',
+    "backtick index expression" = "my_list[[`mea",
+    "nested incomplete index" = "my_list[[index_list$na",
     "quoted accessor character is ignored" = 'my_list[["a$b"]]$chi',
     "namespace accessor" = "stats::l",
+    "triple namespace accessor" = "stats:::l",
     "nested indices" = "my_list[indices[1], indices[2]]$chi",
     "parenthesized context is rejected" = "(my_list)$chi",
     "function call is rejected" = "get_object()$chi",
