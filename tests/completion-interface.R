@@ -19,7 +19,9 @@ firstenv$my_list <- list(
     child = 1L,
     'a"b' = 2L,
     "a b" = 3L,
-    "my item" = 4L
+    "aaa" = 4L,
+    "aab" = 5L,
+    "my item" = 6L
 )
 firstenv$mean_global <- 4L
 firstenv$x <- 99
@@ -88,6 +90,10 @@ show_items(
     'my_list[["my',
     ' item"]]'
 )
+
+cat("\nDebug from UI\n")
+show_items("ex1", "my_list[[\"a")
+show_items("ex2", "my_list[[\"a", "\"")
 
 cat("\nempty index expressions\n")
 stopifnot(!length(show_items("bracket without a receiver", "[")))

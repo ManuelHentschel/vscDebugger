@@ -134,8 +134,9 @@ completion_candidates <- function(
         list(
             label = child_name,
             text = trimmed_text,
-            type = item_type,
-            start = replacement_start,
+            # DAP says 1-based, but vscode interprets 0-based for `start`
+            # (Temporary?) fix by converting to 0-based
+            start = replacement_start - 1L,
             length = replacement_length
         )
     })
