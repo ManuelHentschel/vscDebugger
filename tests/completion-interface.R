@@ -12,6 +12,7 @@ source(file.path("R", "completion.R"))
 # Keep these examples independent of the installed package and browser stack.
 isPromise <- function(name, environment) FALSE
 isCalledFromBrowser <- function() FALSE
+logCat <- function(...) invisible()
 
 firstenv <- new.env(parent = emptyenv())
 firstenv$my_list <- list(
@@ -128,9 +129,9 @@ cat(
 print_items(items)
 stopifnot(
     items[[1L]]$label == "child",
-    items[[1L]]$text == "child",
-    items[[1L]]$start == 18L,
-    items[[1L]]$length == 2L
+    items[[1L]]$text == '"child',
+    items[[1L]]$start == 17L,
+    items[[1L]]$length == 3L
 )
 
 # UTF-16 cursor positions must not split a surrogate pair.
@@ -147,28 +148,36 @@ stopifnot(items[[1L]]$text == "mea")
 items <- .vsc.getCompletionNew(0L, "my_list$child", 11L, 1L)
 stopifnot(items[[1L]]$text == "ch")
 
-# Reject candidates that match only part of the name fragment on the right.
+# Reuse safe overlaps and keep the full text for other candidates.
 items <- .vsc.getCompletionNew(
     0L,
     "overlap_list$child",
     nchar("overlap_list$ch") + 1L,
     1L
 )
-stopifnot(identical(vapply(items, `[[`, "", "label"), "child"))
+labels <- vapply(items, `[[`, "", "label")
+stopifnot(
+    identical(labels, c("child", "chili")),
+    items[[which(labels == "child")]]$text == "ch",
+    items[[which(labels == "chili")]]$text == "chili"
+)
 
-# DAP treats an empty insertion as the label, so omit complete overlaps.
+# DAP treats an empty insertion as the label, so omit only the exact overlap.
 items <- .vsc.getCompletionNew(
     0L,
     "overlap_list$child",
     nchar("overlap_list$") + 1L,
     1L
 )
-stopifnot(!length(items))
+stopifnot(
+    identical(vapply(items, `[[`, "", "label"), "chili"),
+    items[[1L]]$text == "chili"
+)
 
 items <- .vsc.getCompletionNew(0L, 'my_list[["child"]]', 13L, 1L)
-stopifnot(items[[1L]]$text == "ch")
+stopifnot(items[[1L]]$text == '"ch')
 
 # Do not reuse spaces or other expression separators on the right.
 items <- .vsc.getCompletionNew(0L, 'my_list[["my item"]]', 13L, 1L)
 item <- items[[which(vapply(items, `[[`, "", "label") == "my item")]]
-stopifnot(item$text == 'my item"')
+stopifnot(item$text == '"my item"')

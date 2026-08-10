@@ -1,19 +1,13 @@
-# Keep only identifier-like text and closing syntax to the right.
+# Keep only text before the first whitespace to the right.
 .completion_available_right_text <- function(text_after_cursor) {
-    closing_delimiters <- c("'", "\"", "`", ")", "]", "}")
-    for (i in seq_len(nchar(text_after_cursor))) {
-        ch <- substr(text_after_cursor, i, i)
-        if (
-            !grepl("^[[:alnum:]_.]$", ch) &&
-            !ch %in% closing_delimiters
-        ) {
-            return(substr(text_after_cursor, 1L, i - 1L))
-        }
+    whitespace <- regexpr("[[:space:]]", text_after_cursor)
+    if (whitespace == -1L) {
+        return(text_after_cursor)
     }
-    text_after_cursor
+    substr(text_after_cursor, 1L, whitespace - 1L)
 }
 
-# Reuse the right fragment, or reject a candidate that cannot preserve it.
+# Reuse a matching right-hand suffix when the full name fragment matches.
 .completion_trim_right_overlap <- function(insertion, available_right_text) {
     max_overlap <- min(nchar(insertion), nchar(available_right_text))
     if (max_overlap == 0L) {
@@ -34,37 +28,31 @@
         }
     }
 
-    # A completion must account for the entire name fragment to the right.
+    # Reuse only complete name fragments; otherwise insert the full text.
     right_name <- sub("[^[:alnum:]_.].*$", "", available_right_text)
-    if (
-        matched_overlap < nchar(right_name) ||
-        matched_overlap == nchar(insertion)
-    ) {
-        return(NULL)
+    if (matched_overlap < nchar(right_name)) {
+        return(insertion)
     }
     substr(insertion, 1L, nchar(insertion) - matched_overlap)
 }
 
-# Spell a candidate as valid R code while preserving an existing quote.
+# Spell a candidate as valid R code using the partial child's quote style.
 .completion_candidate_text <- function(
     child_name,
     accessor,
-    quote,
-    available_right_text
+    quote
 ) {
     if (!is.null(quote)) {
-        insertion <- substring(encodeString(child_name, quote = quote), 2L)
+        return(encodeString(child_name, quote = quote))
     } else if (!is.null(accessor) && accessor %in% c("[", "[[")) {
-        insertion <- encodeString(child_name, quote = "\"")
+        return(encodeString(child_name, quote = "\""))
     } else if (make.names(child_name) == child_name) {
-        insertion <- child_name
-    } else {
-        insertion <- encodeString(child_name, quote = "`")
+        return(child_name)
     }
-    .completion_trim_right_overlap(insertion, available_right_text)
+    encodeString(child_name, quote = "`")
 }
 
-# Generates DAP completion items from an already resolved context.
+# Generate DAP completion items from an already resolved context.
 completion_candidates <- function(
     context,
     accessor,
@@ -130,22 +118,22 @@ completion_candidates <- function(
         "property"
     }
 
+    # Consider right-hand text up to first whitespace
     available_right_text <- .completion_available_right_text(text_after_cursor)
 
-    # Build DAP items, omitting candidates that cannot reuse the right fragment.
+    # Build DAP items, omitting only exact no-op overlaps.
     items <- lapply(child_names, function(child_name) {
-        text <- .completion_candidate_text(
-            child_name,
-            accessor,
-            quote,
+        escaped_text <- .completion_candidate_text(child_name, accessor, quote)
+        trimmed_text <- .completion_trim_right_overlap(
+            escaped_text,
             available_right_text
         )
-        if (is.null(text)) {
+        if (nchar(trimmed_text) == 0L) {
             return(NULL)
         }
         list(
             label = child_name,
-            text = text,
+            text = trimmed_text,
             type = item_type,
             start = replacement_start,
             length = replacement_length

@@ -23,6 +23,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Manuel Hentschel \email{Manuel.Hentschel@outlook.com}
 
+Authors:
+\itemize{
+  \item Manuel Hentschel \email{Manuel.Hentschel@outlook.com}
+}
+
 Other contributors:
 \itemize{
   \item Kun Ren \email{mail@renkun.me} [contributor]
