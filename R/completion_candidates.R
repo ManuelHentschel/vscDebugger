@@ -173,21 +173,24 @@
 
 # Generate candidates for language wide constants
 .completion_constant_candidates <- function(partial_name){
-  constants <- c(
-    "TRUE", "FALSE", "NULL", "NA", "NA_integer_", "NA_real_",
-    "NA_complex_", "NA_character_", "Inf", "NaN"
-  )
-  items <- .completion_candidates_from_names(
-    constants,
+  constant_items <- .completion_candidates_from_names(
+    c(
+      "TRUE", "FALSE", "NULL", "NA", "NA_integer_", "NA_real_",
+      "NA_complex_", "NA_character_", "Inf", "NaN"
+    ),
     "constant",
     partial_name
   )
+  keyword_items <- .completion_candidates_from_names(
+    c("if", "else", "repeat", "while", "function", "for", "in", "next", "break"),
+    "keyword",
+    partial_name
+  )
   # Mark them as constants so they don't get escaped with backticks
-  items <- lapply(items, function(item){
+  lapply(c(constant_items, keyword_items), function(item){
     item$is_constant <- TRUE
     item
   })
-  return(items)
 }
 
 # Generate DAP completion items from an already resolved context.
