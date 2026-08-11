@@ -1,3 +1,4 @@
+
 # Keep only text before the first whitespace to the right.
 .completion_available_right_text <- function(text_after_cursor) {
     whitespace <- regexpr("[[:space:]]", text_after_cursor)
@@ -42,6 +43,21 @@
     accessor,
     quote
 ) {
+    if (identical(accessor, "(")) {
+        name_text <- if (make.names(child_name) == child_name) {
+            child_name
+        } else {
+            encodeString(child_name, quote = "`")
+        }
+        equals <- if (child_name == "...") {
+            ""
+        } else if (isTRUE(getOption("vsc.completionsFunctionArgumentSpaces", FALSE))) {
+            " = "
+        } else {
+            "="
+        }
+        return(paste0(name_text, equals))
+    }
     if (!is.null(quote)) {
         return(encodeString(child_name, quote = quote))
     } else if (!is.null(accessor) && accessor %in% c("[", "[[")) {
@@ -52,38 +68,49 @@
     encodeString(child_name, quote = "`")
 }
 
+# Build one typed candidate without bypassing the resolver's binding guards.
+.completion_candidate_from_binding <- function(
+    name,
+    environment,
+    is_namespace
+) {
+    candidate <- list(name = name)
+    value <- tryCatch(
+        list(value = .completion_read_binding(
+            name,
+            environment,
+            is_namespace
+        )),
+        error = function(error) NULL
+    )
+    if (is.null(value)) {
+        candidate$type <- "event"
+    } else if (is.function(value$value)) {
+        candidate$type <- "function"
+    } else {
+        candidate$type <- "variable"
+    }
+    candidate
+}
+
 # Build typed candidates from bindings in one environment.
 .completion_environment_candidates <- function(
     environment,
     names = NULL,
     partial_name = "",
-    maybe_force_promises = FALSE
+    is_namespace = FALSE
 ) {
     if (is.null(names)) {
         names <- ls(environment, all.names = TRUE, sorted = FALSE)
     }
     names <- as.character(names)
     names <- names[!is.na(names) & startsWith(names, partial_name)]
-    force_promises <- (
-        maybe_force_promises
-        && isTRUE(getOption("vsc.completionsForceNamespacePromises", TRUE))
+    lapply(
+        names,
+        .completion_candidate_from_binding,
+        environment = environment,
+        is_namespace = is_namespace
     )
-
-    lapply(names, function(name) {
-        candidate <- list(name = name)
-
-        # Do not force active bindings or ordinary promises just to choose an icon.
-        if (bindingIsActive(name, environment)) {
-            candidate$type <- "event"
-        } else if (!force_promises && isPromise(name, environment)) {
-            candidate$type <- "event"
-        } else if (is.function(get(name, envir = environment))) {
-            candidate$type <- "function"
-        } else {
-            candidate$type <- "variable"
-        }
-        candidate
-    })
 }
 
 # Build uniform candidates from known names.
@@ -115,14 +142,26 @@
     )
 }
 
+# Generate candidates from the formal arguments of a function.
+.completion_function_argument_candidates <- function(function_, partial_name) {
+    .completion_candidates_from_names(
+        names(formals(function_)),
+        "property",
+        partial_name
+    )
+}
+
 # Generate candidates from attached search-path environments.
 .completion_search_path_candidates <- function(partial_name) {
-    search_path <- setdiff(search(), ".GlobalEnv")
-    candidates <- lapply(search_path, function(entry) {
+    namespace_environments <- lapply(
+        setdiff(search(), ".GlobalEnv"),
+        as.environment
+    )
+    candidates <- lapply(namespace_environments, function(environment) {
         .completion_environment_candidates(
-            as.environment(entry),
+            environment,
             partial_name = partial_name,
-            maybe_force_promises = startsWith(entry, "package:")
+            is_namespace = TRUE
         )
     })
     unlist(candidates, recursive = FALSE, use.names = FALSE)
@@ -157,8 +196,9 @@ completion_candidates <- function(
             context,
             getNamespaceExports(context),
             partial_name = partial_name,
-            maybe_force_promises = TRUE
+            is_namespace = TRUE
         )
+        # Add lazy data (accessible through `::`, but not in namespace)
         candidates <- c(
             candidates,
             .completion_lazy_data_candidates(context, partial_name)
@@ -167,7 +207,12 @@ completion_candidates <- function(
         candidates <- .completion_environment_candidates(
             context,
             partial_name = partial_name,
-            maybe_force_promises = TRUE
+            is_namespace = TRUE
+        )
+    } else if (accessor == "(" && is.function(context)) {
+        candidates <- .completion_function_argument_candidates(
+            context,
+            partial_name
         )
     } else if (is.environment(context)) {
         if (accessor == "[") {

@@ -11,14 +11,10 @@
     NULL
 }
 
-.completion_is_name_char <- function(ch) {
-    grepl("^[[:alnum:]_.]$", ch)
-}
-
 # Returns a list with the following elements:
 # - status: one of "candidate", "no_completion", or "infeasible"
 # - context: the text of the context expression
-# - accessor: the accessor character
+# - accessor: the accessor token
 # - partial_child: the text of the child expression
 # - reason: an optional explanation when status is "infeasible"
 # Context, accessor, and partial_child are present only for candidates.
@@ -81,7 +77,7 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                 child_start <- child_start - 1L
             }
             child_kind <- "name"
-        } else if (ch %in% c("$", "@", ":", "[")) {
+        } else if (ch %in% c("$", "@", ":", "[", "(")) {
             # If we are on an accessor, the child is empty.
             child_start <- end
             child_kind <- "empty"
@@ -129,6 +125,10 @@ lex_backward <- function(text, forward = lex_forward(text)) {
                 accessor <- "["
                 accessor_start <- position
             }
+        } else if (ch == "(" && child_kind %in% c("empty", "name")) {
+            # An immediate call can complete its first argument name.
+            accessor <- ch
+            accessor_start <- position
         }
     }
 
@@ -227,9 +227,18 @@ lex_backward <- function(text, forward = lex_forward(text)) {
         ))
     }
 
-    # Every accessor requires a context expression to its left.
+    # Check for an empty context expression
     context_start <- position + 1L
     if (context_start == accessor_start) {
+        if (accessor == "(") {
+            # A bare `(` starts an empty expression rather than a call context.
+            return(.completion_backward_result(
+                "candidate",
+                text,
+                child_start
+            ))
+        }
+        # All other accessors require a context
         return(.completion_backward_result(
             "infeasible",
             reason = "The accessor has no context expression"

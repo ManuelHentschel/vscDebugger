@@ -135,7 +135,8 @@ If no values are set, the defaults listed below are used.
 * `"vsc.arrayDimOrder" = c(3,1,2)`: The order in which the dimensions of an array are shown in the variables view. Can also be a list of numeric vectors.
 * `"vsc.assignToAns" = TRUE`: Whether to assign the result of the last evaluation from the debug console to `.GlobalEnv$.ans`
 * `"vsc.completionsLoadNamespaces" = TRUE`: Whether completion may load an otherwise unloaded package namespace
-* `"vsc.completionsForceNamespacePromises" = TRUE`: Whether completion may force promises in package environments/namespaces, in particular lazy-loaded objects
+* `"vsc.completionsForceNamespacePromises" = TRUE`: Whether completion may force promises in search-path environments and namespaces, in particular lazy-loaded objects
+* `"vsc.completionsFunctionArgumentSpaces" = FALSE`: Whether function-argument completion inserts `name = ` rather than `name=`
 * `"vsc.convertFactorEntries" = FALSE`: Whether to convert the individual entries of factors to strings when shown in the variables view
 * `"vsc.dataFrameDimOrder" = NULL`: Same as `vsc.arrayDimOrder` for data frames. Defaults to `vsc.arrayDimOrder`.
 * `"vsc.defaultAllowGlobalDebugging" = TRUE`: Default value for the launch config entry `allowGlobalDebugging`

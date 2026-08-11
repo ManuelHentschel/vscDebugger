@@ -21,18 +21,20 @@ QUOTED_STATES <- c(LS_SINGLE_QUOTED, LS_DOUBLE_QUOTED, LS_BACKTICK)
     .raw_opening_delimiters
 )
 
+.completion_is_name_char <- function(ch) {
+    grepl("^[[:alnum:]_.]$", ch)
+}
+
 lex_forward <- function(text) {
+    # Split text into chars to iterate over
     chars <- strsplit(text, "", fixed = TRUE)[[1L]]
     n <- length(chars)
 
     # Opaque regions include strings, comments, and complete special operators.
-    # Their characters must not be reinterpreted by the rest of this scanner.
-    #
+    # Their characters are not reinterpreted by the rest of this scanner.
     # Positions are 1-based and half-open: [start, end).
-    # For an unfinished region extending to the cursor,
-    # end == n + 1.
+    # For an unfinished region extending to the cursor, end == n + 1.
     regions <- list()
-
     add_region <- function(state, start, end) {
         regions[[length(regions) + 1L]] <<- list(
             state = state,
@@ -41,6 +43,7 @@ lex_forward <- function(text) {
         )
     }
 
+    # Initial lexical state
     state <- LS_CODE
     state_start <- NA_integer_
 
@@ -48,7 +51,6 @@ lex_forward <- function(text) {
     raw_quote <- NA_character_
     raw_dash_count <- 0L
     raw_close <- NA_character_
-
     reset_raw <- function() {
         raw_quote <<- NA_character_
         raw_dash_count <<- 0L
@@ -60,12 +62,10 @@ lex_forward <- function(text) {
     while (i <= n) {
         ch <- chars[i]
 
-        # Ordinary quoted strings / backtick names
-        quote <- .quote_by_state[[as.character(state)]]
-        if (!is.null(quote)) {
-            # A backslash escapes the following character for the purpose of
-            # finding the end of this quoted region. We don't need to
-            # interpret the escape itself.
+        # Inside a quoted string/name ("'`)
+        if(state %in% QUOTED_STATES){
+            quote <- .quote_by_state[[as.character(state)]]
+            # Consume escape sequences
             if (ch == "\\") {
                 if (i < n) {
                     i <- i + 2L
@@ -75,6 +75,7 @@ lex_forward <- function(text) {
                 next
             }
 
+            # Handle closing quote
             if (ch == quote) {
                 add_region(
                     state,
@@ -92,12 +93,12 @@ lex_forward <- function(text) {
         # Inside an incomplete but so-far valid raw-string prefix
         # (r"|, r"-|, r"---|, etc.)
         if (state == LS_RAW_PREFIX) {
+            # Only dashes and opening delimiters are valid here
             if (ch == "-") {
                 raw_dash_count <- raw_dash_count + 1L
                 i <- i + 1L
                 next
             }
-
             if (ch %in% .raw_opening_delimiters) {
                 raw_close <- .raw_opening_to_closing_delimiters[[ch]]
                 state <- LS_RAW_QUOTED
@@ -107,28 +108,15 @@ lex_forward <- function(text) {
                 next
             }
 
-            # Once r" / r' has been recognized, do not reinterpret its quote
-            # as the beginning of an ordinary string. This is instead a
-            # malformed raw-string prefix.
-            #
-            # For completion-oriented error recovery, an invalid raw prefix
-            # is considered opaque until the next newline.
+            # r" is not followed by a valid opening delimiter -> invalid state
             state <- LS_RAW_INVALID
-            # Do not advance yet: process this same character as part of the
-            # invalid region.
             next
         }
 
         # Valid raw-string contents
         if (state == LS_RAW_QUOTED) {
+            # Check for closing delimiter
             if (ch == raw_close) {
-                # Required terminator:
-                #
-                #   closing delimiter
-                #   same number of dashes as the prefix
-                #   original quote character
-                #
-                # e.g. )---"
                 quote_pos <- i + raw_dash_count + 1L
                 if (quote_pos <= n) {
                     dashes_match <- TRUE
@@ -168,13 +156,9 @@ lex_forward <- function(text) {
         }
 
         # Malformed raw-string prefix
+        # Consider the rest of the line as invalid, then reset to code
         if (state == LS_RAW_INVALID) {
             if (ch %in% c("\n", "\r")) {
-                # Completion-oriented recovery: consider the malformed raw
-                # literal finished at the end of this line.
-                #
-                # The newline itself remains code/whitespace rather than
-                # belonging to the invalid region.
                 add_region(
                     LS_RAW_INVALID,
                     state_start,
@@ -184,17 +168,13 @@ lex_forward <- function(text) {
                 state_start <- NA_integer_
                 reset_raw()
             }
-
             i <- i + 1L
             next
         }
 
-        # Special infix operators
-        #
-        # Between two percent signs, R permits any printable character except
-        # another percent sign. In particular, #, quotes, backslashes and
-        # brackets have no special meaning here. Escape sequences do not
-        # apply. A newline cannot occur inside the operator token.
+        # Special infix %operators%
+        # Anything (but linebreaks) between two percent signs is allowed
+        # We recover to code state on unexpected linebreaks
         if (state == LS_SPECIAL_OPERATOR) {
             if (ch == "%") {
                 add_region(
@@ -238,6 +218,7 @@ lex_forward <- function(text) {
         }
 
         # Code
+        # (Should only throw if new states are introduced and not handled above.)
         stopifnot(state == LS_CODE)
 
         # Special infix operator. Its first following percent sign terminates
@@ -259,31 +240,20 @@ lex_forward <- function(text) {
         }
 
         # Potential raw-string prefix.
-        #
-        # Avoid recognizing the r/R in an ordinary identifier such as:
-        #
-        #   foobar"...
-        #
-        # This isn't intended to be a complete R identifier lexer; it just
-        # prevents the common identifier case from being mistaken for a raw
-        # string.
         if (
             ch %in% c("r", "R") &&
             i < n
         ) {
-            previous_is_name_char <-
-                i > 1L &&
-                grepl(
-                    "^[[:alnum:]_.]$",
-                    chars[i - 1L]
-                )
+            # Avoid recognizing the r/R in an ordinary identifier (e.g. foobar")
+            previous_is_name_char <- (
+                i > 1L
+                .completion_is_name_char(chars[i - 1L])
+            )
 
             next_ch <- chars[i + 1L]
+            next_is_quote <- next_ch %in% c("\"", "'")
 
-            if (
-                !previous_is_name_char &&
-                next_ch %in% c("\"", "'")
-            ) {
+            if (!previous_is_name_char && next_is_quote) {
                 state <- LS_RAW_PREFIX
                 state_start <- i
                 raw_quote <- next_ch

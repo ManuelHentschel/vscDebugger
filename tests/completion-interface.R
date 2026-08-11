@@ -25,6 +25,7 @@ firstenv$mean_global <- 4L
 firstenv$x <- 99
 firstenv$unnamed <- unname(list(1L, 2L))
 firstenv$overlap_list <- list(child = 1L, chili = 2L)
+firstenv$my_function <- function(alpha, beta = 1L, ...) NULL
 
 format_source <- function(text) {
     encodeString(text, quote = "\"")
@@ -111,6 +112,22 @@ stopifnot("mean_global" %in% vapply(items, `[[`, "", "label"))
 
 items <- show_items("nonempty index stays an expression", "my_list[[mea")
 stopifnot("mean_global" %in% vapply(items, `[[`, "", "label"))
+
+cat("\nfunction arguments\n")
+items <- show_items("empty first argument", "my_function(")
+labels <- vapply(items, `[[`, "", "label")
+stopifnot(identical(labels, c("alpha=", "beta=", "...")))
+
+items <- show_items("partial first argument", "my_function(be")
+stopifnot(identical(vapply(items, `[[`, "", "label"), "beta="))
+
+items <- show_items("attached-package function", "install.packages(")
+stopifnot("pkgs=" %in% vapply(items, `[[`, "", "label"))
+
+old_options <- options(vsc.completionsFunctionArgumentSpaces = TRUE)
+items <- show_items("spaced argument insertion", "my_function(al")
+options(old_options)
+stopifnot(items[[1L]]$text == "alpha = ")
 
 cat("\nrequest cursor handling\n")
 my_list <- firstenv$my_list
