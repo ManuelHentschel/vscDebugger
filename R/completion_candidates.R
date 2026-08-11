@@ -66,7 +66,7 @@
     names <- names[!is.na(names) & startsWith(names, partial_name)]
     force_promises <- (
         maybe_force_promises
-        && isTRUE(getOption("vsc.completionsForceNamespacePromises", FALSE))
+        && isTRUE(getOption("vsc.completionsForceNamespacePromises", TRUE))
     )
 
     lapply(names, function(name) {

@@ -5,8 +5,6 @@ source(file.path("R", "stackTreeHelpers.R"))
 source(file.path("R", "completion_context_resolution.R"))
 source(file.path("R", "completion_candidates.R"))
 source(file.path("R", "completion_main.R"))
-source(file.path("R", "completion_legacy.R"))
-source(file.path("R", "completion_utils.R"))
 source(file.path("R", "completion.R"))
 
 # Keep these examples independent of the installed package and browser stack.

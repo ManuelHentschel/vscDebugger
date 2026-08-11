@@ -117,7 +117,7 @@
             child_environment <- lazy_data
         }
 
-        force_promises <- isTRUE(getOption("vsc.completionsForceNamespacePromises", FALSE))
+        force_promises <- isTRUE(getOption("vsc.completionsForceNamespacePromises", TRUE))
 
         return(.completion_lookup_binding(
             child,
@@ -195,7 +195,7 @@
         ))
     }
     if (!isNamespaceLoaded(package)) {
-        if (!isTRUE(getOption("vsc.completionsLoadNamespaces", FALSE))) {
+        if (!isTRUE(getOption("vsc.completionsLoadNamespaces", TRUE))) {
             return(.completion_resolution_result(
                 "infeasible",
                 reason = paste0("Namespace is not loaded: ", package)

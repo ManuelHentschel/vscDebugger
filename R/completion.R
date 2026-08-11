@@ -5,25 +5,9 @@ completionsRequest <- function(response, args, request) {
   column <- lget(args, 'column', 0)
   line <- lget(args, 'line', 1)
 
-  # Collect items from the enabled completion providers.
+  # Run the new completion pipeline when enabled.
   targets <- list()
-  if(getOption('vsc.completionsNew', TRUE)){
-    # use the staged completion pipeline
-    targets <- c(targets, .vsc.getCompletionNew(frameIdVsc, text, column, line))
-  }
-  if(getOption('vsc.completionsFromVscDebugger', FALSE)){
-    # use the legacy vscDebugger completion pipeline
-    targets <- c(targets, .vsc.getCompletion(frameIdVsc, text, column, line))
-  }
-  if(getOption('vsc.completionsFromUtils', FALSE)){
-    # use the completion tools from package utils
-    targets <- c(targets, getCompletionsFromUtils(text, column, line))
-  }
-
-  # Keep the first item so the new pipeline retains its edit metadata.
-  labels <- sapply(targets, function(target) target$label)
-  uniqueInd <- !duplicated(labels)
-  targets <- targets[uniqueInd]
+  targets <- c(targets, .vsc.getCompletionNew(frameIdVsc, text, column, line))
 
   response$body <- list(
     targets = targets
