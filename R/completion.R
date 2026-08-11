@@ -172,6 +172,28 @@
   )
 }
 
+.items_to_data_frame <- function(items) {
+  if (!length(items)) {
+    return(data.frame())
+  }
+
+  prototype <- items[[1L]]
+  columns <- lapply(names(prototype), function(name) {
+    vapply(
+      items,
+      function(item) item[[name]],
+      FUN.VALUE = prototype[[name]]
+    )
+  })
+  names(columns) <- names(prototype)
+
+  data.frame(
+    columns,
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+}
+
 # Handle a DAP completions request.
 completionsRequest <- function(response, args, request) {
   frame_id <- lget(args, "frameId", 0)
@@ -179,8 +201,14 @@ completionsRequest <- function(response, args, request) {
   column <- lget(args, "column", 0)
   line <- lget(args, "line", 1)
 
+  items <- .completion_items_for_request(frame_id, text, column, line)
+
+  # JSON serialization for data frames is way faster with jsonlite!
+  # Relevant for top-level completions with thousands of items!
+  items_df <- .items_to_data_frame(items)
+
   response$body <- list(
-    targets = .completion_items_for_request(frame_id, text, column, line)
+    targets = items_df
   )
   sendResponse(response)
 }

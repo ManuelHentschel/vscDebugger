@@ -295,8 +295,5 @@ completion_candidates <- function(
     items <- Filter(Negate(is.null), items)
 
     # Keep each fully constructed DAP item only once.
-    item_keys <- vapply(items, function(item) {
-        paste(unlist(item, use.names = FALSE), collapse = "\r")
-    }, "")
-    items[!duplicated(item_keys)]
+    items[!duplicated(items)]
 }
