@@ -55,10 +55,9 @@ print_items <- function(items) {
 show_items <- function(description, text, text_after_cursor = "") {
     items <- completion_main(
         text,
-        firstenv,
-        firstenv,
-        firstenv,
-        text_after_cursor
+        firstenv = firstenv,
+        lastenv = firstenv,
+        text_after_cursor = text_after_cursor
     )
     cat("\n", description, "\n", sep = "")
     cat(
@@ -101,12 +100,12 @@ stopifnot(!length(show_items("double bracket without a receiver", "[[")))
 
 items <- show_items("named single-bracket index", "my_list[")
 labels <- vapply(items, `[[`, "", "label")
-child <- items[[which(labels == "child")]]
+child <- items[[which(labels == '"child"')]]
 stopifnot(child$text == '"child"')
 stopifnot(!"mean_global" %in% labels)
 
 items <- show_items("named double-bracket index", "my_list[[")
-child <- items[[which(vapply(items, `[[`, "", "label") == "child")]]
+child <- items[[which(vapply(items, `[[`, "", "label") == '"child"')]]
 stopifnot(child$text == '"child"')
 
 items <- show_items("unnamed index starts a new expression", "unnamed[")
@@ -134,7 +133,7 @@ cat(
 )
 print_items(items)
 stopifnot(
-    items[[1L]]$label == "child",
+    items[[1L]]$label == '"child"',
     items[[1L]]$text == '"child',
     items[[1L]]$start == 16L,
     items[[1L]]$length == 3L
@@ -185,5 +184,5 @@ stopifnot(items[[1L]]$text == '"ch')
 
 # Do not reuse spaces or other expression separators on the right.
 items <- .vsc.getCompletionNew(0L, 'my_list[["my item"]]', 13L, 1L)
-item <- items[[which(vapply(items, `[[`, "", "label") == "my item")]]
+item <- items[[which(vapply(items, `[[`, "", "label") == '"my item"')]]
 stopifnot(item$text == '"my item"')

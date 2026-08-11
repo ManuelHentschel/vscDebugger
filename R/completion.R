@@ -107,7 +107,6 @@ completionsRequest <- function(response, args, request) {
     cursor$text,
     firstenv = firstenv,
     lastenv = globalenv(),
-    global_lastenv = emptyenv(),
     text_after_cursor = cursor$text_after_cursor
   )
 }

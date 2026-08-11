@@ -56,20 +56,26 @@
 .completion_environment_candidates <- function(
     environment,
     names = NULL,
-    compute_types = TRUE
+    partial_name = "",
+    maybe_force_promises = FALSE
 ) {
     if (is.null(names)) {
         names <- ls(environment, all.names = TRUE, sorted = FALSE)
     }
+    names <- as.character(names)
+    names <- names[!is.na(names) & startsWith(names, partial_name)]
+    force_promises <- (
+        maybe_force_promises
+        && isTRUE(getOption("vsc.completionsForceNamespacePromises", FALSE))
+    )
 
     lapply(names, function(name) {
         candidate <- list(name = name)
-        if (!compute_types) {
-            return(candidate)
-        }
 
-        # Do not force promises or active bindings just to choose an icon.
-        if (bindingIsActive(name, environment) || isPromise(name, environment)) {
+        # Do not force active bindings or ordinary promises just to choose an icon.
+        if (bindingIsActive(name, environment)) {
+            candidate$type <- "event"
+        } else if (!force_promises && isPromise(name, environment)) {
             candidate$type <- "event"
         } else if (is.function(get(name, envir = environment))) {
             candidate$type <- "function"
@@ -83,22 +89,43 @@
 # Build uniform candidates from known names.
 .completion_candidates_from_names <- function(
     names,
-    type = 'variable'
+    type = "variable",
+    partial_name = ""
 ) {
+    names <- as.character(names)
+    names <- names[!is.na(names) & startsWith(names, partial_name)]
     lapply(names, function(name) {
         list(name = name, type = type)
     })
 }
 
-# Generate items for installed packages
-.completion_generate_namespace_candidates <- function() {
+# Generate module candidates for installed package namespaces.
+.completion_namespace_candidates <- function(partial_name) {
     pkgs <- .packages(all.available = TRUE)
-    lapply(pkgs, function(pkg) {
-        list(
-            name = pkg,
-            type = "module"
+    .completion_candidates_from_names(pkgs, "module", partial_name)
+}
+
+# Generate candidates from a namespace's lazy-loaded datasets.
+.completion_lazy_data_candidates <- function(namespace, partial_name) {
+    lazy_data <- getNamespaceInfo(namespace, "lazydata")
+    .completion_candidates_from_names(
+        ls(lazy_data, all.names = TRUE, sorted = FALSE),
+        "variable",
+        partial_name
+    )
+}
+
+# Generate candidates from attached search-path environments.
+.completion_search_path_candidates <- function(partial_name) {
+    search_path <- setdiff(search(), ".GlobalEnv")
+    candidates <- lapply(search_path, function(entry) {
+        .completion_environment_candidates(
+            as.environment(entry),
+            partial_name = partial_name,
+            maybe_force_promises = startsWith(entry, "package:")
         )
     })
+    unlist(candidates, recursive = FALSE, use.names = FALSE)
 }
 
 # Generate DAP completion items from an already resolved context.
@@ -109,29 +136,38 @@ completion_candidates <- function(
     quote,
     replacement_start,
     replacement_length,
-    text_after_cursor,
-    compute_types = TRUE
+    text_after_cursor
 ) {
     candidates <- NULL
 
     if (is.null(accessor)) {
-        # Top-level expression, context is list of available environments.
+        # Top-level expressions use frame/global bindings and the search path.
         candidates <- unlist(lapply(
             context,
             .completion_environment_candidates,
-            compute_types = compute_types
+            partial_name = partial_name
         ), recursive = FALSE, use.names = FALSE)
-        candidates <- c(candidates, .completion_generate_namespace_candidates())
+        candidates <- c(
+            candidates,
+            .completion_search_path_candidates(partial_name),
+            .completion_namespace_candidates(partial_name)
+        )
     } else if (accessor == "::") {
         candidates <- .completion_environment_candidates(
             context,
             getNamespaceExports(context),
-            compute_types
+            partial_name = partial_name,
+            maybe_force_promises = TRUE
+        )
+        candidates <- c(
+            candidates,
+            .completion_lazy_data_candidates(context, partial_name)
         )
     } else if (accessor == ":::") {
         candidates <- .completion_environment_candidates(
             context,
-            compute_types = compute_types
+            partial_name = partial_name,
+            maybe_force_promises = TRUE
         )
     } else if (is.environment(context)) {
         if (accessor == "[") {
@@ -139,28 +175,32 @@ completion_candidates <- function(
         } else if(accessor == "$") {
             candidates <- .completion_environment_candidates(
                 context,
-                compute_types = compute_types
+                partial_name = partial_name
             )
         } else if(accessor == "[[") {
             candidates <- .completion_candidates_from_names(
                 ls(context, all.names = TRUE, sorted = FALSE),
-                type = "value"
+                type = "value",
+                partial_name = partial_name
             )
         }
     } else if (accessor == "@") {
         candidates <- .completion_candidates_from_names(
             utils::.Atnames(context),
-            type = "field"
+            type = "field",
+            partial_name = partial_name
         )
     } else if (accessor == "$") {
         candidates <- .completion_candidates_from_names(
             utils::.DollarNames(context),
-            type = "field"
+            type = "field",
+            partial_name = partial_name
         )
     } else if (accessor %in% c("[", "[[")) {
         candidates <- .completion_candidates_from_names(
             attr(context, "names", exact = TRUE),
-            type = "value"
+            type = "value",
+            partial_name = partial_name
         )
     }
 
@@ -169,16 +209,11 @@ completion_candidates <- function(
         return(list())
     }
 
-    # Keep usable candidates matching the typed prefix, once per name/type pair.
+    # Discard unusable candidate names before spelling them as R code.
     candidates <- Filter(function(candidate) {
         !is.na(candidate$name) &&
-        nzchar(candidate$name) &&
-        startsWith(candidate$name, partial_name)
+        nzchar(candidate$name)
     }, candidates)
-    candidate_keys <- vapply(candidates, function(candidate) {
-        paste(c(candidate$type, candidate$name), collapse = "\r")
-    }, "")
-    candidates <- candidates[!duplicated(candidate_keys)]
 
     # Consider right-hand text up to first whitespace
     available_right_text <- .completion_available_right_text(text_after_cursor)
@@ -212,5 +247,11 @@ completion_candidates <- function(
         )
         item
     })
-    Filter(Negate(is.null), items)
+    items <- Filter(Negate(is.null), items)
+
+    # Keep each fully constructed DAP item only once.
+    item_keys <- vapply(items, function(item) {
+        paste(unlist(item, use.names = FALSE), collapse = "\r")
+    }, "")
+    items[!duplicated(item_keys)]
 }

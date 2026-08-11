@@ -40,7 +40,6 @@ completion_main <- function(
     text,
     firstenv = parent.frame(),
     lastenv = .GlobalEnv,
-    global_lastenv = emptyenv(),
     text_after_cursor = ""
 ) {
     # Select and split the expression suffix before the cursor.
@@ -59,11 +58,11 @@ completion_main <- function(
     accessor <- backward$accessor
     if (is.null(accessor)) {
         # Top-level expressions must be code or backtick names.
-        # They get all available environments as context.
+        # They use bindings from the current frame through the global environment.
         if (!forward$state %in% c(LS_CODE, LS_BACKTICK)) {
             return(list())
         }
-        context <- getScopeEnvs(firstenv, global_lastenv)
+        context <- getScopeEnvs(firstenv, .GlobalEnv)
     } else {
         # Parse the context
         parsed <- parse_completion_context(backward$context)
@@ -108,7 +107,7 @@ completion_main <- function(
         is.null(partial$quote)
     ) {
         items <- completion_candidates(
-            getScopeEnvs(firstenv, global_lastenv),
+            getScopeEnvs(firstenv, .GlobalEnv),
             NULL,
             "",
             NULL,

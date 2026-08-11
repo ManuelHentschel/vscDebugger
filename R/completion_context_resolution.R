@@ -14,23 +14,24 @@
 # Avoids promise forcing and active bindings according to package settings
 .completion_lookup_binding <- function(
     name,
-    environments
+    environments,
+    force_promises = FALSE
 ) {
     environment <- .completion_find_binding(name, environments)
     if (is.null(environment)) {
         stop("Could not find binding: ", name)
     }
 
-    # Active bindings might have side-effects
-    if (
-        bindingIsActive(name, environment) &&
-        !isTRUE(getOption("vsc.evaluateActiveBindings", FALSE))
-    ) {
-        stop("Refusing to evaluate active binding: ", name)
+    # Active bindings might have side-effects.
+    if (bindingIsActive(name, environment)) {
+        if (!isTRUE(getOption("vsc.evaluateActiveBindings", FALSE))) {
+            stop("Refusing to evaluate active binding: ", name)
+        }
+        return(get(name, envir = environment, inherits = FALSE))
     }
 
     # Preview promises by evaluating their code without forcing the binding.
-    if (isPromise(name, environment)) {
+    if (!force_promises && isPromise(name, environment)) {
         if (!isTRUE(getOption("vsc.previewPromises", FALSE))) {
             stop("Refusing to evaluate promise: ", name)
         }
@@ -96,25 +97,32 @@
     # Remaining cases are calls which are handled recursively
     operator <- as.character(node[[1L]])
 
-    # Handle namespace accessors
+    # Resolve namespace accessors without loading unless completion allows it.
     if (operator %in% c("::", ":::")) {
         package <- node[[2L]]
-        if(!isNamespaceLoaded(package)){
-            stop("Namespace is not loaded: ", package)
+        namespace_result <- .completion_resolve_namespace(package)
+        if (namespace_result$status != "success") {
+            stop(namespace_result$reason)
         }
-        namespace <- getNamespace(package)
+        namespace <- namespace_result$value
         child <- node[[3L]]
-        # Check namespace exports for `::`
-        if (
-            operator == "::" &&
-            !(child %in% getNamespaceExports(namespace))
-        ) {
-            stop(child, " is not exported by ", package)
+        child_environment <- namespace
+
+        # `::` also exposes lazy-loaded datasets outside namespace exports.
+        if (operator == "::" && !(child %in% getNamespaceExports(namespace))) {
+            lazy_data <- getNamespaceInfo(namespace, "lazydata")
+            if (!exists(child, envir = lazy_data, inherits = FALSE)) {
+                stop(child, " is not exported by ", package)
+            }
+            child_environment <- lazy_data
         }
+
+        force_promises <- isTRUE(getOption("vsc.completionsForceNamespacePromises", FALSE))
 
         return(.completion_lookup_binding(
             child,
-            list(namespace)
+            list(child_environment),
+            force_promises = force_promises
         ))
     }
 
@@ -170,7 +178,7 @@
     )
 }
 
-# Resolve a bare or quoted package name without loading its namespace.
+# Resolve a bare or quoted package name, loading it when completion allows it.
 .completion_resolve_namespace <- function(package) {
     if (is.name(package)) {
         package <- as.character(package)
@@ -187,14 +195,25 @@
         ))
     }
     if (!isNamespaceLoaded(package)) {
-        return(.completion_resolution_result(
-            "infeasible",
-            reason = paste0("Namespace is not loaded: ", package)
-        ))
+        if (!isTRUE(getOption("vsc.completionsLoadNamespaces", FALSE))) {
+            return(.completion_resolution_result(
+                "infeasible",
+                reason = paste0("Namespace is not loaded: ", package)
+            ))
+        }
+        namespace <- try(getNamespace(package), silent = TRUE)
+        if (inherits(namespace, "try-error")) {
+            return(.completion_resolution_result(
+                "infeasible",
+                reason = paste0("Could not load namespace: ", package)
+            ))
+        }
+    } else {
+        namespace <- getNamespace(package)
     }
     .completion_resolution_result(
         "success",
-        value = getNamespace(package)
+        value = namespace
     )
 }
 

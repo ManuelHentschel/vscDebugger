@@ -31,8 +31,7 @@ show_candidates <- function(
     text,
     firstenv,
     lastenv,
-    preview_promises = FALSE,
-    global_lastenv = lastenv
+    preview_promises = FALSE
 ) {
     old_options <- options(vsc.previewPromises = preview_promises)
     on.exit(options(old_options))
@@ -41,8 +40,7 @@ show_candidates <- function(
     items <- completion_main(
         text,
         firstenv = firstenv,
-        lastenv = lastenv,
-        global_lastenv = global_lastenv
+        lastenv = lastenv
     )
     labels <- vapply(items, `[[`, "", "label")
     cat("text:    ", dQuote(text), "\n", sep = "")
@@ -196,8 +194,7 @@ show_candidates("mea", .GlobalEnv, .GlobalEnv)
 show_candidates(
     "mea",
     .GlobalEnv,
-    .GlobalEnv,
-    global_lastenv = emptyenv()
+    .GlobalEnv
 )
 
 cat("\n", strrep("=", 72L), "\nnamespace completion\n", sep = "")
