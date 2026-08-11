@@ -124,6 +124,14 @@ lex_backward <- function(text, forward = lex_forward(text)){
     child_region <- .completion_region_ending_at(forward$regions, n)
     child_start <- child_region$start
     child_kind <- if(forward$state == LS_BACKTICK) "name" else "string"
+  } else if(forward$state == LS_SPECIAL_OPERATOR){
+    # An unfinished, unquoted infix operator is always an accessor/context-free partial child.
+    child_region <- .completion_region_ending_at(forward$regions, n)
+    return(.completion_backward_result(
+      "candidate",
+      text,
+      child_region$start
+    ))
   } else if(forward$state == LS_CODE){
     ch <- chars[n]
     if(.completion_is_name_char(ch)){
@@ -152,7 +160,7 @@ lex_backward <- function(text, forward = lex_forward(text)){
       return(.completion_backward_result("candidate", text, end))
     }
   } else{
-    # Raw strings, comments, and unfinished special operators are infeasible.
+    # Raw strings, comments, and other unsupported states are infeasible.
     return(.completion_backward_result(
       "infeasible",
       reason = "Invalid cursor location"

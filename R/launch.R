@@ -25,7 +25,7 @@ initializeRequest <- function(response, args, request){
 
   # Advertise Debug Console completion support and automatic triggers.
   body$supportsCompletionsRequest <- TRUE
-  body$completionTriggerCharacters <- list("[", "$", ":", "@", "(")
+  body$completionTriggerCharacters <- list("[", "$", ":", "@", "(", "%")
 
   # make VS Code to send cancelRequests
   body$supportsCancelRequest <- FALSE

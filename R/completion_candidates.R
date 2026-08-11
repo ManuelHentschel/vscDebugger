@@ -281,6 +281,17 @@ completion_candidates <- function(
     return(list())
   }
 
+  # Infix operators must be functions; guarded bindings may be lazy functions.
+  is_infix <- is.null(accessor) && is.null(quote) && startsWith(partial_name, "%")
+
+  if(is_infix){
+    candidates <- Filter(function(candidate){
+      candidate$type %in% c("function", "event") &&
+      startsWith(candidate$name, "%") &&
+      endsWith(candidate$name, "%")
+    }, candidates)
+  }
+
   # Discard unusable candidate names before spelling them as R code.
   candidates <- Filter(function(candidate){
     !is.na(candidate$name) &&
@@ -293,7 +304,7 @@ completion_candidates <- function(
   # Build DAP items, omitting only exact no-op overlaps.
   items <- lapply(candidates, function(candidate){
     child_name <- candidate$name
-    if(isTRUE(candidate$is_constant)){
+    if(is_infix || isTRUE(candidate$is_constant)){
       escaped_text <- child_name
     } else{
       escaped_text <- .completion_candidate_text(child_name, accessor, quote)
@@ -315,7 +326,7 @@ completion_candidates <- function(
       label = label_text,
       text = trimmed_text,
       sortText = sort_text,
-      type = candidate$type,
+      type = if(is_infix) "operator" else candidate$type,
       # DAP says 1-based, but vscode interprets 0-based for `start`
       # (Temporary?) fix by converting to 0-based
       start = replacement_start - 1L,

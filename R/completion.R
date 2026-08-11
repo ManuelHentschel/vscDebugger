@@ -111,8 +111,8 @@
   accessor <- backward$accessor
   items <- list()
   if(is.null(accessor)){
-    # Expressions without an accessor must be code or backtick names.
-    if(!forward$state %in% c(LS_CODE, LS_BACKTICK)){
+    # Accessor-free completions may be code, backtick names, or infix operators.
+    if(!forward$state %in% c(LS_CODE, LS_BACKTICK, LS_SPECIAL_OPERATOR)){
       return(list())
     }
     include_top_level <- TRUE
