@@ -247,7 +247,7 @@ lex_forward <- function(text) {
             # Avoid recognizing the r/R in an ordinary identifier (e.g. foobar")
             previous_is_name_char <- (
                 i > 1L
-                .completion_is_name_char(chars[i - 1L])
+                && .completion_is_name_char(chars[i - 1L])
             )
 
             next_ch <- chars[i + 1L]
