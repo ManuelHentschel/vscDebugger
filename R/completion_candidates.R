@@ -90,6 +90,17 @@
     })
 }
 
+# Generate items for installed packages
+.completion_generate_namespace_candidates <- function() {
+    pkgs <- .packages(all.available = TRUE)
+    lapply(pkgs, function(pkg) {
+        list(
+            name = pkg,
+            type = "module"
+        )
+    })
+}
+
 # Generate DAP completion items from an already resolved context.
 completion_candidates <- function(
     context,
@@ -110,6 +121,7 @@ completion_candidates <- function(
             .completion_environment_candidates,
             compute_types = compute_types
         ), recursive = FALSE, use.names = FALSE)
+        candidates <- c(candidates, .completion_generate_namespace_candidates())
     } else if (accessor == "::") {
         candidates <- .completion_environment_candidates(
             context,
@@ -121,45 +133,38 @@ completion_candidates <- function(
             context,
             compute_types = compute_types
         )
+    } else if (is.environment(context)) {
+        if (accessor == "[") {
+            candidates <- list()
+        } else if(accessor == "$") {
+            candidates <- .completion_environment_candidates(
+                context,
+                compute_types = compute_types
+            )
+        } else if(accessor == "[[") {
+            candidates <- .completion_candidates_from_names(
+                ls(context, all.names = TRUE, sorted = FALSE),
+                type = "value"
+            )
+        }
     } else if (accessor == "@") {
         candidates <- .completion_candidates_from_names(
-            methods::slotNames(context),
+            utils::.Atnames(context),
             type = "field"
         )
-    } else if (is.environment(context)) {
-        candidates <- if (accessor == "[" && !is.object(context)) {
-            list()
-        } else {
-            .completion_candidates_from_names(
-                ls(context, all.names = TRUE, sorted = FALSE),
-                type = "field"
-            )
-        }
-    } else if (
-        accessor == "$" &&
-        !is.recursive(context) &&
-        !is.object(context)
-    ) {
-        candidates <- list()
-    } else if (accessor %in% c("$", "[", "[[")) {
-        # Read names without dispatching another user-defined method.
+    } else if (accessor == "$") {
+        candidates <- .completion_candidates_from_names(
+            utils::.DollarNames(context),
+            type = "field"
+        )
+    } else if (accessor %in% c("[", "[[")) {
         candidates <- .completion_candidates_from_names(
             attr(context, "names", exact = TRUE),
-            type = "field"
+            type = "value"
         )
-        if (
-            is.null(attr(context, "names", exact = TRUE)) &&
-            accessor %in% c("[", "[[")
-        ) {
-            candidates <- .completion_candidates_from_names(
-                unlist(attr(context, "dimnames", exact = TRUE), use.names = FALSE),
-                type = "field"
-            )
-        }
-    } else {
-        stop("Unsupported completion accessor: ", accessor)
     }
 
+    # Any unsupported accessor/context combination
     if (is.null(candidates)) {
         return(list())
     }
@@ -182,6 +187,12 @@ completion_candidates <- function(
     items <- lapply(candidates, function(candidate) {
         child_name <- candidate$name
         escaped_text <- .completion_candidate_text(child_name, accessor, quote)
+        label_text <- escaped_text
+        sort_text <- label_text
+        # If a candidate starts with a non-letter move it to the end of the list
+        if (!grepl("^[[:alpha:]]", label_text)) {
+            sort_text <- paste0("zzz", label_text)
+        }
         trimmed_text <- .completion_trim_right_overlap(
             escaped_text,
             available_right_text
@@ -190,8 +201,9 @@ completion_candidates <- function(
             return(NULL)
         }
         item <- list(
-            label = child_name,
+            label = label_text,
             text = trimmed_text,
+            sortText = sort_text,
             type = candidate$type,
             # DAP says 1-based, but vscode interprets 0-based for `start`
             # (Temporary?) fix by converting to 0-based
