@@ -114,10 +114,6 @@ getDotVars <- function(env) {
 #' ## evaluate it...
 #' base::print(e$x)
 #' 
-#' ## is it still a promise? (It depends...)
-#' stopifnot(vscDebugger:::isPromise("x", e, strict = FALSE))
-#' stopifnot(!vscDebugger:::isPromise("x", e, strict = TRUE))
-#' 
 #' ## get info again
 #' vscDebugger:::getPromiseVar("x", e)
 #' 

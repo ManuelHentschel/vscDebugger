@@ -191,12 +191,9 @@ show_candidates("active_list$al", firstenv, lastenv)
 
 cat("\n", strrep("=", 72L), "\nconfigurable environment boundary\n", sep = "")
 show_candidates("mea", .GlobalEnv, .GlobalEnv)
-show_candidates(
-    "mea",
-    .GlobalEnv,
-    .GlobalEnv
-)
 
 cat("\n", strrep("=", 72L), "\nnamespace completion\n", sep = "")
 show_candidates("stats::l", firstenv, lastenv)
 show_candidates('"stats"::l', firstenv, lastenv)
+base_items <- show_candidates("base::me", firstenv, lastenv)
+stopifnot("mean" %in% vapply(base_items, `[[`, "", "label"))

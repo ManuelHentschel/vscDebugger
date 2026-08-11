@@ -84,6 +84,7 @@
     error = function(error) NULL
   )
   if(is.null(value)){
+    # "event" not officially supported but renders a lightning bolt
     candidate$type <- "event"
   } else if(is.function(value$value)){
     candidate$type <- "function"
@@ -134,7 +135,10 @@
 
 # Generate candidates from a namespace's lazy-loaded datasets.
 .completion_lazy_data_candidates <- function(namespace, partial_name){
-  lazy_data <- getNamespaceInfo(namespace, "lazydata")
+  lazy_data <- tryCatch(
+    getNamespaceInfo(namespace, "lazydata"),
+    error = function(error) list()
+  )
   .completion_candidates_from_names(
     ls(lazy_data, all.names = TRUE, sorted = FALSE),
     "variable",

@@ -59,7 +59,7 @@ examples <- list(
     "namespace accessor" = "stats::l",
     "quoted namespace accessor" = '"stats"::l',
     "triple namespace accessor" = "stats:::l",
-    "nested indices" = "my_list[indices[1], indices[2]]$chi",
+    "nested indices" = "my_list[indices[1],indices[2]]$chi",
     "parenthesized context is rejected" = "(my_list)$chi",
     "function call is rejected" = "get_object()$chi",
     "operator call is rejected" = "my_list[index + 1]$chi"

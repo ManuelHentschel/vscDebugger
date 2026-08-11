@@ -88,9 +88,9 @@ show_items(
     ' item"]]'
 )
 
-cat("\nDebug from UI\n")
-show_items("ex1", "my_list[[\"a")
-show_items("ex2", "my_list[[\"a", "\"")
+cat("\nquoted completion at the end or before an existing quote\n")
+show_items("unfinished quoted index", "my_list[[\"a")
+show_items("quoted index with its closing quote", "my_list[[\"a", "\"")
 
 cat("\nempty index expressions\n")
 stopifnot(!length(show_items("bracket without a receiver", "[")))

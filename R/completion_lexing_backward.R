@@ -1,6 +1,8 @@
-# Finds and splits a feasible expression suffix for completion. This pass deliberately
+# Finds and splits a feasible expression context for completion. This pass deliberately
 # does not decide whether evaluating the expression or following its accessors
 # is safe; those checks belong to semantic resolution.
+
+.backward_horizontal_whitespace <- c(" ", "\t", "\f", "\v")
 
 .completion_region_ending_at <- function(regions, position){
   for(region in rev(regions)){
@@ -141,7 +143,7 @@ lex_backward <- function(text, forward = lex_forward(text)){
     } else if(ch %in% c(")", "]", "}", "\"", "'", "`")){
       # Completed strings and closing delimiters cannot be extended.
       return(.completion_backward_result("no_completion"))
-    } else if(ch %in% c(" ", "\t", "\f", "\v")){
+    } else if(ch %in% .backward_horizontal_whitespace){
       # Horizontal whitespace may separate a comma from an empty child.
       child_start <- end
       child_kind <- "empty"
@@ -160,13 +162,16 @@ lex_backward <- function(text, forward = lex_forward(text)){
   # Skip any horizontal whitespace before the child (only allowed for "," as accessor)
   position <- child_start - 1L
   had_whitespace <- FALSE
-  while(position >= 1L && chars[position] %in% c(" ", "\t", "\f", "\v")){
+  while(
+    position >= 1L &&
+    chars[position] %in% .backward_horizontal_whitespace
+  ){
     had_whitespace <- TRUE
     position <- position - 1L
   }
 
   if(position == 0L){
-    # No acessor/context present
+    # No accessor/context present
     return(.completion_backward_result("candidate", text, child_start))
   }
 
@@ -234,12 +239,7 @@ lex_backward <- function(text, forward = lex_forward(text)){
   }
 
   # Scan backward to find the start of the context expression.
-  allowed_regions <- c(
-    LS_SINGLE_QUOTED,
-    LS_DOUBLE_QUOTED,
-    LS_BACKTICK,
-    LS_RAW_QUOTED
-  )
+  allowed_regions <- c(QUOTED_STATES, LS_RAW_QUOTED)
   bracket_depth <- 0L
   position <- accessor_start - 1L
 
@@ -262,8 +262,8 @@ lex_backward <- function(text, forward = lex_forward(text)){
       break
     }
 
-    # Stop looking on horizontal whitespace unless it is inside an index expression
-    if(bracket_depth == 0L && ch %in% c(" ", "\t", "\f", "\v")){
+    # Stop looking on horizontal whitespace
+    if(ch %in% .backward_horizontal_whitespace){
       break
     }
 

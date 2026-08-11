@@ -256,7 +256,7 @@ examples <- list(
     "fresh expression after special operator" = "value %in%",
     "fresh expression after newline" = "value\n",
     "completed index" = 'x[["item"]]',
-    "function call receiver needs to be discarded later" = "get_object()$fo",
+    "function call receiver is rejected" = "get_object()$fo",
     "parenthesized receiver stops at closing parenthesis" = "(my_list)$fo",
     "computed index candidate" = "x[[name]]$fo",
     "incomplete %operator%" = "x %incomplete",

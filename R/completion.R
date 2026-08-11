@@ -10,7 +10,7 @@
 .completion_utf16_to_char_index <- function(text, index){
   codepoints <- utf8ToInt(enc2utf8(text))
   ends <- cumsum(1L + (codepoints > 0xffffL))
-  starts <- c(1L, ends + 1L) # includes start of next codepoints
+  starts <- c(1L, ends + 1L) # includes start of the next codepoint
   match(index, starts)
 }
 
@@ -63,7 +63,7 @@
   lastenv = .GlobalEnv,
   text_after_cursor = ""
 ){
-  # Select and split the expression suffix before the cursor.
+  # Select and split the expression context before the cursor.
   forward <- lex_forward(text)
   backward <- lex_backward(text, forward)
   if(backward$status != "candidate"){
@@ -108,7 +108,7 @@
       if(resolved_context$status == "success"){
         context <- resolved_context$value
         # Get candidates based on context and accessor
-        items <- c(items, completion_candidates(
+        items <- completion_candidates(
           context,
           accessor,
           partial$name,
@@ -116,7 +116,7 @@
           replacement_start,
           replacement_length,
           text_after_cursor
-        ))
+        )
       }
     }
   }
@@ -201,7 +201,10 @@ completionsRequest <- function(response, args, request){
   column <- lget(args, "column", 0)
   line <- lget(args, "line", 1)
 
-  items <- .completion_items_for_request(frame_id, text, column, line)
+  items <- tryCatch(
+    .completion_items_for_request(frame_id, text, column, line),
+    error = function(error) list()
+  )
 
   # JSON serialization for data frames is way faster with jsonlite!
   # Relevant for top-level completions with thousands of items!
