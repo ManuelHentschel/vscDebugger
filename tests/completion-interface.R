@@ -101,6 +101,10 @@ labels <- vapply(items, `[[`, "", "label")
 child <- items[[which(labels == '"child"')]]
 stopifnot(child$text == '"child"')
 stopifnot("mean_global" %in% labels)
+stopifnot(
+    startsWith(child$sortText, "000"),
+    !startsWith(items[[which(labels == "mean_global")]]$sortText, "000")
+)
 
 items <- show_items("named double-bracket index", "my_list[[")
 child <- items[[which(vapply(items, `[[`, "", "label") == '"child"')]]
@@ -116,6 +120,10 @@ cat("\nfunction arguments\n")
 items <- show_items("empty first argument", "my_function(")
 labels <- vapply(items, `[[`, "", "label")
 stopifnot(all(c("alpha=", "beta=", "...", "mean_global") %in% labels))
+stopifnot(
+    startsWith(items[[which(labels == "alpha=")]]$sortText, "000"),
+    !startsWith(items[[which(labels == "mean_global")]]$sortText, "000")
+)
 
 items <- show_items("partial first argument", "my_function(be")
 stopifnot("beta=" %in% vapply(items, `[[`, "", "label"))
@@ -129,15 +137,15 @@ stopifnot("pkgs=" %in% vapply(items, `[[`, "", "label"))
 old_options <- options(vsc.completionsFunctionArgumentSpaces = TRUE)
 items <- show_items("spaced argument insertion", "my_function(al")
 options(old_options)
-argument_item <- Filter(function(item) item$label == "alpha=", items)[[1L]]
-stopifnot(argument_item$text == "alpha = ")
+argument_item <- Filter(function(item) item$text == "alpha = ", items)
+stopifnot(length(argument_item) == 1L)
 
 cat("\nrequest cursor handling\n")
 my_list <- firstenv$my_list
 overlap_list <- firstenv$overlap_list
 request_text <- 'first\r\nmy_list[["ch"]]'
 cursor <- .completion_split_request_text(request_text, 2L, 13L)
-items <- .completion_items_from_request(
+items <- .completion_items_for_request(
     0L,
     request_text,
     13L,
@@ -169,14 +177,14 @@ stopifnot(
 
 # Reuse the part of a completion that is already present after the cursor.
 mean_global <- firstenv$mean_global
-items <- .completion_items_from_request(0L, "mean_global", 4L, 1L)
+items <- .completion_items_for_request(0L, "mean_global", 4L, 1L)
 stopifnot(items[[1L]]$text == "mea")
 
-items <- .completion_items_from_request(0L, "my_list$child", 11L, 1L)
+items <- .completion_items_for_request(0L, "my_list$child", 11L, 1L)
 stopifnot(items[[1L]]$text == "ch")
 
 # Reuse safe overlaps and keep the full text for other candidates.
-items <- .completion_items_from_request(
+items <- .completion_items_for_request(
     0L,
     "overlap_list$child",
     nchar("overlap_list$ch") + 1L,
@@ -190,7 +198,7 @@ stopifnot(
 )
 
 # DAP treats an empty insertion as the label, so omit only the exact overlap.
-items <- .completion_items_from_request(
+items <- .completion_items_for_request(
     0L,
     "overlap_list$child",
     nchar("overlap_list$") + 1L,
@@ -201,10 +209,10 @@ stopifnot(
     items[[1L]]$text == "chili"
 )
 
-items <- .completion_items_from_request(0L, 'my_list[["child"]]', 13L, 1L)
+items <- .completion_items_for_request(0L, 'my_list[["child"]]', 13L, 1L)
 stopifnot(items[[1L]]$text == '"ch')
 
 # Do not reuse spaces or other expression separators on the right.
-items <- .completion_items_from_request(0L, 'my_list[["my item"]]', 13L, 1L)
+items <- .completion_items_for_request(0L, 'my_list[["my item"]]', 13L, 1L)
 item <- items[[which(vapply(items, `[[`, "", "label") == '"my item"')]]
 stopifnot(item$text == '"my item"')

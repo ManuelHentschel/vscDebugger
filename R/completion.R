@@ -123,7 +123,11 @@
 
   # Add top-level names when requested by the accessor branch above.
   if (include_top_level) {
-    items <- c(items, completion_candidates(
+    specific_items <- lapply(items, function(item) {
+      item$sortText <- paste0("000", item$sortText)
+      item
+    })
+    top_level_items <- completion_candidates(
       getScopeEnvs(firstenv, .GlobalEnv),
       NULL,
       partial$name,
@@ -131,7 +135,8 @@
       replacement_start,
       replacement_length,
       text_after_cursor
-    ))
+    )
+    items <- c(specific_items, top_level_items)
   }
 
   items
