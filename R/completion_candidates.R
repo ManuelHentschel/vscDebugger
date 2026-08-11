@@ -1,29 +1,29 @@
 
 # Keep only text before the first whitespace to the right.
-.completion_available_right_text <- function(text_after_cursor) {
+.completion_available_right_text <- function(text_after_cursor){
     whitespace <- regexpr("[[:space:]]", text_after_cursor)
-    if (whitespace == -1L) {
+    if(whitespace == -1L){
         return(text_after_cursor)
     }
     substr(text_after_cursor, 1L, whitespace - 1L)
 }
 
 # Reuse a matching right-hand suffix when the full name fragment matches.
-.completion_trim_right_overlap <- function(insertion, available_right_text) {
+.completion_trim_right_overlap <- function(insertion, available_right_text){
     max_overlap <- min(nchar(insertion), nchar(available_right_text))
-    if (max_overlap == 0L) {
+    if(max_overlap == 0L){
         return(insertion)
     }
 
     matched_overlap <- 0L
-    for (overlap in rev(seq_len(max_overlap))) {
+    for(overlap in rev(seq_len(max_overlap))){
         insertion_suffix <- substr(
             insertion,
             nchar(insertion) - overlap + 1L,
             nchar(insertion)
         )
         right_prefix <- substr(available_right_text, 1L, overlap)
-        if (insertion_suffix == right_prefix) {
+        if(insertion_suffix == right_prefix){
             matched_overlap <- overlap
             break
         }
@@ -31,7 +31,7 @@
 
     # Reuse only complete name fragments; otherwise insert the full text.
     right_name <- sub("[^[:alnum:]_.].*$", "", available_right_text)
-    if (matched_overlap < nchar(right_name)) {
+    if(matched_overlap < nchar(right_name)){
         return(insertion)
     }
     substr(insertion, 1L, nchar(insertion) - matched_overlap)
@@ -42,27 +42,27 @@
     child_name,
     accessor,
     quote
-) {
-    if (identical(accessor, "(")) {
-        name_text <- if (make.names(child_name) == child_name) {
+){
+    if(identical(accessor, "(")){
+        name_text <- if(make.names(child_name) == child_name){
             child_name
-        } else {
+        } else{
             encodeString(child_name, quote = "`")
         }
-        equals <- if (child_name == "...") {
+        equals <- if(child_name == "..."){
             ""
-        } else if (isTRUE(getOption("vsc.completionsFunctionArgumentSpaces", FALSE))) {
+        } else if(isTRUE(getOption("vsc.completionsFunctionArgumentSpaces", FALSE))){
             " = "
-        } else {
+        } else{
             "="
         }
         return(paste0(name_text, equals))
     }
-    if (!is.null(quote)) {
+    if(!is.null(quote)){
         return(encodeString(child_name, quote = quote))
-    } else if (!is.null(accessor) && accessor %in% c("[", "[[")) {
+    } else if(!is.null(accessor) && accessor %in% c("[", "[[")){
         return(encodeString(child_name, quote = "\""))
-    } else if (make.names(child_name) == child_name) {
+    } else if(make.names(child_name) == child_name){
         return(child_name)
     }
     encodeString(child_name, quote = "`")
@@ -73,7 +73,7 @@
     name,
     environment,
     is_namespace
-) {
+){
     candidate <- list(name = name)
     value <- tryCatch(
         list(value = .completion_read_binding(
@@ -83,11 +83,11 @@
         )),
         error = function(error) NULL
     )
-    if (is.null(value)) {
+    if(is.null(value)){
         candidate$type <- "event"
-    } else if (is.function(value$value)) {
+    } else if(is.function(value$value)){
         candidate$type <- "function"
-    } else {
+    } else{
         candidate$type <- "variable"
     }
     candidate
@@ -99,8 +99,8 @@
     names = NULL,
     partial_name = "",
     is_namespace = FALSE
-) {
-    if (is.null(names)) {
+){
+    if(is.null(names)){
         names <- ls(environment, all.names = TRUE, sorted = FALSE)
     }
     names <- as.character(names)
@@ -118,22 +118,22 @@
     names,
     type = "variable",
     partial_name = ""
-) {
+){
     names <- as.character(names)
     names <- names[!is.na(names) & startsWith(names, partial_name)]
-    lapply(names, function(name) {
+    lapply(names, function(name){
         list(name = name, type = type)
     })
 }
 
 # Generate module candidates for installed package namespaces.
-.completion_namespace_candidates <- function(partial_name) {
+.completion_namespace_candidates <- function(partial_name){
     pkgs <- .packages(all.available = TRUE)
     .completion_candidates_from_names(pkgs, "module", partial_name)
 }
 
 # Generate candidates from a namespace's lazy-loaded datasets.
-.completion_lazy_data_candidates <- function(namespace, partial_name) {
+.completion_lazy_data_candidates <- function(namespace, partial_name){
     lazy_data <- getNamespaceInfo(namespace, "lazydata")
     .completion_candidates_from_names(
         ls(lazy_data, all.names = TRUE, sorted = FALSE),
@@ -143,7 +143,7 @@
 }
 
 # Generate candidates from the formal arguments of a function.
-.completion_function_argument_candidates <- function(function_, partial_name) {
+.completion_function_argument_candidates <- function(function_, partial_name){
     .completion_candidates_from_names(
         names(formals(function_)),
         "property",
@@ -152,12 +152,12 @@
 }
 
 # Generate candidates from attached search-path environments.
-.completion_search_path_candidates <- function(partial_name) {
+.completion_search_path_candidates <- function(partial_name){
     namespace_environments <- lapply(
         setdiff(search(), ".GlobalEnv"),
         as.environment
     )
-    candidates <- lapply(namespace_environments, function(environment) {
+    candidates <- lapply(namespace_environments, function(environment){
         .completion_environment_candidates(
             environment,
             partial_name = partial_name,
@@ -176,10 +176,10 @@ completion_candidates <- function(
     replacement_start,
     replacement_length,
     text_after_cursor
-) {
+){
     candidates <- NULL
 
-    if (is.null(accessor)) {
+    if(is.null(accessor)){
         # Top-level expressions use frame/global bindings and the search path.
         candidates <- unlist(lapply(
             context,
@@ -191,7 +191,7 @@ completion_candidates <- function(
             .completion_search_path_candidates(partial_name),
             .completion_namespace_candidates(partial_name)
         )
-    } else if (accessor == "::") {
+    } else if(accessor == "::"){
         candidates <- .completion_environment_candidates(
             context,
             getNamespaceExports(context),
@@ -203,45 +203,45 @@ completion_candidates <- function(
             candidates,
             .completion_lazy_data_candidates(context, partial_name)
         )
-    } else if (accessor == ":::") {
+    } else if(accessor == ":::"){
         candidates <- .completion_environment_candidates(
             context,
             partial_name = partial_name,
             is_namespace = TRUE
         )
-    } else if (accessor == "(" && is.function(context)) {
+    } else if(accessor == "(" && is.function(context)){
         candidates <- .completion_function_argument_candidates(
             context,
             partial_name
         )
-    } else if (is.environment(context)) {
-        if (accessor == "[") {
+    } else if(is.environment(context)){
+        if(accessor == "["){
             candidates <- list()
-        } else if(accessor == "$") {
+        } else if(accessor == "$"){
             candidates <- .completion_environment_candidates(
                 context,
                 partial_name = partial_name
             )
-        } else if(accessor == "[[") {
+        } else if(accessor == "[["){
             candidates <- .completion_candidates_from_names(
                 ls(context, all.names = TRUE, sorted = FALSE),
                 type = "value",
                 partial_name = partial_name
             )
         }
-    } else if (accessor == "@") {
+    } else if(accessor == "@"){
         candidates <- .completion_candidates_from_names(
             utils::.Atnames(context),
             type = "field",
             partial_name = partial_name
         )
-    } else if (accessor == "$") {
+    } else if(accessor == "$"){
         candidates <- .completion_candidates_from_names(
             utils::.DollarNames(context),
             type = "field",
             partial_name = partial_name
         )
-    } else if (accessor %in% c("[", "[[")) {
+    } else if(accessor %in% c("[", "[[")){
         candidates <- .completion_candidates_from_names(
             attr(context, "names", exact = TRUE),
             type = "value",
@@ -250,12 +250,12 @@ completion_candidates <- function(
     }
 
     # Any unsupported accessor/context combination
-    if (is.null(candidates)) {
+    if(is.null(candidates)){
         return(list())
     }
 
     # Discard unusable candidate names before spelling them as R code.
-    candidates <- Filter(function(candidate) {
+    candidates <- Filter(function(candidate){
         !is.na(candidate$name) &&
         nzchar(candidate$name)
     }, candidates)
@@ -264,20 +264,20 @@ completion_candidates <- function(
     available_right_text <- .completion_available_right_text(text_after_cursor)
 
     # Build DAP items, omitting only exact no-op overlaps.
-    items <- lapply(candidates, function(candidate) {
+    items <- lapply(candidates, function(candidate){
         child_name <- candidate$name
         escaped_text <- .completion_candidate_text(child_name, accessor, quote)
         label_text <- escaped_text
         sort_text <- label_text
         # If a candidate starts with a non-letter move it to the end of the list
-        if (!grepl("^[[:alpha:]]", label_text)) {
+        if(!grepl("^[[:alpha:]]", label_text)){
             sort_text <- paste0("zzz", label_text)
         }
         trimmed_text <- .completion_trim_right_overlap(
             escaped_text,
             available_right_text
         )
-        if (nchar(trimmed_text) == 0L) {
+        if(nchar(trimmed_text) == 0L){
             return(NULL)
         }
         item <- list(
