@@ -15,6 +15,9 @@
       quote = NULL
     ))
   }
+  if(partial_child == "`"){
+    return(list(name = "", quote = quote))
+  }
 
   # Add the closing quote before parsing escapes.
   parsed <- tryCatch(
