@@ -49,7 +49,7 @@ completion_main <- function(
         return(list())
     }
 
-    # If partial child is quoted, parse it to unescape and validate
+    # If partial child is quoted, parse it to validate and resolve escapes
     partial <- .completion_unescape_quoted(backward$partial_child)
     if (is.null(partial)) {
         return(list())
@@ -57,8 +57,9 @@ completion_main <- function(
 
     accessor <- backward$accessor
     if (is.null(accessor)) {
-        # Top-level expressions must be code or backtick names.
-        # They use bindings from the current frame through the global environment.
+        # Expressions without accessor and context must be code or backtick names.
+        # We specify the current frame and parents up to .GlobalEnv as "virtual context".
+        # Additionally, the search path (packages) is searched during candidate generation.
         if (!forward$state %in% c(LS_CODE, LS_BACKTICK)) {
             return(list())
         }
@@ -83,10 +84,12 @@ completion_main <- function(
         context <- resolved$value
     }
 
-    # Replace the complete partial child, including an opening quote.
+    # Provide the range of the complete partial child as replacement range
+    # (including quotes)
     replacement_length <- .completion_utf16_length(backward$partial_child)
     replacement_start <- .completion_utf16_length(text) - replacement_length + 1L
 
+    # Generate completion candidates from context and child
     items <- completion_candidates(
         context,
         accessor,
