@@ -171,6 +171,25 @@
   unlist(candidates, recursive = FALSE, use.names = FALSE)
 }
 
+# Generate candidates for language wide constants
+.completion_constant_candidates <- function(partial_name){
+  constants <- c(
+    "TRUE", "FALSE", "NULL", "NA", "NA_integer_", "NA_real_",
+    "NA_complex_", "NA_character_", "Inf", "NaN"
+  )
+  items <- .completion_candidates_from_names(
+    constants,
+    "constant",
+    partial_name
+  )
+  # Mark them as constants so they don't get escaped with backticks
+  items <- lapply(items, function(item){
+    item$is_constant <- TRUE
+    item
+  })
+  return(items)
+}
+
 # Generate DAP completion items from an already resolved context.
 completion_candidates <- function(
   context,
@@ -193,7 +212,8 @@ completion_candidates <- function(
     candidates <- c(
       candidates,
       .completion_search_path_candidates(partial_name),
-      .completion_namespace_candidates(partial_name)
+      .completion_namespace_candidates(partial_name),
+      .completion_constant_candidates(partial_name)
     )
   } else if(accessor == "::"){
     candidates <- .completion_environment_candidates(
@@ -270,7 +290,11 @@ completion_candidates <- function(
   # Build DAP items, omitting only exact no-op overlaps.
   items <- lapply(candidates, function(candidate){
     child_name <- candidate$name
-    escaped_text <- .completion_candidate_text(child_name, accessor, quote)
+    if(isTRUE(candidate$is_constant)){
+      escaped_text <- child_name
+    } else{
+      escaped_text <- .completion_candidate_text(child_name, accessor, quote)
+    }
     label_text <- escaped_text
     sort_text <- label_text
     # If a candidate starts with a non-letter move it to the end of the list
