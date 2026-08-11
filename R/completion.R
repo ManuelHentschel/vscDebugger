@@ -1,3 +1,30 @@
+
+# Completion generation for DAP
+#
+# Main steps for completion generation (here and in files completion_*.R):
+# 1. [.completion_split_request_text()] splits the text at the cursor.
+#    We mostly use the part before the cursor.
+# 2. [lex_forward()] identifies quoted regions and %...% operators.
+#    These are treated as opaque atomic regions later.
+# 3. [lex_backward()] identifies the partial child under the cursor,
+#    the accessor ($, [, ...), and the expression that probably forms the context (e.g. my_list)
+# 4. [parse_completion_context()] parses the context expression, checks for validity, and returns an AST.
+# 5. [resolve_completion_context()] evaluates the AST to get the context object.
+#    Promises are only evaluated if configured so by the user (in particular package namespaces)
+# 6. [completion_candidates()] generates candidates based on the context and accessor.
+#
+# Example input, cursor at `|`:
+# one_list[["entry"]] + meta_list$my_list$my_ch| - other_code
+#           """""""     CCCCCCCCCCCCCCCCCAPPPPP
+#
+# (1) splits at |, handling multiline text if necessary
+# (2) identifies quoted regions like "entry"
+# (3) identifies the partial child my_ch, accessor $, and context meta_list$my_list
+# (4) parses the context and makes sure it is valid R without functioncalls etc.
+# (5) finds the value of meta_list$my_list in the current frame, preserving promises
+# (6) generates candidates how to continue after my_ch based on the value of meta_list$my_list
+
+
 # Count positions in the UTF-16 units used by DAP.
 .completion_utf16_length <- function(text){
   codepoints <- utf8ToInt(enc2utf8(text))

@@ -152,6 +152,9 @@ toAtomicBoolean <- function(v, ...){
   )
 }
 
+#' @name varInfos
+NULL
+
 #' Tools to modify/debug varInfos
 #' 
 #' Tools to check the varInfos computed for variables and modify
