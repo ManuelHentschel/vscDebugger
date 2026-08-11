@@ -128,6 +128,47 @@ stopifnot(
 items <- show_items("partial first argument", "my_function(be")
 stopifnot("beta=" %in% vapply(items, `[[`, "", "label"))
 
+items <- show_items("partial later argument", "my_function(1, be")
+stopifnot("beta=" %in% vapply(items, `[[`, "", "label"))
+
+items <- show_items("spaced later argument", "my_function(1,  be")
+stopifnot("beta=" %in% vapply(items, `[[`, "", "label"))
+
+items <- show_items("empty later argument", "my_function(1, ")
+labels <- vapply(items, `[[`, "", "label")
+stopifnot(all(c("alpha=", "beta=", "...", "mean_global") %in% labels))
+
+items <- show_items(
+  "later argument after a nested call",
+  "my_function(sum(1, 2), be"
+)
+stopifnot("beta=" %in% vapply(items, `[[`, "", "label"))
+
+items <- show_items(
+  "later argument after a special operator",
+  "my_function(1 %in% c(1, 2), be"
+)
+stopifnot("beta=" %in% vapply(items, `[[`, "", "label"))
+
+items <- show_items(
+  "later argument after a string containing a comma",
+  'my_function("a,b", be'
+)
+stopifnot("beta=" %in% vapply(items, `[[`, "", "label"))
+
+# An indexing comma and a newline fall back to ordinary expression completion.
+items <- show_items("index expression after a comma", "my_list[1, ")
+labels <- vapply(items, `[[`, "", "label")
+stopifnot("mean_global" %in% labels, !'"child"' %in% labels)
+
+items <- show_items("later argument on another line", "my_function(1,\nbe")
+stopifnot(!"beta=" %in% vapply(items, `[[`, "", "label"))
+
+stopifnot(!length(show_items(
+  "mismatched delimiters before a later argument",
+  "my_function(value], be"
+)))
+
 items <- show_items("unnamed argument expression", "my_function(mea")
 stopifnot("mean_global" %in% vapply(items, `[[`, "", "label"))
 

@@ -24,6 +24,7 @@
   start = NULL,
   accessor = NULL,
   accessor_start = NULL,
+  child_start = NULL,
   reason = NULL
 ){
   result <- list(status = status)
@@ -33,19 +34,75 @@
   if(!is.null(start)){
     if(is.null(accessor)){
       context <- ""
-      partial_child <- substring(text, start)
+      child_start <- start
     } else{
       context <- substr(text, start, accessor_start - 1L)
-      partial_child <- substring(
-        text,
-        accessor_start + nchar(accessor)
-      )
+      if(is.null(child_start)){
+        child_start <- accessor_start + nchar(accessor)
+      }
     }
     result$context <- context
     result$accessor <- accessor
-    result$partial_child <- partial_child
+    result$partial_child <- substring(text, child_start)
   }
   result
+}
+
+# Find the nearest unmatched opening delimiter before a comma
+.completion_argument_opening <- function(chars, regions, position){
+  opening_by_closing <- c(")" = "(", "]" = "[", "}" = "{")
+  opening_delimiters <- unname(opening_by_closing)
+  expected_openings <- character()
+  valid_region_states <- c(QUOTED_STATES, LS_RAW_QUOTED, LS_SPECIAL_OPERATOR)
+
+  while(position >= 1L){
+    # Ignore brackets and commas inside complete opaque regions.
+    region <- .completion_region_ending_at(regions, position)
+    if(!is.null(region)){
+      if(!region$state %in% valid_region_states){
+        return(list(status = "infeasible"))
+      }
+      position <- region$start - 1L
+      next
+    }
+
+    ch <- chars[position]
+    if(ch %in% c("\n", "\r")){
+      return(list(status = "not_found"))
+    }
+
+    # Closing delimiters must be matched before an outer opener is accepted.
+    if(ch %in% names(opening_by_closing)){
+      expected_openings <- c(
+        expected_openings,
+        opening_by_closing[[ch]]
+      )
+      position <- position - 1L
+      next
+    }
+
+    if(ch %in% opening_delimiters){
+      if(!length(expected_openings)){
+        return(list(
+          status = "found",
+          delimiter = ch,
+          position = position
+        ))
+      }
+      expected <- expected_openings[[length(expected_openings)]]
+      if(ch != expected){
+        return(list(status = "infeasible"))
+      }
+      expected_openings <- expected_openings[-length(expected_openings)]
+    }
+
+    position <- position - 1L
+  }
+
+  if(length(expected_openings)){
+    return(list(status = "infeasible"))
+  }
+  list(status = "not_found")
 }
 
 lex_backward <- function(text, forward = lex_forward(text)){
@@ -77,15 +134,19 @@ lex_backward <- function(text, forward = lex_forward(text)){
         child_start <- child_start - 1L
       }
       child_kind <- "name"
-    } else if(ch %in% c("$", "@", ":", "[", "(")){
-      # If we are on an accessor, the child is empty.
+    } else if(ch %in% c("$", "@", ":", "[", "(", ",")){
+      # An accessor or argument separator is followed by an empty child.
       child_start <- end
       child_kind <- "empty"
     } else if(ch %in% c(")", "]", "}", "\"", "'", "`")){
       # Completed strings and closing delimiters cannot be extended.
       return(.completion_backward_result("no_completion"))
+    } else if(ch %in% c(" ", "\t", "\f", "\v")){
+      # Horizontal whitespace may separate a comma from an empty child.
+      child_start <- end
+      child_kind <- "empty"
     } else{
-      # Whitespace and other punctuation start an empty expression.
+      # Other punctuation starts an empty expression.
       return(.completion_backward_result("candidate", text, end))
     }
   } else{
@@ -96,49 +157,80 @@ lex_backward <- function(text, forward = lex_forward(text)){
     ))
   }
 
-  # Identify the accessor preceding the partial child.
+  # Skip any horizontal whitespace before the child (only allowed for "," as accessor)
+  position <- child_start - 1L
+  had_whitespace <- FALSE
+  while(position >= 1L && chars[position] %in% c(" ", "\t", "\f", "\v")){
+    had_whitespace <- TRUE
+    position <- position - 1L
+  }
+
+  if(position == 0L){
+    # No acessor/context present
+    return(.completion_backward_result("candidate", text, child_start))
+  }
+
+  ch <- chars[position]
   accessor <- NULL
   accessor_start <- NULL
-  position <- child_start - 1L
-  if(position >= 1L){
-    ch <- chars[position]
-    if(ch %in% c("$", "@")){
-      accessor <- ch
-      accessor_start <- position
-    } else if(ch == ":"){
-      # Count the complete colon run before accepting `::` or `:::`.
-      colon_start <- position
-      while(colon_start > 1L && chars[colon_start - 1L] == ":"){
-        colon_start <- colon_start - 1L
-      }
-      colon_width <- position - colon_start + 1L
-      if(colon_width %in% c(2L, 3L)){
-        accessor <- substr(text, colon_start, position)
-        accessor_start <- colon_start
-      }
-    } else if(ch == "[" && child_kind %in% c("empty", "string")){
-      # Empty/string indices are child access; name/backtick indices are expressions.
-      if(position > 1L && chars[position - 1L] == "["){
-        accessor <- "[["
-        accessor_start <- position - 1L
-      } else{
-        accessor <- "["
-        accessor_start <- position
-      }
-    } else if(ch == "(" && child_kind %in% c("empty", "name")){
-      # An immediate call can complete its first argument name.
-      accessor <- ch
+  # Identify the accessor preceding the partial child.
+  # If there was whitespace, only a comma is allowed
+  if(ch == "," && child_kind %in% c("empty", "name")){
+    accessor <- ch
+    accessor_start <- position
+  } else if(had_whitespace){
+    return(.completion_backward_result("candidate", text, child_start))
+  } else if(ch %in% c("$", "@")){
+    accessor <- ch
+    accessor_start <- position
+  } else if(ch == ":"){
+    # Count the complete colon run before accepting `::` or `:::`.
+    colon_start <- position
+    while(colon_start > 1L && chars[colon_start - 1L] == ":"){
+      colon_start <- colon_start - 1L
+    }
+    colon_width <- position - colon_start + 1L
+    if(colon_width %in% c(2L, 3L)){
+      accessor <- substr(text, colon_start, position)
+      accessor_start <- colon_start
+    }
+  } else if(ch == "[" && child_kind %in% c("empty", "string")){
+    # Empty/string indices are child access; name/backtick indices are expressions.
+    if(position > 1L && chars[position - 1L] == "["){
+      accessor <- "[["
+      accessor_start <- position - 1L
+    } else{
+      accessor <- "["
       accessor_start <- position
     }
+  } else if(ch == "(" && child_kind %in% c("empty", "name")){
+    # An immediate call can complete its first argument name.
+    accessor <- ch
+    accessor_start <- position
   }
 
   # Without an accessor, return only the partial child.
   if(is.null(accessor)){
-    return(.completion_backward_result(
-      "candidate",
-      text,
-      child_start
-    ))
+    return(.completion_backward_result("candidate", text, child_start))
+  }
+
+  # If the accessor is a comma, find the opening delimiter of the argument list.
+  if(accessor == ","){
+    # Find the call containing this later argument without parsing its contents.
+    opening <- .completion_argument_opening(
+      chars,
+      forward$regions,
+      accessor_start - 1L
+    )
+    if(opening$status == "infeasible"){
+      return(.completion_backward_result("infeasible", reason = "Mismatched delimiters."))
+    }
+    if(opening$status != "found" || opening$delimiter != "("){
+      return(.completion_backward_result("candidate", text, child_start))
+    }
+    # mark accessor as "(" and continue from its position
+    accessor <- "("
+    accessor_start <- opening$position
   }
 
   # Scan backward to find the start of the context expression.
@@ -250,6 +342,7 @@ lex_backward <- function(text, forward = lex_forward(text)){
     text,
     context_start,
     accessor,
-    accessor_start
+    accessor_start,
+    child_start
   )
 }
