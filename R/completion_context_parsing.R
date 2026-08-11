@@ -1,5 +1,36 @@
 # Validates and normalizes the supported completion-context AST shape.
 
+# Parse a partial child into its unescaped name and quote character.
+.completion_parse_partial_child <- function(partial_child) {
+    # We don't handle completion of multi-line strings
+    if (grepl("[\r\n]", partial_child)) {
+        return(NULL)
+    }
+
+    # Return unquoted partial children unchanged.
+    quote <- substr(partial_child, 1L, 1L)
+    if (!quote %in% c("'", "\"", "`")) {
+        return(list(
+            name = partial_child,
+            quote = NULL
+        ))
+    }
+
+    # Add the closing quote before parsing escapes.
+    parsed <- tryCatch(
+        parse(text = paste0(partial_child, quote), keep.source = FALSE),
+        error = function(error) NULL
+    )
+    if (is.null(parsed) || length(parsed) != 1L) {
+        return(NULL)
+    }
+
+    list(
+        name = as.character(parsed[[1L]]),
+        quote = quote
+    )
+}
+
 .completion_ast_name_to_string <- function(node) {
     if (is.name(node)) {
         node <- as.character(node)

@@ -4,7 +4,7 @@ source(file.path("R", "completion_context_parsing.R"))
 source(file.path("R", "stackTreeHelpers.R"))
 source(file.path("R", "completion_context_resolution.R"))
 source(file.path("R", "completion_candidates.R"))
-source(file.path("R", "completion_main.R"))
+source(file.path("R", "completion.R"))
 
 # Load the package's native promise inspection without installing the package.
 if (!("vscDebugger" %in% names(getLoadedDLLs()))) {
@@ -37,7 +37,7 @@ show_candidates <- function(
     on.exit(options(old_options))
     forward <- lex_forward(text)
     backward <- lex_backward(text, forward)
-    items <- completion_main(
+    items <- .completion_items_from_text(
         text,
         firstenv = firstenv,
         lastenv = lastenv
