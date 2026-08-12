@@ -10,8 +10,8 @@
 Modified version of \code{pkgload::load_all()}
 }
 \seealso{
-Other overwrites: 
-\code{\link{.vsc.debugSource}()},
+Other overwrites:
+\code{\link[=.vsc.debugSource]{.vsc.debugSource()}},
 \code{\link{outputOverwrites}}
 }
 \concept{overwrites}

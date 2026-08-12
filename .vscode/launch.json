@@ -5,6 +5,9 @@
             "name": "Launch R-Workspace",
             "request": "launch",
             "debugMode": "workspace",
+            // "rPath": "C:\\Program Files\\R\\R-4.3.3\\bin\\R.exe",
+            // "rPath": "C:\\Program Files\\R\\R-4.6.0\\bin\\R.exe",
+            "rPath": "C:\\Program Files\\R\\R-4.5.3\\bin\\R.exe",
             "workingDirectory": ""
         },
         {

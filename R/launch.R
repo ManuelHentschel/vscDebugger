@@ -23,9 +23,9 @@ initializeRequest <- function(response, args, request){
   # make VS Code NOT support data breakpoints
   body$supportsDataBreakpoints <- FALSE
 
-  # make VS Code to support completion in REPL
+  # Advertise Debug Console completion support and automatic triggers.
   body$supportsCompletionsRequest <- TRUE
-  body$completionTriggerCharacters <- list("[", "$", ":", "@", "(", ")")
+  body$completionTriggerCharacters <- list("[", "$", ":", "@", "(", "%")
 
   # make VS Code to send cancelRequests
   body$supportsCancelRequest <- FALSE

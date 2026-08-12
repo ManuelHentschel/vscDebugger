@@ -64,10 +64,9 @@ if('docOnly' %in% args){
   # normal install first to build binaries
   devtools::install(
     dependencies = FALSE,
-    upgrade = 'never',
+    upgrade = FALSE,
     quick = FALSE,
     build = TRUE,
-    force = TRUE,
     args = c(
       "--preclean",
       "--clean"

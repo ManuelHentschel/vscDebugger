@@ -114,10 +114,6 @@ getDotVars <- function(env) {
 #' ## evaluate it...
 #' base::print(e$x)
 #' 
-#' ## is it still a promise? (It depends...)
-#' stopifnot(vscDebugger:::isPromise("x", e, strict = FALSE))
-#' stopifnot(!vscDebugger:::isPromise("x", e, strict = TRUE))
-#' 
 #' ## get info again
 #' vscDebugger:::getPromiseVar("x", e)
 #' 
@@ -159,6 +155,9 @@ getPromiseInfo <- function(name, env) {
 #' @keywords internal
 #' @useDynLib vscDebugger c_is_promise
 isPromise <- function(name, env) {
+  if(bindingIsActive(name, env)){
+    return(FALSE)
+  }
   sym <- as.name(name)
   .Call(c_is_promise, sym, env)
 }

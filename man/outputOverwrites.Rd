@@ -58,8 +58,8 @@ If the overwrites are not required, they can be toggled using the launch config 
 
 \code{\link[utils:str]{utils::str()}}
 
-Other overwrites: 
-\code{\link{.vsc.debugSource}()},
-\code{\link{.vsc.load_all}()}
+Other overwrites:
+\code{\link[=.vsc.debugSource]{.vsc.debugSource()}},
+\code{\link[=.vsc.load_all]{.vsc.load_all()}}
 }
 \concept{overwrites}

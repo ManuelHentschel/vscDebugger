@@ -31,8 +31,8 @@
 Modified version of \code{base::source} that honors breakpoints set by the debugger.
 }
 \seealso{
-Other overwrites: 
-\code{\link{.vsc.load_all}()},
+Other overwrites:
+\code{\link[=.vsc.load_all]{.vsc.load_all()}},
 \code{\link{outputOverwrites}}
 }
 \concept{overwrites}

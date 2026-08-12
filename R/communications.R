@@ -179,7 +179,9 @@ getJson <- function(body){
 }
 
 removeNonJsonElements <- function(v){
-  if(is.list(v)){
+  if(is.data.frame(v)){
+    return(v)
+  } else if(is.list(v)){
     v <- lapply(v, removeNonJsonElements)
     # remove NULL entries
     for(i in rev(seq_along(v))){
