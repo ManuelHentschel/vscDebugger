@@ -26,6 +26,7 @@
   chdir = FALSE,
   print.eval = NULL,
   encoding = "unknown",
+  isRmd = NULL,
   ...
 ) {
   # determine envir
@@ -46,7 +47,12 @@
 
   # parse file:
   path <- normalizePath(file)
-  body0 <- parse(path, encoding = encoding, keep.source = TRUE)
+  usePurl <- identical(isRmd, TRUE) || (is.null(isRmd) && endsWith(tolower(path), '.rmd'))
+  if(usePurl){
+    body0 <- purlAndParse(path)
+  } else{
+    body0 <- parse(path, encoding = encoding, keep.source = TRUE)
+  }
 
   # store state
   if(chdir){
@@ -318,3 +324,20 @@ intervalContains <- function(interval, x) {
 hasSrcref <- function(x) {
   'srcref' %in% names(attributes(x))
 }
+
+purlAndParse <- function(fileName){
+  txt <- purlAndRead(fileName)
+  body0 <- parse(text = txt, keep.source = TRUE)
+  attr(body0, 'srcfile')[['filename']] <- fileName
+  return(body0)
+}
+
+purlAndRead <- function(fileName){
+  ret <- NULL
+  file <- textConnection('ret', open = 'w', local = TRUE)
+  knitr::purl(fileName, output = file, quiet = TRUE, documentation = 2)
+  close(file)
+  ret <- paste0(ret, collapse = '\n')
+  return(ret)
+}
+
