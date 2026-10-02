@@ -193,6 +193,10 @@ which is more robust than the custom breakpoint mechanism.</li>
 <p>The remaining config entries are:</p>
 <ul>
 <li>
+<code>"rPath"</code>: The path to the R executable to be launched.
+If not specified, fall back to other settings, the path, or
+registry.</li>
+<li>
 <code>"workingDirectory"</code>: An absolute path to the desired
 work directory. Defaults to the workspace folder. The R process is
 launched in this directory (reading the <code>.Rprofile</code>
